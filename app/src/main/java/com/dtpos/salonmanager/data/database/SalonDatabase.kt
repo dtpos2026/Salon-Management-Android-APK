@@ -80,7 +80,7 @@ abstract class SalonDatabase : RoomDatabase() {
         fun build(context: Context, name: String = NAME): SalonDatabase =
             Room.databaseBuilder(context.applicationContext, SalonDatabase::class.java, name)
                 .addMigrations(*Migrations.ALL)
-                .setJournalMode(JournalMode.WRITE_AHEAD_LOGGING)
+                .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
                 .build()
 
         fun inMemory(context: Context): SalonDatabase =

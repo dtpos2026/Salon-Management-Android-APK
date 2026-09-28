@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dashboard -->
+    <string name="dashboard_greeting">Welcome back</string>
+    <string name="dashboard_greeting_sub">Here is how your salon is doing today</string>
+    <string name="dashboard_demo_badge">DEMO DATA</string>
+    <string name="dashboard_new_sale">New Sale</string>
+    <string name="dashboard_today">Today</string>
+    <string name="dashboard_sales">Today\'s sales</string>
+    <string name="dashboard_expenses">Today\'s expenses</string>
+    <string name="dashboard_incl_staff">incl. staff pay %1$s</string>
+    <string name="dashboard_profit">Today\'s profit</string>
+    <string name="dashboard_cash_received">Cash received</string>
+    <string name="dashboard_customers">Customers</string>
+    <string name="dashboard_services">Services done</string>
+    <string name="dashboard_staff_outstanding">Staff pay outstanding</string>
+    <string name="dashboard_this_month">This month</string>
+    <string name="dashboard_targets">Targets</string>
+    <string name="dashboard_targets_none">Set daily and monthly targets to track your progress.</string>
+    <string name="dashboard_target_detail">%1$s of %2$s · %3$s remaining</string>
+    <string name="dashboard_last_7_days">Sales - last 7 days</string>
+    <string name="dashboard_manage">Manage</string>
+    <string name="dashboard_recent_sales">Recent sales</string>
+    <string name="dashboard_no_sales_title">No sales yet</string>
+    <string name="dashboard_no_sales_message">Tap New Sale to record your first customer.</string>
+    <string name="dashboard_license_trial">Trial version: %1$d days left</string>
+    <string name="dashboard_license_expiring">Your licence expires in %1$d days</string>
+    <string name="dashboard_license_read_only">Licence expired - app is in view-only mode</string>
+    <string name="dashboard_backup_never">You have not saved a backup yet. Protect your data.</string>
+    <string name="dashboard_backup_old">Last backup was %1$d days ago</string>
+    <string name="dashboard_backup_now">Back up</string>
+
+    <!-- Customers -->
+    <string name="customers_total">%1$d customers</string>
+    <string name="customers_add">Add customer</string>
+    <string name="customers_edit">Edit customer</string>
+    <string name="customers_search">Search by name or phone</string>
+    <string name="customers_empty_title">No customers yet</string>
+    <string name="customers_empty_message">Customers are saved here with their visit history. You can also add them quickly from New Sale.</string>
+    <string name="customers_last_visit">Last visit %1$s</string>
+    <string name="customers_last_visit_label">Last visit</string>
+    <string name="customers_no_visits">No visits yet</string>
+    <string name="customers_visits_count">%1$d visits</string>
+    <string name="customers_profile">Customer</string>
+    <string name="customers_deleted">This customer was deleted.</string>
+    <string name="customers_total_visits">Total visits</string>
+    <string name="customers_total_spent">Total spent</string>
+    <string name="customers_favorites">Favourite services</string>
+    <string name="customers_favorite_line">%1$s (%2$d times)</string>
+    <string name="customers_history">Visit history</string>
+    <string name="customers_history_empty">Sales for this customer will appear here.</string>
+    <string name="customers_since">Customer since %1$s</string>
+    <string name="customers_visit_staff">By %1$s · %2$s</string>
+    <string name="customers_delete_title">Delete customer?</string>
+    <string name="customers_delete_message">The customer will be removed. Past receipts are kept and still show the name.</string>
+
+    <!-- Services -->
+    <string name="services_add">Add service</string>
+    <string name="services_edit">Edit service</string>
+    <string name="services_search">Search services</string>
+    <string name="services_add_defaults">Add common salon services</string>
+    <string name="services_defaults_added">Common services added. Please check the prices.</string>
+    <string name="services_empty_message">Add the services you offer with their fixed prices. Prices load automatically in New Sale.</string>
+    <string name="services_minutes">%1$d min</string>
+    <string name="services_delete_title">Delete service?</string>
+    <string name="services_delete_message">Past receipts keep the service name and price. You can also mark it inactive instead.</string>
+
+    <!-- Staff -->
+    <string name="staff_add">Add staff</string>
+    <string name="staff_edit">Edit staff</string>
+    <string name="staff_search">Search staff</string>
+    <string name="staff_empty_title">No staff yet</string>
+    <string name="staff_empty_message">Add your barbers and team to track their sales, commission and payments.</string>
+    <string name="staff_customers_count">%1$d customers</string>
+    <string name="staff_sales">Sales</string>
+    <string name="staff_commission">Commission</string>
+    <string name="staff_settlement">Salary and commission</string>
+    <string name="staff_fixed_salary">Fixed salary</string>
+    <string name="staff_commission_earned">Commission earned</string>
+    <string name="staff_total_earned">Total earned</string>
+    <string name="staff_paid_against">Paid (salary, commission, advance)</string>
+    <string name="staff_extras_paid">Bonus and other payments</string>
+    <string name="staff_outstanding">Outstanding to pay</string>
+    <string name="staff_overpaid">Paid in advance</string>
+    <string name="staff_settlement_note">Outstanding = fixed salary + commission − salary, commission and advance payments this month.</string>
+    <string name="staff_payments">Payments</string>
+    <string name="staff_no_payments">No payments recorded.</string>
+    <string name="staff_record_payment">Record payment</string>
+    <string name="staff_payment_saved">Payment saved</string>
+    <string name="staff_delete_payment_title">Delete payment?</string>
+    <string name="staff_delete_payment_message">Delete this payment of %1$s? The cash counter will be updated.</string>
+    <string name="staff_delete_title">Delete staff member?</string>
+    <string name="staff_delete_message">Only staff without sales or payments can be deleted.</string>
+    <string name="staff_delete_in_use">This staff member has sales or payments. Mark as inactive instead to keep the history.</string>
+
+    <!-- Expenses -->
+    <string name="expenses_add">Add expense</string>
+    <string name="expenses_edit">Edit expense</string>
+    <string name="expenses_search">Search notes or category</string>
+    <string name="expenses_categories">Expense categories</string>
+    <string name="expenses_manage_categories">Manage</string>
+    <string name="expenses_total_business">Business expenses</string>
+    <string name="expenses_total_personal">Personal and household spending</string>
+    <string name="expenses_separation_business">Personal spending in this period (%1$s) is kept separate and does not reduce business profit.</string>
+    <string name="expenses_separation_personal">Kept separate from business expenses (%1$s). It is not subtracted from business profit.</string>
+    <string name="expenses_empty_title">No expenses in this period</string>
+    <string name="expenses_empty_message">Record bills, supplies and household spending to see your real profit.</string>
+    <string name="expenses_from_counter">from counter</string>
+    <string name="expenses_from_counter_hint">Reduces the expected cash in the cash counter</string>
+    <string name="expenses_business_hint">Business expenses reduce business profit (rent, bills, supplies…).</string>
+    <string name="expenses_personal_hint">Personal and household spending is tracked separately and never reduces business profit.</string>
+    <string name="expenses_pick_category">Choose a category</string>
+    <string name="expenses_delete_title">Delete expense?</string>
+    <string name="expenses_delete_message">This expense will be removed and the cash counter updated.</string>
+    <string name="expenses_add_category">Add category</string>
+    <string name="expenses_edit_category">Edit category</string>
+    <string name="expenses_budget_group">Budget line</string>
+    <string name="expenses_no_budget_group">Household only</string>
+    <string name="expenses_budget_line">Counts towards: %1$s</string>
+    <string name="expenses_builtin">Built-in category</string>
+    <string name="expenses_custom">Custom category</string>
+    <string name="expenses_category_in_use">This category has expenses. Switch it off to hide it instead.</string>
+
+    <!-- Cash counter -->
+    <string name="cash_status_open">Open</string>
+    <string name="cash_status_closed">Closed</string>
+    <string name="cash_expected_title">Cash in drawer</string>
+    <string name="cash_opening">Opening cash</string>
+    <string name="cash_sales">Cash sales</string>
+    <string name="cash_voids">Refunds</string>
+    <string name="cash_expenses">Cash expenses</string>
+    <string name="cash_staff_payments">Staff cash payments</string>
+    <string name="cash_expected">Expected closing cash</string>
+    <string name="cash_actual">Actual cash counted</string>
+    <string name="cash_balanced">Balanced</string>
+    <string name="cash_short">Short</string>
+    <string name="cash_excess">Excess</string>
+    <string name="cash_short_amount">Short %1$s</string>
+    <string name="cash_excess_amount">Excess %1$s</string>
+    <string name="cash_set_opening">Opening</string>
+    <string name="cash_close_day">Count cash and close day</string>
+    <string name="cash_close_hint">Count the cash in the drawer and enter the actual amount. Expected: %1$s</string>
+    <string name="cash_closed_message">Day closed</string>
+    <string name="cash_reopen">Reopen day</string>
+    <string name="cash_movements">Cash movements</string>
+    <string name="cash_history">Previous days</string>
+    <string name="cash_history_line">Expected %1$s · Counted %2$s</string>
+    <string name="cash_opening_hint">Last counted closing cash: %1$s</string>
+    <string name="cash_in_hint">Money added to the drawer, for example change from home.</string>
+    <string name="cash_out_hint">Money taken out of the drawer, for example taken home or deposited in the bank.</string>
+
+    <!-- Targets -->
+    <string name="targets_target">Target</string>
+    <string name="targets_achieved">Achieved</string>
+    <string name="targets_remaining">Remaining</string>
+    <string name="targets_not_set">Not set. Tap to set a target.</string>
+    <string name="targets_set_title">Set %1$s</string>
+    <string name="targets_set_hint">Enter 0 to remove the target.</string>
+    <string name="targets_required_per_day">You need about %1$s per day for the remaining %2$d days.</string>
+
+    <!-- Budget -->
+    <string name="budget_intro">Plan your monthly spending. Business and household money are kept separate so you always know your real profit.</string>
+    <string name="budget_monthly_amount">Monthly amount</string>
+    <string name="budget_planned">Planned</string>
+    <string name="budget_actual">Spent this month</string>
+    <string name="budget_saved">Saved this month</string>
+    <string name="budget_left">Left to spend</string>
+    <string name="budget_over">Over budget by</string>
+    <string name="budget_to_save">Still to save</string>
+    <string name="budget_saved_extra">Saved above target</string>
+    <string name="budget_not_set">No budget set. Tap edit to plan this line.</string>
+    <string name="budget_hint_business">Business expenses + staff payments</string>
+    <string name="budget_hint_household">All personal and household spending</string>
+    <string name="budget_hint_children">Children and education categories</string>
+    <string name="budget_hint_food">Food category</string>
+    <string name="budget_hint_savings">Business profit minus household spending</string>
+</resources>

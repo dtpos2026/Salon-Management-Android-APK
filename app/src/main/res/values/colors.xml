@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand colours (also defined in presentation/theme/Theme.kt for Compose) -->
+    <color name="brand_navy">#FF14213D</color>
+    <color name="brand_navy_light">#FF1C2D52</color>
+    <color name="brand_gold">#FFD4A537</color>
+    <color name="window_background">#FFF6F7FB</color>
+</resources>

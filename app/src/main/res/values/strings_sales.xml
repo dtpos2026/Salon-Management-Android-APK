@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- POS -->
+    <string name="pos_title">New Sale</string>
+    <string name="pos_checkout">Checkout</string>
+    <string name="pos_clear">Clear sale</string>
+    <string name="pos_customer">Customer</string>
+    <string name="pos_served_by">Served by</string>
+    <string name="pos_no_staff">No staff</string>
+    <string name="pos_staff">Staff</string>
+    <string name="pos_search_services">Search services</string>
+    <string name="pos_no_services_title">No services yet</string>
+    <string name="pos_no_services_message">Add your salon services and prices in Services first.</string>
+    <string name="pos_total">Total</string>
+    <string name="pos_subtotal">Subtotal</string>
+    <string name="pos_cart">Services in this sale</string>
+    <string name="pos_cart_empty">No services added yet.</string>
+    <string name="pos_discount">Discount</string>
+    <string name="pos_discount_amount">Amount</string>
+    <string name="pos_discount_percent">Percent</string>
+    <string name="pos_discount_value">Discount on the whole sale</string>
+    <string name="pos_payment_method">Payment method</string>
+    <string name="pos_cash_received">Cash received (optional)</string>
+    <string name="pos_change_due">Change to return: %1$s</string>
+    <string name="pos_complete">Complete sale · %1$s</string>
+    <string name="pos_line_price">%1$s × %2$d</string>
+    <string name="pos_line_discount">Discount %1$s</string>
+    <string name="pos_unit_price">Unit price</string>
+    <string name="pos_line_discount_label">Discount for this service</string>
+    <string name="pos_line_invalid">Check the price and discount</string>
+    <string name="pos_increase">Increase quantity</string>
+    <string name="pos_decrease">Decrease quantity</string>
+    <string name="pos_select_customer">Select customer</string>
+    <string name="pos_new_customer">New customer</string>
+    <string name="pos_discard_title">Discard this sale?</string>
+    <string name="pos_discard_message">The services you added will be removed.</string>
+    <string name="pos_discard_confirm">Discard</string>
+    <string name="pos_error_empty">Add at least one service</string>
+    <string name="pos_error_price">Every service needs a price greater than zero</string>
+    <string name="pos_error_tendered">Cash received is less than the total</string>
+
+    <!-- Sales list -->
+    <string name="sales_search">Search receipt no., customer or phone</string>
+    <string name="sales_total">Total sales</string>
+    <string name="sales_count">Number of sales</string>
+    <string name="sales_empty_title">No sales in this period</string>
+    <string name="sales_empty_message">Completed sales and receipts will appear here.</string>
+
+    <!-- Sale detail / receipt -->
+    <string name="sale_title">Receipt</string>
+    <string name="sale_saved">Sale saved successfully</string>
+    <string name="sale_is_voided">This sale was voided and is excluded from all totals.</string>
+    <string name="sale_voided">VOIDED</string>
+    <string name="sale_open_customer">Customer</string>
+    <string name="sale_void">Void this sale</string>
+    <string name="sale_void_title">Void sale?</string>
+    <string name="sale_void_message">The receipt stays in history marked as VOID and its amount is removed from sales totals. For cash sales a refund is recorded in today\'s cash counter.</string>
+    <string name="sale_void_reason">Reason (optional)</string>
+    <string name="sale_void_confirm">Void sale</string>
+    <string name="sale_void_done">Sale voided</string>
+    <string name="share_receipt">Share receipt</string>
+
+    <!-- Printing -->
+    <string name="print_receipt">Print receipt</string>
+    <string name="print_reprint">Reprint receipt</string>
+    <string name="print_printing">Printing…</string>
+    <string name="print_success">Receipt sent to the printer</string>
+    <string name="print_failed_title">Could not print</string>
+
+    <!-- Receipt labels (also used on the printed slip) -->
+    <string name="receipt_no">Receipt</string>
+    <string name="receipt_date">Date</string>
+    <string name="receipt_time">Time</string>
+    <string name="receipt_customer">Customer</string>
+    <string name="receipt_phone">Ph</string>
+    <string name="receipt_item">Service</string>
+    <string name="receipt_amount">Amount</string>
+    <string name="receipt_by">By</string>
+    <string name="receipt_discount">Discount</string>
+    <string name="receipt_subtotal">Subtotal</string>
+    <string name="receipt_total">TOTAL</string>
+    <string name="receipt_payment">Payment</string>
+    <string name="receipt_tendered">Received</string>
+    <string name="receipt_change">Change</string>
+    <string name="receipt_voided">VOID</string>
+    <string name="receipt_default_footer">Thank you for visiting!</string>
+</resources>

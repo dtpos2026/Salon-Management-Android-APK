@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Files the app may share through FileProvider (receipts, reports, backups). -->
+<paths>
+    <cache-path name="shared" path="shared/" />
+    <files-path name="backups" path="backups/" />
+</paths>
