@@ -1,0 +1,36 @@
+# Gradle / Android
+.gradle/
+build/
+*.apk
+*.aab
+*.ap_
+*.dex
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+*.hprof
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Signing material and secrets - NEVER commit these
+keystore.properties
+*.jks
+*.keystore
+*.p12
+*.pem
+*.key
+license-private*.txt
+license-private*.pem
+secrets.properties
+google-services.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local tooling output
+/tools/license/out/
