@@ -195,7 +195,7 @@ private fun SalonNavHost(nav: NavHostController) {
             CustomerEditScreen(
                 customerId = entry.arguments?.getLong("customerId")?.takeIf { it > 0 },
                 onBack = back,
-                onDeleted = { nav.popBackStack(Routes.CUSTOMERS, inclusive = false) },
+                onDeleted = { if (!nav.popBackStack(Routes.CUSTOMERS, inclusive = false)) nav.popBackStack() },
             )
         }
 
@@ -219,7 +219,7 @@ private fun SalonNavHost(nav: NavHostController) {
             StaffEditScreen(
                 staffId = entry.arguments?.getLong("staffId")?.takeIf { it > 0 },
                 onBack = back,
-                onDeleted = { nav.popBackStack(Routes.STAFF, inclusive = false) },
+                onDeleted = { if (!nav.popBackStack(Routes.STAFF, inclusive = false)) nav.popBackStack() },
             )
         }
 
