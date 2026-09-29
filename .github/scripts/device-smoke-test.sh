@@ -10,7 +10,7 @@ ACTIVITY=com.dtpos.salonmanager.MainActivity
 adb install -r "$APK"
 echo "Installed: $(adb shell pm path "$PKG")"
 
-adb logcat -c
+adb logcat -c || true  # Android 8 emulators cannot always clear the main buffer
 adb shell am start -W -n "$PKG/$ACTIVITY"
 sleep 15
 
