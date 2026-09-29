@@ -33,6 +33,10 @@ jobs:
       - name: Build release APK
         run: ./gradlew assembleRelease --stacktrace
 
+      - name: Print exported Room schema (commit it to app/schemas)
+        run: |
+          for f in app/schemas/*/*.json; do echo "=== $f"; cat "$f"; echo; echo "=== end"; done
+
       - name: Android lint (report only)
         run: ./gradlew lintDebug
         continue-on-error: true
