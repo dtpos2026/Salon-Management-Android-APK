@@ -33,8 +33,12 @@ jobs:
       - name: Build release APK
         run: ./gradlew assembleRelease --stacktrace
 
+      # Room writes the schema as a side effect of KSP, which the build cache can skip,
+      # so re-run KSP without the cache before printing it.
       - name: Print exported Room schema (commit it to app/schemas)
+        continue-on-error: true
         run: |
+          ./gradlew :app:kspDebugKotlin --rerun --no-build-cache
           for f in app/schemas/*/*.json; do echo "=== $f"; cat "$f"; echo; echo "=== end"; done
 
       - name: Android lint (report only)
