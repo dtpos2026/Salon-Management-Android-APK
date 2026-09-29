@@ -34,12 +34,18 @@ jobs:
         run: ./gradlew assembleRelease --stacktrace
 
       # Room writes the schema as a side effect of KSP, which the build cache can skip,
-      # so re-run KSP without the cache before printing it.
-      - name: Print exported Room schema (commit it to app/schemas)
-        continue-on-error: true
+      # so re-run KSP without the cache. Any change means an entity changed without a
+      # committed schema (and usually without a version bump and migration).
+      - name: Check the committed Room schema is up to date
         run: |
           ./gradlew :app:kspDebugKotlin --rerun --no-build-cache
-          for f in app/schemas/*/*.json; do echo "=== $f"; cat "$f"; echo; echo "=== end"; done
+          if [ -n "$(git status --porcelain app/schemas)" ]; then
+            git status --porcelain app/schemas
+            git diff app/schemas
+            echo "::error::The database schema changed. Bump SalonDatabase.VERSION, add a migration and commit app/schemas."
+            exit 1
+          fi
+          echo "Committed Room schema matches the entities."
 
       - name: Android lint (report only)
         run: ./gradlew lintDebug

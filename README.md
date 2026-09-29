@@ -222,11 +222,13 @@ engine testable and language-independent.
 * All money is stored as integer minor units (paisa) – no floating point rounding.
 * A sale, its items, the customer visit, the receipt number and the cash movement are written in
   **one Room transaction** (all or nothing); a unique index guarantees unique receipt numbers.
-* Room schemas are exported to `app/schemas/` on every build – **commit the generated JSON**
-  (`app/schemas/com.dtpos.salonmanager.data.database.SalonDatabase/1.json`) and keep it.
+* Room schemas are exported to `app/schemas/` and committed
+  (`app/schemas/com.dtpos.salonmanager.data.database.SalonDatabase/1.json`). CI fails if an
+  entity changes without a committed schema.
 * Every schema change must bump the database version and add a `Migration` in
-  `data/database/Migrations.kt` with a `MigrationTestHelper` test. Destructive migration is never
-  enabled, so an update can not silently wipe a salon's data.
+  `data/database/Migrations.kt` with a `MigrationTestHelper` test (`androidTest/MigrationTest.kt`
+  already opens every committed schema version with the current code). Destructive migration is
+  never enabled, so an update can not silently wipe a salon's data.
 
 ## Tests
 
@@ -236,7 +238,7 @@ engine testable and language-independent.
 | `services/*Test` | licence signing/verification/evaluation, ESC/POS encoding and 58/80 mm layouts, dithering, backup encryption, insights |
 | `data/*Test` (Robolectric) | atomic sale transaction and rollback, receipt uniqueness, voids, customer history, duplicate phones, expense separation in reports, cash counter, staff settlement, dashboard |
 | `services/BackupRestoreTest`, `LicenseAndSecurityTest` (Robolectric) | backup → restore round trip with safety copy, encrypted backups, auto backup, licence activation rules, PIN lockout and recovery |
-| `androidTest` | app launch and the real queries on the device's SQLite (run on Android 8 and 14 in CI) |
+| `androidTest` | app launch, the real queries on the device's SQLite, and the committed schema/migrations (run on Android 8 and 14 in CI) |
 
 ---
 
