@@ -199,6 +199,7 @@ private fun ServicesPane(
     showCartBar: Boolean,
 ) {
     val money = LocalMoney.current
+    val sound = com.dtpos.salonmanager.presentation.common.LocalAppContainer.current.soundEffects
     Column(modifier) {
         Column(Modifier.padding(horizontal = 16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -241,7 +242,10 @@ private fun ServicesPane(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 items(state.filteredServices, key = { it.id }) { service ->
-                    ServiceTile(service, state.quantityOf(service.id), money.format(service.priceMinor)) { vm.addService(service) }
+                    ServiceTile(service, state.quantityOf(service.id), money.format(service.priceMinor)) {
+                        sound.tap()
+                        vm.addService(service)
+                    }
                 }
             }
         }

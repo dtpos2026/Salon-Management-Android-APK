@@ -116,6 +116,10 @@ class AppContainer(private val app: Application) {
         ReceiptPrinter(app, bluetoothPrinterService, printerSettingsStore, saleRepository, logoStore)
     }
 
+    val receiptExporter by lazy {
+        com.dtpos.salonmanager.services.export.ReceiptExporter(app, receiptPrinter, logoStore, uiPreferences)
+    }
+
     val backupManager by lazy {
         BackupManager(app, { database }, ::closeDatabase, settingsRepository, logoStore)
     }

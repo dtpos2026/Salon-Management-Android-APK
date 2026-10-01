@@ -1,6 +1,22 @@
 package com.dtpos.salonmanager.presentation.sales
 
 import androidx.compose.foundation.Image
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.layout.ContentScale
+import com.dtpos.salonmanager.presentation.common.LocalMoney
+import com.dtpos.salonmanager.services.export.ExternalApps
+import com.dtpos.salonmanager.services.export.ReceiptImageFormat
+import com.dtpos.salonmanager.services.export.SaveResult
+import com.dtpos.salonmanager.services.printer.PrintMode
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -109,6 +125,60 @@ class SaleDetailViewModel(
 
     val shareFile = MutableSharedFlow<File>(extraBufferCapacity = 1)
 
+    /** Image actions the screen performs with an Activity context. */
+    sealed interface ImageAction {
+        data class Share(val file: File) : ImageAction
+        data class WhatsApp(val file: File, val phone: String?, val message: String) : ImageAction
+        data class RequestPermission(val format: ReceiptImageFormat) : ImageAction
+    }
+
+    val imageActions = MutableSharedFlow<ImageAction>(extraBufferCapacity = 2)
+
+    private val _exporting = MutableStateFlow(false)
+    val exporting: StateFlow<Boolean> = _exporting.asStateFlow()
+
+    /** Styled receipt for the preview (null while rendering). */
+    val previewImage: StateFlow<android.graphics.Bitmap?> = receipt
+        .map { data -> data?.let { runCatching { container.receiptExporter.render(it) }.getOrNull() } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val printMode: StateFlow<PrintMode> = container.printerSettingsStore.settingsFlow
+        .map { it.mode }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PrintMode.IMAGE)
+
+    private fun export(block: suspend (ReceiptData) -> Unit) {
+        if (_exporting.value) return
+        _exporting.value = true
+        launchSafe {
+            try {
+                block(receipt.first { it != null } ?: return@launchSafe)
+            } finally {
+                _exporting.value = false
+            }
+        }
+    }
+
+    fun saveImage(format: ReceiptImageFormat) = export { data ->
+        when (val result = container.receiptExporter.saveToGallery(data, format)) {
+            is SaveResult.Saved -> {
+                container.soundEffects.tap()
+                showMessage(R.string.receipt_image_saved, result.fileName)
+            }
+            SaveResult.NeedsPermission -> imageActions.tryEmit(ImageAction.RequestPermission(format))
+            SaveResult.Failed -> showMessage(R.string.receipt_image_failed)
+        }
+    }
+
+    fun shareImage() = export { data ->
+        val file = container.receiptExporter.cacheFile(data)
+        if (file == null) showMessage(R.string.receipt_image_failed) else imageActions.tryEmit(ImageAction.Share(file))
+    }
+
+    fun sendWhatsApp(message: String) = export { data ->
+        val file = container.receiptExporter.cacheFile(data)
+        if (file == null) showMessage(R.string.receipt_image_failed) else imageActions.tryEmit(ImageAction.WhatsApp(file, data.customerPhone, message))
+    }
+
     init {
         if (isNewSale) {
             viewModelScope.launch {
@@ -176,6 +246,43 @@ fun SaleDetailScreen(
     LaunchedEffect(vm) {
         vm.shareFile.collect { ShareHelper.shareFile(context, it, "application/pdf", shareTitle) }
     }
+    var pendingFormat by remember { mutableStateOf<ReceiptImageFormat?>(null) }
+    val permissionDenied = stringResource(R.string.receipt_permission_denied)
+    val storagePermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        val format = pendingFormat
+        pendingFormat = null
+        if (granted && format != null) vm.saveImage(format) else Toast.makeText(context, permissionDenied, Toast.LENGTH_LONG).show()
+    }
+    val whatsappMissing = stringResource(R.string.whatsapp_not_installed)
+    val shareImageTitle = stringResource(R.string.receipt_share_image)
+    LaunchedEffect(vm) {
+        vm.imageActions.collect { action ->
+            when (action) {
+                is SaleDetailViewModel.ImageAction.Share -> ShareHelper.shareFile(context, action.file, "image/png", shareImageTitle)
+                is SaleDetailViewModel.ImageAction.WhatsApp -> {
+                    val uri = ShareHelper.uriFor(context, action.file)
+                    if (uri == null || !ExternalApps.shareImageToWhatsApp(context, uri, "image/png", action.phone, action.message)) {
+                        Toast.makeText(context, whatsappMissing, Toast.LENGTH_LONG).show()
+                    }
+                }
+                is SaleDetailViewModel.ImageAction.RequestPermission -> {
+                    pendingFormat = action.format
+                    storagePermission.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                }
+            }
+        }
+    }
+    // A short chime when a new sale is completed (Settings > App preferences > Sound effects).
+    var chimed by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(isNewSale) {
+        if (isNewSale && !chimed) {
+            chimed = true
+            container.soundEffects.success()
+        }
+    }
+    val previewImage by vm.previewImage.collectAsStateWithLifecycle()
+    val printMode by vm.printMode.collectAsStateWithLifecycle()
+    val exporting by vm.exporting.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -217,7 +324,11 @@ fun SaleDetailScreen(
                     content = SalonTheme.extended.negative,
                 )
             }
-            ReceiptPreview(data, Modifier.widthIn(max = 420.dp))
+            if (printMode == PrintMode.TEXT) {
+                ReceiptPreview(data, Modifier.widthIn(max = 420.dp))
+            } else {
+                StyledReceiptPreview(previewImage, Modifier.widthIn(max = 420.dp))
+            }
 
             Button(
                 onClick = vm::print,
@@ -234,6 +345,21 @@ fun SaleDetailScreen(
                     Text(stringResource(if (isNewSale) R.string.print_receipt else R.string.print_reprint))
                 }
             }
+            val whatsappMessage = stringResource(
+                R.string.receipt_whatsapp_message,
+                data.customerName?.takeIf { it.isNotBlank() } ?: "",
+                data.receiptNumber,
+                LocalMoney.current.format(data.totalMinor),
+                data.businessName,
+            ).replace("  ", " ")
+            ReceiptImageActions(
+                exporting = exporting,
+                onPng = { vm.saveImage(ReceiptImageFormat.PNG) },
+                onJpeg = { vm.saveImage(ReceiptImageFormat.JPEG) },
+                onShare = vm::shareImage,
+                onWhatsApp = { vm.sendWhatsApp(whatsappMessage) },
+                modifier = Modifier.widthIn(max = 420.dp).fillMaxWidth(),
+            )
             Row(Modifier.widthIn(max = 420.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedButton(onClick = onNewSale, modifier = Modifier.weight(1f)) {
                     Icon(Icons.Filled.AddShoppingCart, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -326,6 +452,72 @@ fun ReceiptPreview(receipt: ReceiptData, modifier: Modifier = Modifier) {
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = if (line.align == PrintAlign.CENTER) androidx.compose.ui.text.style.TextAlign.Center else null,
                 )
+            }
+        }
+    }
+}
+
+/** The branded receipt image exactly as it is saved, shared and printed in image mode. */
+@Composable
+fun StyledReceiptPreview(image: android.graphics.Bitmap?, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.White, contentColor = Color.Black),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+    ) {
+        if (image == null) {
+            Box(Modifier.fillMaxWidth().height(320.dp), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(Modifier.size(28.dp), strokeWidth = 2.dp)
+            }
+        } else {
+            val bitmap = remember(image) { image.asImageBitmap() }
+            Image(
+                bitmap = bitmap,
+                contentDescription = null,
+                contentScale = ContentScale.FillWidth,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReceiptImageActions(
+    exporting: Boolean,
+    onPng: () -> Unit,
+    onJpeg: () -> Unit,
+    onShare: () -> Unit,
+    onWhatsApp: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilledTonalButton(onClick = onPng, enabled = !exporting, modifier = Modifier.weight(1f)) {
+                Icon(Icons.Filled.Image, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(stringResource(R.string.receipt_save_png), maxLines = 1)
+            }
+            FilledTonalButton(onClick = onJpeg, enabled = !exporting, modifier = Modifier.weight(1f)) {
+                Icon(Icons.Filled.PhotoLibrary, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(stringResource(R.string.receipt_save_jpeg), maxLines = 1)
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilledTonalButton(onClick = onShare, enabled = !exporting, modifier = Modifier.weight(1f)) {
+                Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(stringResource(R.string.action_share), maxLines = 1)
+            }
+            Button(
+                onClick = onWhatsApp,
+                enabled = !exporting,
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1FA855), contentColor = Color.White),
+            ) {
+                Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(stringResource(R.string.support_whatsapp), maxLines = 1)
             }
         }
     }

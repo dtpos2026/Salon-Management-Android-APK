@@ -9,6 +9,13 @@ import java.io.File
 /** Shares files through the Android share sheet (WhatsApp, email, Drive, ...). */
 object ShareHelper {
 
+    /** content:// URI that other apps (WhatsApp, Gmail, ...) may read. */
+    fun uriFor(context: Context, file: File): android.net.Uri? = try {
+        FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+    } catch (e: IllegalArgumentException) {
+        null
+    }
+
     fun shareFile(context: Context, file: File, mimeType: String, chooserTitle: String): Boolean = try {
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
         val send = Intent(Intent.ACTION_SEND).apply {

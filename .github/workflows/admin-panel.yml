@@ -1,0 +1,105 @@
+name: Super Admin panel
+
+on:
+  push:
+    paths:
+      - 'admin-panel/**'
+      - 'firebase/**'
+      - 'firebase.json'
+      - '.github/workflows/admin-panel.yml'
+  pull_request:
+    paths:
+      - 'admin-panel/**'
+      - 'firebase/**'
+      - 'firebase.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: admin-panel-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Security rules and panel tests (Firebase emulators)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: firebase
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: firebase/package-lock.json
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - run: npm ci
+
+      - name: Install Chromium for the panel test
+        run: npx playwright install --with-deps chromium
+
+      - name: Firestore security rules tests
+        run: npm test
+
+      - name: Admin panel end-to-end test
+        run: npm run test:panel
+
+      - name: Upload panel screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-panel-screenshots
+          path: firebase/test/screenshots/
+
+  # Optional free hosting on GitHub Pages. Turn on with: Settings > Pages > Source: GitHub Actions,
+  # then add the repository variable ADMIN_PANEL_PAGES=true and the secret FIREBASE_WEB_CONFIG.
+  deploy:
+    name: Deploy panel to GitHub Pages
+    needs: test
+    if: >-
+      vars.ADMIN_PANEL_PAGES == 'true' && github.event_name != 'pull_request' &&
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Write firebase-config.js from the FIREBASE_WEB_CONFIG secret
+        working-directory: admin-panel
+        run: node tools/write-config.mjs
+        env:
+          FIREBASE_WEB_CONFIG: ${{ secrets.FIREBASE_WEB_CONFIG }}
+
+      - name: Collect site files
+        run: |
+          mkdir -p _site
+          cp -r admin-panel/index.html admin-panel/verify.html admin-panel/css admin-panel/js admin-panel/vendor admin-panel/assets _site/
+          if [ -f admin-panel/firebase-config.js ]; then cp admin-panel/firebase-config.js _site/; fi
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,15 @@
+{
+  "name": "dt-salon-super-admin",
+  "private": true,
+  "description": "DT Salon Management Super Admin panel (static site). Only needed to rebuild the vendor bundles.",
+  "type": "module",
+  "scripts": {
+    "vendor": "node tools/build-vendor.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.24.2",
+    "firebase": "11.1.0",
+    "html2canvas": "1.4.1",
+    "qrcode-generator": "1.4.4"
+  }
+}

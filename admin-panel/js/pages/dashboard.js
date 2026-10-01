@@ -1,0 +1,73 @@
+import { dashboardCounts, recentPending, expiringSoon, revenueSummary, listInvoices, effectiveStatus } from '../data.js';
+import { esc, fmtDate, money, relativeDays, errorMessage } from '../util.js';
+import { approveDialog, statusPill } from '../actions.js';
+
+function stat(label, value, hint, href, tint, hero = false) {
+  return `<a class="stat ${hero ? 'hero' : ''}" href="${href}" style="--tint:${tint}">
+    <div class="label">${esc(label)}</div><div class="value">${esc(value)}</div>${hint ? `<div class="hint">${esc(hint)}</div>` : ''}</a>`;
+}
+
+export async function render(el, ctx) {
+  ctx.setTitle('Dashboard');
+  ctx.setActions('<a class="btn btn-primary" href="#/invoice/new">+ New invoice</a>');
+  const [counts, pending, renewals, revenue, latest] = await Promise.all([
+    dashboardCounts(),
+    recentPending(6),
+    expiringSoon(6),
+    revenueSummary().catch(() => null),
+    listInvoices({ pageSize: 5 }).catch(() => ({ items: [] })),
+  ]);
+  el.innerHTML = `
+    <div class="stats">
+      ${stat('Total salons', counts.total, 'All registered accounts', '#/salons', 'rgba(255,255,255,.12)', true)}
+      ${stat('Waiting for approval', counts.PENDING, 'New Google sign-ups', '#/salons?filter=PENDING', 'rgba(36,87,197,.12)')}
+      ${stat('Active', counts.active, 'Approved and valid', '#/salons?filter=APPROVED', 'rgba(30,138,74,.12)')}
+      ${stat('Payment pending', counts.PAYMENT_PENDING, '', '#/salons?filter=PAYMENT_PENDING', 'rgba(138,90,0,.14)')}
+      ${stat('Expired', counts.expiredTotal, `${counts.lapsed} licence date passed`, '#/salons?filter=LAPSED', 'rgba(198,40,40,.12)')}
+      ${stat('Expiring in 7 days', counts.expiringSoon, '', '#/salons?filter=SOON', 'rgba(233,201,135,.35)')}
+      ${stat('Suspended', counts.SUSPENDED, '', '#/salons?filter=SUSPENDED', 'rgba(90,63,138,.14)')}
+      ${stat('Blocked', counts.BLOCKED, `${counts.REJECTED} rejected`, '#/salons?filter=BLOCKED', 'rgba(198,40,40,.12)')}
+      ${revenue ? stat('Collected this month', money(revenue.collectedThisMonth), `Invoiced ${money(revenue.invoicedThisMonth)}`, '#/invoices', 'rgba(30,138,74,.12)') : ''}
+      ${revenue ? stat('Outstanding', money(revenue.outstanding), `${revenue.unpaidCount} unpaid invoices`, '#/invoices?filter=UNPAID', 'rgba(198,40,40,.12)') : ''}
+    </div>
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-head"><h2>Waiting for approval</h2><div class="spacer"></div><a href="#/salons?filter=PENDING">View all</a></div>
+        ${pending.length ? `<table class="list"><tbody>${pending.map((a) => `
+          <tr>
+            <td data-label="Salon"><a class="cell-title" href="#/salon/${encodeURIComponent(a.id)}">${esc(a.salonName || '—')}</a><div class="cell-sub">${esc(a.ownerName || '')} · ${esc(a.phone || '')}</div><div class="cell-sub">${esc(a.email || '')}</div></td>
+            <td data-label="Registered" class="cell-sub">${fmtDate(a.createdAt)}</td>
+            <td style="text-align:right"><button class="btn btn-primary btn-sm" data-approve="${esc(a.id)}">Approve</button></td>
+          </tr>`).join('')}</tbody></table>` : '<div class="empty">No salons waiting. New sign-ups appear here.</div>'}
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Renewals due</h2><div class="spacer"></div><a href="#/salons?filter=SOON">View all</a></div>
+        ${renewals.length ? `<table class="list"><tbody>${renewals.map((a) => `
+          <tr class="row-link" data-href="#/salon/${encodeURIComponent(a.id)}">
+            <td data-label="Salon"><div class="cell-title">${esc(a.salonName || '—')}</div><div class="cell-sub">${esc(a.customerId || '')}</div></td>
+            <td data-label="Licence ends"><div>${fmtDate(a.expiresAt)}</div><div class="cell-sub">${esc(relativeDays(a.expiresAt))}</div></td>
+            <td data-label="Status">${statusPill(effectiveStatus(a))}</td>
+          </tr>`).join('')}</tbody></table>` : '<div class="empty">No licences ending in the next 7 days.</div>'}
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <div class="card-head"><h2>Latest invoices</h2><div class="spacer"></div><a href="#/invoices">All invoices</a></div>
+      ${latest.items.length ? `<table class="list"><thead><tr><th>Invoice</th><th>Salon</th><th>Date</th><th>Total</th><th>Balance</th><th>Status</th></tr></thead><tbody>${latest.items.map((i) => `
+        <tr class="row-link" data-href="#/invoice/${encodeURIComponent(i.id)}">
+          <td data-label="Invoice" class="cell-title">${esc(i.number)}</td>
+          <td data-label="Salon">${esc(i.salonName || '')}</td>
+          <td data-label="Date">${fmtDate(i.issuedAt)}</td>
+          <td data-label="Total">${money(i.total)}</td>
+          <td data-label="Balance">${money(i.balance)}</td>
+          <td data-label="Status"><span class="pill st-${esc(i.status)}">${esc(i.status)}</span></td>
+        </tr>`).join('')}</tbody></table>` : '<div class="empty">No invoices yet.</div>'}
+    </div>`;
+  el.querySelectorAll('[data-href]').forEach((row) => row.addEventListener('click', () => ctx.go(row.dataset.href)));
+  el.querySelectorAll('[data-approve]').forEach((btn) => btn.addEventListener('click', async () => {
+    const account = pending.find((a) => a.id === btn.dataset.approve);
+    if (await approveDialog(account)) {
+      ctx.refreshBadge();
+      render(el, ctx).catch((e) => { el.innerHTML = `<div class="card">${esc(errorMessage(e))}</div>`; });
+    }
+  }));
+}

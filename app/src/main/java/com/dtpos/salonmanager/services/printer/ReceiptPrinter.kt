@@ -1,6 +1,9 @@
 package com.dtpos.salonmanager.services.printer
 
 import android.content.Context
+import android.content.res.Configuration
+import android.graphics.Bitmap
+import android.view.View
 import com.dtpos.salonmanager.R
 import com.dtpos.salonmanager.data.repository.SaleRepository
 import com.dtpos.salonmanager.domain.model.PaymentMethod
@@ -8,6 +11,7 @@ import com.dtpos.salonmanager.domain.model.ReceiptData
 import com.dtpos.salonmanager.services.branding.LogoStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.Locale
 
 /** High-level printing: turns a stored sale into ESC/POS bytes and sends it to the saved printer. */
 class ReceiptPrinter(
@@ -27,7 +31,7 @@ class ReceiptPrinter(
         val settings = settingsStore.current()
         if (!settings.isConfigured) return PrintResult.Failure(PrinterError.NO_PRINTER_SELECTED)
         val bytes = try {
-            buildBytes(ReceiptLayout.build(receipt, labels(receipt.paymentMethod)), settings, receipt.logoPath.takeIf { receipt.showLogo })
+            buildReceiptBytes(receipt, settings)
         } catch (e: Exception) {
             return PrintResult.Failure(PrinterError.NOTHING_TO_PRINT)
         } catch (e: OutOfMemoryError) {
@@ -56,6 +60,34 @@ class ReceiptPrinter(
         return bluetooth.send(address, bytes, copies = 1)
     }
 
+    /** Image mode prints the styled receipt; text mode the classic printer-font layout. */
+    private suspend fun buildReceiptBytes(receipt: ReceiptData, settings: PrinterSettings): ByteArray {
+        if (settings.mode == PrintMode.TEXT) {
+            val lines = ReceiptLayout.build(receipt, labels(receipt.paymentMethod, forTextPrinter = true))
+            return buildBytes(lines, settings, receipt.logoPath.takeIf { receipt.showLogo })
+        }
+        return withContext(Dispatchers.Default) {
+            val logo = receipt.logoPath.takeIf { receipt.showLogo && settings.printLogo }
+                ?.let { logoStore.loadBitmap(it) }
+                ?.let { ditheredLogo(it) }
+            val bitmap = ReceiptImageRenderer(settings.paper.dots, forPrinter = true, rtl = isRtl())
+                .render(receipt, labels(receipt.paymentMethod), logo)
+            EscPos.encodeImage(ReceiptCanvasRenderer.toMonochrome(bitmap, dither = false), settings.feedLines, settings.cut)
+        }
+    }
+
+    /** Photos and coloured logos look best on thermal paper when dithered once, before layout. */
+    private fun ditheredLogo(source: Bitmap): Bitmap {
+        val scaled = ReceiptCanvasRenderer.scaleLogo(source, maxWidth = 200, maxHeight = 120)
+        val mono = ReceiptCanvasRenderer.toMonochrome(scaled, dither = true)
+        val pixels = IntArray(mono.width * mono.height) { i ->
+            if (mono.isBlack(i % mono.width, i / mono.width)) android.graphics.Color.BLACK else android.graphics.Color.WHITE
+        }
+        return Bitmap.createBitmap(pixels, mono.width, mono.height, Bitmap.Config.ARGB_8888)
+    }
+
+    fun isRtl(): Boolean = context.resources.configuration.layoutDirection == View.LAYOUT_DIRECTION_RTL
+
     private suspend fun buildBytes(lines: List<PrintLine>, settings: PrinterSettings, logoPath: String?): ByteArray =
         withContext(Dispatchers.Default) {
             val logo = logoPath?.takeIf { settings.printLogo }?.let { logoStore.loadBitmap(it) }
@@ -75,7 +107,22 @@ class ReceiptPrinter(
             }
         }
 
-    fun labels(method: PaymentMethod): ReceiptLabels = ReceiptLabels(
+    /**
+     * Receipt labels in the app language. The printer's built-in font only has Latin letters, so
+     * text-mode printing falls back to English labels when the app is in Urdu.
+     */
+    fun labels(method: PaymentMethod, forTextPrinter: Boolean = false): ReceiptLabels {
+        val res = if (forTextPrinter && isRtl()) englishContext() else context
+        return labelsFrom(res, method)
+    }
+
+    private fun englishContext(): Context {
+        val config = Configuration(context.resources.configuration)
+        config.setLocale(Locale.ENGLISH)
+        return context.createConfigurationContext(config)
+    }
+
+    private fun labelsFrom(context: Context, method: PaymentMethod): ReceiptLabels = ReceiptLabels(
         receiptNo = context.getString(R.string.receipt_no),
         date = context.getString(R.string.receipt_date),
         time = context.getString(R.string.receipt_time),
@@ -94,6 +141,10 @@ class ReceiptPrinter(
         voided = context.getString(R.string.receipt_voided),
         paymentMethodName = context.getString(paymentMethodLabel(method)),
         defaultFooter = context.getString(R.string.receipt_default_footer),
+        receiptTitle = context.getString(R.string.receipt_title),
+        servedBy = context.getString(R.string.receipt_served_by),
+        paidStamp = context.getString(R.string.receipt_paid_stamp),
+        poweredBy = context.getString(R.string.receipt_powered_by, context.getString(R.string.app_name)),
     )
 
     companion object {

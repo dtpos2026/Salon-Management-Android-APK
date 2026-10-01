@@ -1,0 +1,97 @@
+rules_version = '2';
+
+// DT Salon Management - Firestore security rules.
+// Only accounts, licences, invoices and app settings live online. Salon data (sales,
+// customers, staff, expenses) never leaves the phone.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // Super admins are documents in /admins/{uid}. The first one is created by hand in the
+    // Firebase console (see docs/SETUP_GUIDE.md); after that admins can add others.
+    function isAdmin() {
+      return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function text(value, max) {
+      return value is string && value.size() <= max;
+    }
+
+    function optionalText(data, key, max) {
+      return !(key in data) || data[key] == null || text(data[key], max);
+    }
+
+    match /admins/{uid} {
+      allow read: if isSelf(uid) || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // Salon accounts. A salon owner can only create their own account in PENDING state and
+    // later update harmless device fields. Status, IDs, plan, expiry and billing are admin-only.
+    match /accounts/{uid} {
+      allow get: if isSelf(uid) || isAdmin();
+      allow list: if isAdmin();
+
+      allow create: if isSelf(uid)
+        && request.resource.data.keys().hasOnly([
+          'uid', 'email', 'displayName', 'photoUrl', 'salonName', 'ownerName', 'phone', 'city',
+          'address', 'salonNameLower', 'ownerNameLower', 'phoneDigits', 'status', 'platform',
+          'appVersion', 'deviceModel', 'createdAt', 'lastSeenAt'])
+        && request.resource.data.uid == uid
+        && request.resource.data.status == 'PENDING'
+        && request.resource.data.email == request.auth.token.email
+        && text(request.resource.data.salonName, 120) && request.resource.data.salonName.size() > 0
+        && text(request.resource.data.ownerName, 120)
+        && text(request.resource.data.phone, 40)
+        && optionalText(request.resource.data, 'city', 80)
+        && optionalText(request.resource.data, 'address', 300)
+        && request.resource.data.createdAt == request.time;
+
+      allow update: if isAdmin() || (isSelf(uid)
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['lastSeenAt', 'appVersion', 'deviceModel', 'displayName', 'photoUrl'])
+        && request.resource.data.lastSeenAt == request.time);
+
+      allow delete: if isAdmin();
+    }
+
+    // Private admin notes about a salon (never visible to the salon).
+    match /adminNotes/{uid} {
+      allow read, write: if isAdmin();
+    }
+
+    // Sequence counters for customer IDs and invoice numbers.
+    match /counters/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    // Subscription invoices. A salon may read its own invoices.
+    match /invoices/{id} {
+      allow read: if isAdmin() || (signedIn() && resource.data.accountUid == request.auth.uid);
+      allow write: if isAdmin();
+    }
+
+    // Public "scan to verify" records behind invoice QR codes: random, unguessable ids,
+    // minimal fields, and no listing.
+    match /invoiceVerify/{token} {
+      allow get: if true;
+      allow list: if false;
+      allow write: if isAdmin();
+    }
+
+    // branding and app are public (the login screen shows support contacts); billing holds
+    // bank details for invoices and is admin-only.
+    match /config/{name} {
+      allow get: if name in ['branding', 'app'] || isAdmin();
+      allow list: if isAdmin();
+      allow write: if isAdmin();
+    }
+  }
+}

@@ -43,6 +43,12 @@ data class ReceiptLabels(
     val voided: String,
     val paymentMethodName: String,
     val defaultFooter: String,
+    /** Extra labels of the styled (image) receipt. */
+    val receiptTitle: String = "RECEIPT",
+    val servedBy: String = "Served by",
+    val paidStamp: String = "PAID",
+    /** e.g. "Powered by DT Salon Management"; blank hides the line. */
+    val poweredBy: String = "",
 )
 
 object ReceiptLayout {
@@ -101,6 +107,7 @@ object ReceiptLayout {
         lines += PrintLine.Separator('=')
         val footer = receipt.footer?.takeIf { it.isNotBlank() } ?: labels.defaultFooter
         footer.lines().filter { it.isNotBlank() }.forEach { lines += PrintLine.Text(it.trim(), PrintAlign.CENTER, bold = true) }
+        if (labels.poweredBy.isNotBlank()) lines += PrintLine.Text(labels.poweredBy, PrintAlign.CENTER)
         return lines
     }
 }

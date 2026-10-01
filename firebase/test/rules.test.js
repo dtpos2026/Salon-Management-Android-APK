@@ -1,0 +1,110 @@
+// Security rules tests (Firestore emulator): run with `npm test` in this folder.
+import { readFileSync } from 'node:fs';
+import { test, before, after, beforeEach } from 'node:test';
+import {
+  initializeTestEnvironment, assertFails, assertSucceeds,
+} from '@firebase/rules-unit-testing';
+import {
+  doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, serverTimestamp, deleteDoc,
+} from 'firebase/firestore';
+
+let env;
+
+before(async () => {
+  env = await initializeTestEnvironment({
+    projectId: 'demo-dt-salon',
+    firestore: { rules: readFileSync(new URL('../firestore.rules', import.meta.url), 'utf8') },
+  });
+});
+
+after(async () => env.cleanup());
+
+beforeEach(async () => {
+  await env.clearFirestore();
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const db = ctx.firestore();
+    await setDoc(doc(db, 'admins/boss'), { email: 'boss@gmail.com' });
+    await setDoc(doc(db, 'config/branding'), { appName: 'DT Salon Management' });
+    await setDoc(doc(db, 'config/app'), { minVersionCode: 1 });
+    await setDoc(doc(db, 'config/billing'), { accountNumber: '0030-0110125578' });
+    await setDoc(doc(db, 'accounts/other'), { uid: 'other', status: 'APPROVED', email: 'other@gmail.com' });
+    await setDoc(doc(db, 'invoices/inv1'), { accountUid: 'salon1', total: 4000 });
+    await setDoc(doc(db, 'invoices/inv2'), { accountUid: 'other', total: 7000 });
+    await setDoc(doc(db, 'invoiceVerify/tok123'), { number: 'DT-INV-2026-0001', status: 'PAID' });
+  });
+});
+
+const salon = () => env.authenticatedContext('salon1', { email: 'salon1@gmail.com', email_verified: true }).firestore();
+const admin = () => env.authenticatedContext('boss', { email: 'boss@gmail.com', email_verified: true }).firestore();
+const anon = () => env.unauthenticatedContext().firestore();
+
+const registration = (extra = {}) => ({
+  uid: 'salon1', email: 'salon1@gmail.com', displayName: 'Ali', photoUrl: null,
+  salonName: 'Royal Cuts', ownerName: 'Ali', phone: '03001234567', city: 'Burewala', address: 'Main Bazar',
+  salonNameLower: 'royal cuts', ownerNameLower: 'ali', phoneDigits: '923001234567',
+  status: 'PENDING', platform: 'android', appVersion: '2.0.0', deviceModel: 'Test',
+  createdAt: serverTimestamp(), lastSeenAt: serverTimestamp(), ...extra,
+});
+
+test('public config is readable before login, billing is not', async () => {
+  await assertSucceeds(getDoc(doc(anon(), 'config/branding')));
+  await assertSucceeds(getDoc(doc(anon(), 'config/app')));
+  await assertFails(getDoc(doc(anon(), 'config/billing')));
+  await assertFails(getDoc(doc(salon(), 'config/billing')));
+  await assertFails(setDoc(doc(salon(), 'config/branding'), { appName: 'Hacked' }));
+});
+
+test('a salon registers itself only as PENDING', async () => {
+  await assertSucceeds(setDoc(doc(salon(), 'accounts/salon1'), registration()));
+});
+
+test('a salon cannot approve itself or set admin fields', async () => {
+  await assertFails(setDoc(doc(salon(), 'accounts/salon1'), registration({ status: 'APPROVED' })));
+  await assertFails(setDoc(doc(salon(), 'accounts/salon1'), registration({ licenseId: 'DTL-FAKE' })));
+  await assertFails(setDoc(doc(salon(), 'accounts/salon1'), registration({ expiresAt: new Date(2099, 1, 1) })));
+  await assertFails(setDoc(doc(salon(), 'accounts/salon1'), registration({ email: 'someone@gmail.com' })));
+  await assertFails(setDoc(doc(salon(), 'accounts/other2'), registration({ uid: 'other2' })));
+  await assertFails(setDoc(doc(anon(), 'accounts/salon1'), registration()));
+});
+
+test('a salon updates only device fields of its own account', async () => {
+  await assertSucceeds(setDoc(doc(salon(), 'accounts/salon1'), registration()));
+  await assertSucceeds(updateDoc(doc(salon(), 'accounts/salon1'), {
+    lastSeenAt: serverTimestamp(), appVersion: '2.0.1', deviceModel: 'Pixel',
+  }));
+  await assertFails(updateDoc(doc(salon(), 'accounts/salon1'), { status: 'APPROVED' }));
+  await assertFails(updateDoc(doc(salon(), 'accounts/salon1'), { lastSeenAt: serverTimestamp(), expiresAt: new Date(2099, 1, 1) }));
+  await assertFails(deleteDoc(doc(salon(), 'accounts/salon1')));
+});
+
+test('salons never see other salons', async () => {
+  await assertFails(getDoc(doc(salon(), 'accounts/other')));
+  await assertFails(getDocs(collection(salon(), 'accounts')));
+  await assertFails(getDoc(doc(salon(), 'invoices/inv2')));
+  await assertSucceeds(getDocs(query(collection(salon(), 'invoices'), where('accountUid', '==', 'salon1'))));
+  await assertFails(getDocs(collection(salon(), 'invoices')));
+  await assertFails(getDoc(doc(salon(), 'adminNotes/other')));
+});
+
+test('nobody can make themselves an admin', async () => {
+  await assertFails(setDoc(doc(salon(), 'admins/salon1'), { email: 'salon1@gmail.com' }));
+  await assertSucceeds(getDoc(doc(salon(), 'admins/salon1')));
+  await assertFails(getDoc(doc(salon(), 'admins/boss')));
+});
+
+test('admins manage accounts, invoices, counters and settings', async () => {
+  const db = admin();
+  await assertSucceeds(getDocs(collection(db, 'accounts')));
+  await assertSucceeds(updateDoc(doc(db, 'accounts/other'), { status: 'SUSPENDED', messageToUser: 'Please pay' }));
+  await assertSucceeds(setDoc(doc(db, 'counters/customers'), { next: 2 }));
+  await assertSucceeds(setDoc(doc(db, 'invoices/inv3'), { accountUid: 'other', total: 1000 }));
+  await assertSucceeds(setDoc(doc(db, 'config/billing'), { bankName: 'Meezan Bank' }));
+  await assertSucceeds(setDoc(doc(db, 'adminNotes/other'), { notes: 'Pays late' }));
+  await assertSucceeds(setDoc(doc(db, 'admins/helper'), { email: 'helper@gmail.com' }));
+});
+
+test('invoice verification is public by id but cannot be listed', async () => {
+  await assertSucceeds(getDoc(doc(anon(), 'invoiceVerify/tok123')));
+  await assertFails(getDocs(collection(anon(), 'invoiceVerify')));
+  await assertFails(setDoc(doc(anon(), 'invoiceVerify/tok999'), { status: 'PAID' }));
+});

@@ -1,0 +1,15 @@
+{
+  "name": "dt-salon-firebase-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "firebase emulators:exec --only firestore --project demo-dt-salon \"node --test test/rules.test.js\"",
+    "test:panel": "firebase emulators:exec --only auth,firestore --project demo-dt-salon \"node test/panel.e2e.mjs\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "4.0.1",
+    "firebase": "11.1.0",
+    "firebase-tools": "13.29.1",
+    "playwright": "1.56.1"
+  }
+}
