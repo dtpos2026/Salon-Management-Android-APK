@@ -7,10 +7,11 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 
-    <!-- Branded splash screen (AndroidX SplashScreen works back to Android 8). -->
+    <!-- System splash (AndroidX SplashScreen works back to Android 8). It hands over to the
+         animated intro drawn in Compose on the same purple, so the transition is seamless. -->
     <style name="Theme.SalonManager.Starting" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/brand_navy</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="windowSplashScreenBackground">@color/brand_purple</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
         <item name="postSplashScreenTheme">@style/Theme.SalonManager</item>
     </style>
 </resources>

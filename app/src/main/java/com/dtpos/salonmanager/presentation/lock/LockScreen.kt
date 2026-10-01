@@ -57,7 +57,9 @@ import com.dtpos.salonmanager.core.validation.Validators
 import com.dtpos.salonmanager.presentation.common.BaseViewModel
 import com.dtpos.salonmanager.presentation.common.LocalAppContainer
 import com.dtpos.salonmanager.presentation.common.appViewModel
-import com.dtpos.salonmanager.presentation.theme.Brand
+import com.dtpos.salonmanager.presentation.components.BrandBackground
+import com.dtpos.salonmanager.presentation.components.BrandMonogram
+import com.dtpos.salonmanager.presentation.theme.SalonTheme
 import com.dtpos.salonmanager.services.security.BiometricAuthenticator
 import com.dtpos.salonmanager.services.security.LockType
 import com.dtpos.salonmanager.services.security.ProtectedArea
@@ -159,18 +161,15 @@ fun LockScreen(area: ProtectedArea, modifier: Modifier = Modifier) {
     }
     LaunchedEffect(biometricAllowed) { if (biometricAllowed) promptBiometric() }
 
-    Surface(modifier = modifier, color = Brand.Navy) {
+    val accent = SalonTheme.glass.accent
+    com.dtpos.salonmanager.presentation.account.SystemBarIcons(lightBackground = false)
+    BrandBackground(modifier = modifier, animated = false) {
         Column(
             Modifier.fillMaxSize().systemBarsPadding().verticalScroll(rememberScrollState()).padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Spacer(Modifier.height(24.dp))
-            Box(
-                Modifier.size(72.dp).clip(CircleShape).background(Brand.Gold.copy(alpha = 0.18f)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(Icons.Filled.ContentCut, contentDescription = null, tint = Brand.Gold, modifier = Modifier.size(36.dp))
-            }
+            BrandMonogram(width = 112.dp)
             Spacer(Modifier.height(16.dp))
             Text(
                 stringResource(if (lockType == LockType.PIN) R.string.lock_enter_pin else R.string.lock_enter_password),
@@ -216,11 +215,11 @@ fun LockScreen(area: ProtectedArea, modifier: Modifier = Modifier) {
                     colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
                         focusedTextColor = Color.White,
                         unfocusedTextColor = Color.White,
-                        focusedBorderColor = Brand.Gold,
+                        focusedBorderColor = accent,
                         unfocusedBorderColor = Color.White.copy(alpha = 0.5f),
-                        focusedLabelColor = Brand.Gold,
+                        focusedLabelColor = accent,
                         unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
-                        cursorColor = Brand.Gold,
+                        cursorColor = accent,
                     ),
                 )
                 Spacer(Modifier.height(8.dp))
@@ -234,9 +233,9 @@ fun LockScreen(area: ProtectedArea, modifier: Modifier = Modifier) {
             Spacer(Modifier.height(16.dp))
             if (biometricAllowed) {
                 TextButton(onClick = promptBiometric) {
-                    Icon(Icons.Filled.Fingerprint, contentDescription = null, tint = Brand.Gold)
+                    Icon(Icons.Filled.Fingerprint, contentDescription = null, tint = accent)
                     Spacer(Modifier.size(8.dp))
-                    Text(stringResource(R.string.lock_use_biometric), color = Brand.Gold)
+                    Text(stringResource(R.string.lock_use_biometric), color = accent)
                 }
             }
             TextButton(onClick = { showRecovery = true }) {
@@ -271,7 +270,7 @@ private fun PinDots(length: Int) {
         repeat(maxOf(4, length)) { i ->
             Box(
                 Modifier.size(16.dp).clip(CircleShape)
-                    .background(if (i < length) Brand.Gold else Color.White.copy(alpha = 0.25f)),
+                    .background(if (i < length) SalonTheme.glass.accent else Color.White.copy(alpha = 0.25f)),
             )
         }
     }

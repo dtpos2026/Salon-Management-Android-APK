@@ -21,10 +21,15 @@ import com.dtpos.salonmanager.services.backup.BackupManager
 import com.dtpos.salonmanager.services.branding.LogoStore
 import com.dtpos.salonmanager.services.export.DataExporter
 import com.dtpos.salonmanager.services.export.PdfExporter
+import com.dtpos.salonmanager.services.account.AccountCache
+import com.dtpos.salonmanager.services.account.AccountManager
+import com.dtpos.salonmanager.services.account.FirebaseAccountBackend
 import com.dtpos.salonmanager.services.license.LicenseConfig
 import com.dtpos.salonmanager.services.license.LicenseManager
 import com.dtpos.salonmanager.services.printer.BluetoothPrinterService
 import com.dtpos.salonmanager.services.printer.PrinterSettingsStore
+import com.dtpos.salonmanager.services.prefs.SoundEffects
+import com.dtpos.salonmanager.services.prefs.UiPreferences
 import com.dtpos.salonmanager.services.printer.ReceiptPrinter
 import com.dtpos.salonmanager.services.security.SecurityManager
 import kotlinx.coroutines.CoroutineScope
@@ -76,6 +81,22 @@ class AppContainer(private val app: Application) {
     val reportRepository by lazy { ReportRepository(database, businessId, staffRepository) }
 
     val logoStore by lazy { LogoStore(app) }
+
+    /** Appearance, colour theme, language and sound preferences (read at startup, so not lazy). */
+    val uiPreferences = UiPreferences(app)
+    val soundEffects by lazy { SoundEffects(app, uiPreferences) }
+
+    /** Google sign-in + admin approval. Only the account lives online; salon data stays in Room. */
+    val accountManager by lazy {
+        AccountManager(
+            context = app,
+            backend = FirebaseAccountBackend(app),
+            cache = AccountCache(app),
+            scope = appScope,
+            versionCode = BuildConfig.VERSION_CODE,
+            versionName = BuildConfig.VERSION_NAME,
+        )
+    }
     val securityManager by lazy { SecurityManager(settingsRepository, appScope) }
     val licenseManager by lazy {
         LicenseManager(
@@ -114,6 +135,11 @@ class AppContainer(private val app: Application) {
     }
 
     suspend fun initialize() {
+        try {
+            accountManager.start()
+        } catch (e: Exception) {
+            // The gate falls back to "not configured"; the salon data is unaffected.
+        }
         try {
             businessRepository.ensureInitialized()
             securityManager // start observing security settings early

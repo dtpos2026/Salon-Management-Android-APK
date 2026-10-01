@@ -8,7 +8,7 @@
     <string name="setup_demo">Explore with demo data</string>
     <string name="setup_demo_hint">Adds sample staff, customers and 30 days of sales to try the app. Erase it later from Settings.</string>
     <string name="setup_start">Start using Salon Manager</string>
-    <string name="setup_offline_note">Works fully offline. No account or internet needed.</string>
+    <string name="setup_offline_note">Your salon data is stored only on this phone and works without internet.</string>
 
     <!-- Lock -->
     <string name="lock_enter_pin">Enter PIN</string>
@@ -228,15 +228,15 @@
     <string name="license_error_not_configured">Licence activation is not configured in this build.</string>
 
     <!-- About -->
-    <string name="about_tagline">Offline salon and barber shop management</string>
+    <string name="about_tagline">Smart salon &amp; barber management</string>
     <string name="about_version">Version</string>
     <string name="about_database">Database version</string>
     <string name="about_build">Build</string>
     <string name="about_offline_title">Your data stays with you</string>
-    <string name="about_offline_text">Salon Manager works without internet. All data is stored privately on this phone. Use Backup and restore to keep a safe copy.</string>
+    <string name="about_offline_text">DT Salon Management works without internet. Your salon data is stored privately on this phone; only your account and licence are checked online. Use Backup and restore to keep a safe copy.</string>
     <string name="about_features_title">What it does</string>
     <string name="about_features_text">Sales counter with receipts and Bluetooth printing, customers and visit history, services and prices, staff commission and payments, business and household expenses, cash counter, targets, budgets, reports and insights.</string>
     <string name="about_open_source_title">Open-source components</string>
-    <string name="about_open_source_text">Built with Kotlin, Jetpack Compose, Material 3, Room and other AndroidX libraries (Apache License 2.0).</string>
-    <string name="about_copyright">© Salon Manager. All rights reserved.</string>
+    <string name="about_open_source_text">Built with Kotlin, Jetpack Compose, Material 3, Room, Firebase and other AndroidX libraries (Apache License 2.0).</string>
+    <string name="about_copyright">© Digital Target. All rights reserved.</string>
 </resources>

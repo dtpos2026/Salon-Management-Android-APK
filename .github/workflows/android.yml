@@ -24,6 +24,13 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      - name: Configure signing key and Firebase from secrets
+        run: bash .github/scripts/configure-secrets.sh
+        env:
+          DT_KEYSTORE_BASE64: ${{ secrets.DT_KEYSTORE_BASE64 }}
+          DT_SIGNING_PASSWORD: ${{ secrets.DT_SIGNING_PASSWORD }}
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+
       - name: Unit tests (JVM + Robolectric database tests)
         run: ./gradlew testDebugUnitTest --stacktrace
 
@@ -57,7 +64,7 @@ jobs:
           name: SalonManager-debug-apk
           path: app/build/outputs/apk/debug/*.apk
 
-      - name: Upload release APK (unsigned unless a keystore is configured)
+      - name: Upload release APK (signed when the signing secrets are set)
         uses: actions/upload-artifact@v4
         with:
           name: SalonManager-release-apk
@@ -102,6 +109,13 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
+
+      - name: Configure signing key and Firebase from secrets
+        run: bash .github/scripts/configure-secrets.sh
+        env:
+          DT_KEYSTORE_BASE64: ${{ secrets.DT_KEYSTORE_BASE64 }}
+          DT_SIGNING_PASSWORD: ${{ secrets.DT_SIGNING_PASSWORD }}
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
 
       - name: Build debug and test APKs
         run: ./gradlew assembleDebug assembleDebugAndroidTest --stacktrace

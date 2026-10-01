@@ -47,6 +47,8 @@ import com.dtpos.salonmanager.presentation.sales.SaleDetailScreen
 import com.dtpos.salonmanager.presentation.sales.SalesListScreen
 import com.dtpos.salonmanager.presentation.services.ServicesScreen
 import com.dtpos.salonmanager.presentation.settings.AboutScreen
+import com.dtpos.salonmanager.presentation.settings.AccountScreen
+import com.dtpos.salonmanager.presentation.settings.AppPreferencesScreen
 import com.dtpos.salonmanager.presentation.settings.BackupScreen
 import com.dtpos.salonmanager.presentation.settings.BusinessProfileScreen
 import com.dtpos.salonmanager.presentation.settings.LicenseScreen
@@ -76,6 +78,7 @@ fun SalonMainScaffold(navController: NavHostController = rememberNavController()
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
     val showBottomBar = currentRoute in Routes.topLevel
+    val sound = com.dtpos.salonmanager.presentation.common.LocalAppContainer.current.soundEffects
 
     Scaffold(
         bottomBar = {
@@ -85,6 +88,7 @@ fun SalonMainScaffold(navController: NavHostController = rememberNavController()
                         NavigationBarItem(
                             selected = currentRoute == item.route,
                             onClick = {
+                                if (currentRoute != item.route) sound.tap()
                                 navController.navigate(item.route) {
                                     popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                     launchSingleTop = true
@@ -263,6 +267,8 @@ private fun SalonNavHost(nav: NavHostController) {
         composable(Routes.SECURITY) { SecuredArea(ProtectedArea.SETTINGS) { SecuritySettingsScreen(onBack = back) } }
         composable(Routes.LICENSE) { SecuredArea(ProtectedArea.SETTINGS) { LicenseScreen(onBack = back) } }
         composable(Routes.ABOUT) { AboutScreen(onBack = back) }
+        composable(Routes.ACCOUNT) { AccountScreen(onBack = back) }
+        composable(Routes.PREFERENCES) { AppPreferencesScreen(onBack = back) }
     }
 }
 

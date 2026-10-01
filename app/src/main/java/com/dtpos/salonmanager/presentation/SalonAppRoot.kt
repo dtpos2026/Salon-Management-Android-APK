@@ -64,6 +64,7 @@ fun SalonAppRoot() {
             val formatter = remember(s.profile.currency) { CurrencyFormatter(s.profile.currency) }
             CompositionLocalProvider(LocalMoney provides formatter) {
                 SalonMainScaffold()
+                com.dtpos.salonmanager.presentation.account.AdminMessages()
             }
         }
     }

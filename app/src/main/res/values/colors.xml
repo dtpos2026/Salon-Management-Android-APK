@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Brand colours (also defined in presentation/theme/Theme.kt for Compose) -->
-    <color name="brand_navy">#FF14213D</color>
-    <color name="brand_navy_light">#FF1C2D52</color>
-    <color name="brand_gold">#FFD4A537</color>
-    <color name="window_background">#FFF6F7FB</color>
+    <!-- DT Salon brand colours (also defined in presentation/theme/Theme.kt for Compose) -->
+    <color name="brand_plum">#FF1E0440</color>
+    <color name="brand_purple">#FF2A0757</color>
+    <color name="brand_violet">#FF6A2BD9</color>
+    <color name="brand_lilac">#FFC9A4FF</color>
+    <color name="window_background">#FFF7F4FC</color>
+    <color name="window_background_dark">#FF120A1E</color>
 </resources>

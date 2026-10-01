@@ -3,9 +3,22 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!--
-        Offline-first: the app deliberately does NOT request android.permission.INTERNET.
-        Future online licence verification will add it behind an explicit feature flag.
+        Offline-first: salon data never leaves the phone. Internet is used only for Google
+        sign-in and the account approval / licence check (Firebase), plus WhatsApp hand-offs.
     -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Saving receipt images to the gallery on Android 8 / 9 (newer versions need no permission) -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
+    <!-- Lets the app check whether WhatsApp is installed (Android 11+ package visibility) -->
+    <queries>
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
+    </queries>
 
     <!-- Bluetooth thermal printer: legacy permissions (Android 8 - 11) -->
     <uses-permission
@@ -45,7 +58,7 @@
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
-        android:label="@string/app_name"
+        android:label="@string/launcher_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.SalonManager"
         tools:targetApi="35">

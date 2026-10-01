@@ -50,7 +50,9 @@ import com.dtpos.salonmanager.presentation.common.BaseViewModel
 import com.dtpos.salonmanager.presentation.common.appViewModel
 import com.dtpos.salonmanager.presentation.common.messageRes
 import com.dtpos.salonmanager.presentation.components.FormTextField
-import com.dtpos.salonmanager.presentation.theme.Brand
+import androidx.compose.ui.graphics.Brush
+import com.dtpos.salonmanager.presentation.components.BrandMonogram
+import com.dtpos.salonmanager.presentation.theme.SalonTheme
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -70,7 +72,16 @@ data class SetupState(
 )
 
 class SetupViewModel(private val container: AppContainer) : BaseViewModel() {
-    private val _state = MutableStateFlow(SetupState())
+    // Pre-filled from the salon's approved account so the owner does not type it twice.
+    private val _state = MutableStateFlow(
+        container.accountManager.cachedAccount()?.account?.let { account ->
+            SetupState(
+                name = account.salonName,
+                phone = account.phone,
+                address = listOf(account.address, account.city).filter { it.isNotBlank() }.joinToString(", "),
+            )
+        } ?: SetupState(),
+    )
     val state: StateFlow<SetupState> = _state.asStateFlow()
 
     fun update(transform: (SetupState) -> SetupState) = _state.update(transform)
@@ -114,17 +125,16 @@ fun SetupScreen() {
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        val glass = SalonTheme.glass
         Box(
-            Modifier.fillMaxWidth().background(Brand.Navy).padding(vertical = 32.dp),
+            Modifier
+                .fillMaxWidth()
+                .background(Brush.verticalGradient(listOf(glass.backgroundTop, glass.backgroundBottom)))
+                .padding(vertical = 32.dp),
             contentAlignment = Alignment.Center,
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(
-                    Modifier.size(80.dp).clip(CircleShape).background(Brand.Gold.copy(alpha = 0.2f)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(Icons.Filled.ContentCut, contentDescription = null, tint = Brand.Gold, modifier = Modifier.size(40.dp))
-                }
+                BrandMonogram(width = 120.dp)
                 Spacer(Modifier.height(12.dp))
                 Text(stringResource(R.string.setup_welcome), style = MaterialTheme.typography.headlineSmall, color = Color.White)
                 Text(

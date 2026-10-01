@@ -20,7 +20,8 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Storefront
-import androidx.compose.material.icons.filled.VerifiedUser
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -76,10 +77,15 @@ fun SettingsScreen(onBack: () -> Unit, onNavigate: (String) -> Unit) {
         SettingsEntry(Routes.expenseCategories(ExpenseType.BUSINESS), R.string.expenses_categories, R.string.settings_categories_sub, Icons.Filled.Category),
         SettingsEntry(Routes.TARGETS, R.string.nav_targets, R.string.settings_targets_sub, Icons.Filled.Flag),
     )
+    val app = listOf(
+        SettingsEntry(Routes.PREFERENCES, R.string.prefs_title, R.string.prefs_sub, Icons.Filled.Palette),
+    )
+    val account = listOf(
+        SettingsEntry(Routes.ACCOUNT, R.string.account_title, R.string.account_sub, Icons.Filled.AccountCircle),
+    )
     val safety = listOf(
         SettingsEntry(Routes.BACKUP, R.string.settings_backup, R.string.settings_backup_sub, Icons.Filled.Backup),
         SettingsEntry(Routes.SECURITY, R.string.settings_security, R.string.settings_security_sub, Icons.Filled.Lock),
-        SettingsEntry(Routes.LICENSE, R.string.settings_license, R.string.settings_license_sub, Icons.Filled.VerifiedUser),
         SettingsEntry(Routes.ABOUT, R.string.nav_about, R.string.settings_about_sub, Icons.Filled.Info),
     )
 
@@ -92,6 +98,10 @@ fun SettingsScreen(onBack: () -> Unit, onNavigate: (String) -> Unit) {
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            item { SectionHeader(stringResource(R.string.settings_group_account)) }
+            account.forEach { entry -> item(key = entry.route) { SettingsRow(entry) { onNavigate(entry.route) } } }
+            item { SectionHeader(stringResource(R.string.settings_group_app)) }
+            app.forEach { entry -> item(key = entry.route) { SettingsRow(entry) { onNavigate(entry.route) } } }
             item { SectionHeader(stringResource(R.string.settings_group_business)) }
             business.forEach { entry -> item(key = entry.route) { SettingsRow(entry) { onNavigate(entry.route) } } }
             item { SectionHeader(stringResource(R.string.settings_group_catalog)) }

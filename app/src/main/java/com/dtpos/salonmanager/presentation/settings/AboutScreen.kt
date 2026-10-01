@@ -1,8 +1,13 @@
 package com.dtpos.salonmanager.presentation.settings
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.dtpos.salonmanager.presentation.common.LocalAppContainer
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,14 +16,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ContentCut
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,7 +32,6 @@ import com.dtpos.salonmanager.data.database.SalonDatabase
 import com.dtpos.salonmanager.presentation.components.ContentCard
 import com.dtpos.salonmanager.presentation.components.LabeledValueRow
 import com.dtpos.salonmanager.presentation.components.SalonTopBar
-import com.dtpos.salonmanager.presentation.theme.Brand
 
 @Composable
 fun AboutScreen(onBack: () -> Unit) {
@@ -41,9 +41,11 @@ fun AboutScreen(onBack: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Box(Modifier.size(96.dp).clip(CircleShape).background(Brand.Navy), contentAlignment = Alignment.Center) {
-                Icon(Icons.Filled.ContentCut, contentDescription = null, tint = Brand.Gold, modifier = Modifier.size(48.dp))
-            }
+            Image(
+                painterResource(R.drawable.dt_logo_full),
+                contentDescription = null,
+                modifier = Modifier.size(128.dp).clip(RoundedCornerShape(28.dp)),
+            )
             Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineSmall)
             Text(stringResource(R.string.about_tagline), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(4.dp))
@@ -64,6 +66,22 @@ fun AboutScreen(onBack: () -> Unit) {
                 Text(stringResource(R.string.about_open_source_title), style = MaterialTheme.typography.titleMedium)
                 Text(stringResource(R.string.about_open_source_text), style = MaterialTheme.typography.bodySmall)
             }
+            val branding by LocalAppContainer.current.accountManager.branding.collectAsStateWithLifecycle()
+            ContentCard {
+                Text(stringResource(R.string.about_support_title), style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(4.dp))
+                LabeledValueRow(stringResource(R.string.about_company), branding.companyName)
+                if (branding.contactNumber.isNotBlank()) LabeledValueRow(stringResource(R.string.support_call), branding.contactNumber)
+                if (branding.whatsapp.isNotBlank()) LabeledValueRow(stringResource(R.string.support_whatsapp), branding.whatsapp)
+                if (branding.email.isNotBlank()) LabeledValueRow(stringResource(R.string.support_email), branding.email)
+                if (branding.website.isNotBlank()) LabeledValueRow(stringResource(R.string.about_website), branding.website)
+            }
+            Image(
+                painterResource(R.drawable.digital_target_logo),
+                contentDescription = null,
+                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant),
+                modifier = Modifier.height(36.dp),
+            )
             Text(
                 stringResource(R.string.about_copyright),
                 style = MaterialTheme.typography.bodySmall,

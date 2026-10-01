@@ -17,16 +17,22 @@ val keystoreProperties = Properties().apply {
 fun gradleProp(name: String, default: String): String =
     (project.findProperty(name) as String?)?.takeIf { it.isNotBlank() } ?: default
 
+// Firebase client config (app/google-services.json) is not committed. CI writes it from the
+// GOOGLE_SERVICES_JSON secret; without it the app builds but shows "setup required" at login.
+val hasFirebaseConfig = file("google-services.json").exists()
+if (hasFirebaseConfig) apply(plugin = "com.google.gms.google-services")
+
 android {
     namespace = "com.dtpos.salonmanager"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.dtpos.salonmanager"
+        // Must match the Android app registered in Firebase (google-services.json).
+        applicationId = "dtsalon.management"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "2.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -34,6 +40,11 @@ android {
         buildConfigField("boolean", "ENFORCE_LICENSE", gradleProp("salon.enforceLicense", "false"))
         buildConfigField("int", "TRIAL_DAYS", gradleProp("salon.trialDays", "30"))
         buildConfigField("String", "LICENSE_PUBLIC_KEY", "\"${gradleProp("salon.licensePublicKey", "")}\"")
+
+        // Account approval (Firebase). The Google web client id normally comes from
+        // google-services.json (default_web_client_id); this property is only an override.
+        buildConfigField("boolean", "FIREBASE_CONFIGURED", hasFirebaseConfig.toString())
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${gradleProp("dt.googleWebClientId", "")}\"")
     }
 
     signingConfigs {
@@ -49,9 +60,13 @@ android {
 
     buildTypes {
         debug {
-            // Lets a debug build live next to the production install without touching its data.
-            applicationIdSuffix = ".debug"
+            // No applicationId suffix: Firebase and Google sign-in only accept the registered
+            // package name. With the release key configured, debug builds use it too, so a
+            // single SHA-1 fingerprint in Firebase covers both.
             versionNameSuffix = "-debug"
+            if (keystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
         release {
             isMinifyEnabled = true
@@ -132,6 +147,15 @@ dependencies {
     ksp(libs.androidx.room.compiler)
 
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.play.services)
+
+    // Google sign-in + account approval (Firebase Auth, Firestore). Salon data stays in Room.
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services)
+    implementation(libs.googleid)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

@@ -47,6 +47,8 @@ object Routes {
     const val BACKUP = "settings/backup"
     const val SECURITY = "settings/security"
     const val LICENSE = "settings/license"
+    const val ACCOUNT = "settings/account"
+    const val PREFERENCES = "settings/preferences"
     const val ABOUT = "settings/about"
 
     val topLevel = listOf(DASHBOARD, SALES, CUSTOMERS, EXPENSES, REPORTS)

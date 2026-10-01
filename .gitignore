@@ -27,6 +27,9 @@ license-private*.txt
 license-private*.pem
 secrets.properties
 google-services.json
+firebase-config.js
+# CI decrypts the signing key here from GitHub secrets; never commit it.
+/app/signing/
 
 # OS
 .DS_Store

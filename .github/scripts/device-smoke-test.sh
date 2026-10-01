@@ -4,7 +4,7 @@
 set -euo pipefail
 
 APK=app/build/outputs/apk/debug/app-debug.apk
-PKG=com.dtpos.salonmanager.debug
+PKG=dtsalon.management
 ACTIVITY=com.dtpos.salonmanager.MainActivity
 
 adb install -r "$APK"

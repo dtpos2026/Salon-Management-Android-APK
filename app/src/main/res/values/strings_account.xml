@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand / intro -->
+    <string name="brand_tagline">Smart Salon &amp; Barber Management</string>
+    <string name="brand_by">By %1$s</string>
+
+    <!-- Language names are always shown in their own language -->
+    <string name="language_english" translatable="false">English</string>
+    <string name="language_urdu" translatable="false">اردو</string>
+    <string name="language_roman_urdu" translatable="false">Roman Urdu</string>
+
+    <!-- Login -->
+    <string name="login_welcome">Welcome</string>
+    <string name="login_subtitle">Sign in with your Gmail account to continue.</string>
+    <string name="login_google">Continue with Google</string>
+    <string name="login_new_salon_hint">New salon? Sign in with Google and your account will be sent to %1$s for approval.</string>
+    <string name="login_error_no_account">No Google account found on this phone. Add one in phone Settings &gt; Accounts, then try again.</string>
+    <string name="login_error_not_configured">Google sign-in is not set up yet. Please contact %1$s.</string>
+    <string name="login_error_failed">Google sign-in failed. Please try again.</string>
+    <string name="login_error_network">Could not sign in. Check your internet connection and try again.</string>
+
+    <!-- Registration -->
+    <string name="register_title">Register your salon</string>
+    <string name="register_subtitle">Your details go to %1$s for approval. You can use the app after approval.</string>
+    <string name="register_signed_in_as">Signed in as %1$s</string>
+    <string name="register_salon_name">Salon / shop name</string>
+    <string name="register_owner_name">Owner name</string>
+    <string name="register_phone">Mobile / WhatsApp number</string>
+    <string name="register_city">City</string>
+    <string name="register_address">Address</string>
+    <string name="register_submit">Submit for approval</string>
+    <string name="register_use_other">Use another Google account</string>
+    <string name="register_error_required">Please enter the salon name, owner name and phone number.</string>
+    <string name="register_error_failed">Could not submit. Check your internet connection and try again.</string>
+
+    <!-- Account status -->
+    <string name="status_pending_title">Waiting for approval</string>
+    <string name="status_pending_message">Your account is pending approval. Please contact %1$s.</string>
+    <string name="status_payment_title">Payment pending</string>
+    <string name="status_payment_message">Your subscription payment is pending. Please clear the payment to continue using the app. Your data is safe on this phone.</string>
+    <string name="status_amount_due">Amount due: Rs %1$s</string>
+    <string name="status_suspended_title">Account suspended</string>
+    <string name="status_suspended_message">Your account has been suspended. Please contact %1$s.</string>
+    <string name="status_blocked_title">Account blocked</string>
+    <string name="status_blocked_message">This account has been blocked. Please contact %1$s.</string>
+    <string name="status_expired_title">Subscription expired</string>
+    <string name="status_expired_message">Your subscription ended on %1$s. Please renew to continue. Your data is safe on this phone.</string>
+    <string name="status_expired_message_nodate">Your subscription has expired. Please renew to continue. Your data is safe on this phone.</string>
+    <string name="status_rejected_title">Registration not approved</string>
+    <string name="status_rejected_message">Your registration was not approved. Please contact %1$s.</string>
+    <string name="status_verify_title">Internet needed</string>
+    <string name="status_verify_message">Please connect to the internet once so your account can be verified.</string>
+    <string name="status_verify_message_days">Your account was last verified %1$d days ago. Please connect to the internet once to continue.</string>
+    <string name="status_admin_message">Message from %1$s</string>
+    <string name="status_check_again">Check again</string>
+    <string name="status_check_failed">Could not reach the server. Check your internet connection.</string>
+    <string name="status_unchanged">No change yet. We will open the app as soon as your account is approved.</string>
+
+    <!-- Support -->
+    <string name="support_whatsapp">WhatsApp</string>
+    <string name="support_call">Call</string>
+    <string name="support_email">Email</string>
+    <string name="support_message">Assalam-o-Alaikum, I need help with my DT Salon account (%1$s).</string>
+    <string name="whatsapp_not_installed">WhatsApp is not installed on this phone.</string>
+    <string name="action_sign_out">Sign out</string>
+
+    <!-- Account screen -->
+    <string name="account_title">Account &amp; subscription</string>
+    <string name="account_sub">Gmail, licence, expiry and sign out</string>
+    <string name="account_email">Gmail</string>
+    <string name="account_salon">Salon</string>
+    <string name="account_owner">Owner</string>
+    <string name="account_phone">Phone</string>
+    <string name="account_customer_id">Customer ID</string>
+    <string name="account_business_id">Business ID</string>
+    <string name="account_license_id">License ID</string>
+    <string name="account_plan">Plan</string>
+    <string name="account_expires">Valid until</string>
+    <string name="account_no_expiry">No expiry</string>
+    <string name="account_not_assigned">Not assigned yet</string>
+    <string name="account_last_verified">Last verified online</string>
+    <string name="account_offline_days">The app works offline for %1$d more days without internet.</string>
+    <string name="account_check_now">Verify now</string>
+    <string name="account_verified">Account verified.</string>
+    <string name="account_signout_title">Sign out?</string>
+    <string name="account_signout_message">Your salon data stays on this phone. Sign in again with the same Gmail account to continue.</string>
+    <string name="account_status_pending">Pending approval</string>
+    <string name="account_status_approved">Active</string>
+    <string name="account_status_payment_pending">Payment pending</string>
+    <string name="account_status_suspended">Suspended</string>
+    <string name="account_status_blocked">Blocked</string>
+    <string name="account_status_expired">Expired</string>
+    <string name="account_status_rejected">Rejected</string>
+
+    <!-- Another account owns this phone's data -->
+    <string name="device_title">This phone is linked to another account</string>
+    <string name="device_message">The salon data on this phone belongs to %1$s. Sign in with that Gmail account, or erase this phone\'s salon data to use it with your account.</string>
+    <string name="device_erase">Erase data and use my account</string>
+    <string name="device_erase_title">Erase salon data?</string>
+    <string name="device_erase_message">All sales, customers, staff and expenses on this phone will be deleted. A safety backup is saved first (Settings &gt; Backup). This cannot be undone.</string>
+    <string name="device_erase_failed">Could not erase the data. Please try again.</string>
+
+    <!-- Updates and setup -->
+    <string name="update_required_title">Update required</string>
+    <string name="update_required_message">This version is no longer supported. Please install the latest version to continue.</string>
+    <string name="update_now">Update now</string>
+    <string name="update_available_title">New version available</string>
+    <string name="update_available_message">Version %1$s is available.</string>
+    <string name="update_later">Later</string>
+    <string name="setup_missing_title">App setup incomplete</string>
+    <string name="setup_missing_message">This copy of the app was built without its online account settings. Please install the official app from %1$s.</string>
+
+    <!-- About -->
+    <string name="about_support_title">Support</string>
+    <string name="about_company">Company</string>
+    <string name="about_website">Website</string>
+
+    <!-- App preferences -->
+    <string name="prefs_title">App preferences</string>
+    <string name="prefs_sub">Language, appearance and sounds</string>
+    <string name="prefs_language">Language</string>
+    <string name="prefs_language_restart">The app restarts to apply the new language.</string>
+    <string name="prefs_color_theme">Colour theme</string>
+    <string name="theme_royal_purple">Royal Purple</string>
+    <string name="theme_black_gold">Black &amp; Gold</string>
+    <string name="theme_rose_gold">Rose Gold</string>
+    <string name="prefs_appearance">Light or dark</string>
+    <string name="prefs_theme_system">Phone setting</string>
+    <string name="prefs_theme_light">Light</string>
+    <string name="prefs_theme_dark">Dark</string>
+    <string name="prefs_sound">Sound effects</string>
+    <string name="prefs_sound_sub">A soft sound for important actions, like completing a sale.</string>
+    <string name="settings_group_app">Application</string>
+    <string name="settings_group_account">Account</string>
+</resources>
