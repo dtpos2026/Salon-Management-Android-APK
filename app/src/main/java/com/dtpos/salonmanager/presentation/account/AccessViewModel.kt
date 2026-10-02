@@ -1,6 +1,5 @@
 package com.dtpos.salonmanager.presentation.account
 
-import android.app.Activity
 import androidx.lifecycle.viewModelScope
 import com.dtpos.salonmanager.R
 import com.dtpos.salonmanager.core.di.AppContainer
@@ -8,7 +7,7 @@ import com.dtpos.salonmanager.core.util.UiText
 import com.dtpos.salonmanager.presentation.common.BaseViewModel
 import com.dtpos.salonmanager.services.account.AccessState
 import com.dtpos.salonmanager.services.account.AccountRegistration
-import com.dtpos.salonmanager.services.account.GoogleSignInError
+import com.dtpos.salonmanager.services.account.AuthError
 import com.dtpos.salonmanager.services.account.RefreshResult
 import com.dtpos.salonmanager.services.account.SignInOutcome
 import kotlinx.coroutines.CancellationException
@@ -34,12 +33,14 @@ class AccessViewModel(private val container: AppContainer) : BaseViewModel() {
 
     fun clearNotice() {
         _notice.value = null
+        _info.value = null
     }
 
     private fun run(block: suspend () -> Unit) {
         if (_busy.value) return
         _busy.value = true
         _notice.value = null
+        _info.value = null
         viewModelScope.launch {
             try {
                 block()
@@ -53,18 +54,60 @@ class AccessViewModel(private val container: AppContainer) : BaseViewModel() {
         }
     }
 
-    fun signIn(activity: Activity) = run {
-        when (val outcome = accounts.signInWithGoogle(activity)) {
-            SignInOutcome.Success -> container.soundEffects.tap()
-            is SignInOutcome.FirebaseFailed -> _notice.value = UiText.res(R.string.login_error_network)
-            is SignInOutcome.Failed -> _notice.value = when (outcome.error) {
-                GoogleSignInError.CANCELLED -> null
-                GoogleSignInError.NO_ACCOUNT -> UiText.res(R.string.login_error_no_account)
-                GoogleSignInError.NOT_CONFIGURED -> UiText.res(R.string.login_error_not_configured, branding.value.appName)
-                GoogleSignInError.FAILED -> UiText.res(R.string.login_error_failed)
-            }
+    /** Positive message (e.g. reset email sent), shown instead of an error. */
+    private val _info = MutableStateFlow<UiText?>(null)
+    val info: StateFlow<UiText?> = _info.asStateFlow()
+
+    fun signIn(email: String, password: String) {
+        if (!validEmail(email)) return fail(R.string.login_error_invalid_email)
+        if (password.isEmpty()) return fail(R.string.login_error_wrong)
+        run { handle(accounts.signIn(email, password)) }
+    }
+
+    fun createLogin(email: String, password: String, confirm: String) {
+        if (!validEmail(email)) return fail(R.string.login_error_invalid_email)
+        if (password.length < MIN_PASSWORD) return fail(R.string.login_error_weak_password)
+        if (password != confirm) return fail(R.string.login_error_password_mismatch)
+        run { handle(accounts.createLogin(email, password)) }
+    }
+
+    fun forgotPassword(email: String) {
+        if (!validEmail(email)) return fail(R.string.login_reset_need_email)
+        run {
+            val error = accounts.sendPasswordReset(email)
+            if (error == null) _info.value = UiText.res(R.string.login_reset_sent, email.trim()) else _notice.value = message(error)
         }
     }
+
+    private fun fail(res: Int) {
+        _info.value = null
+        _notice.value = UiText.res(res)
+    }
+
+    private fun handle(outcome: SignInOutcome) {
+        when (outcome) {
+            SignInOutcome.Success -> container.soundEffects.tap()
+            is SignInOutcome.Failed -> _notice.value = message(outcome.error)
+        }
+    }
+
+    private fun message(error: AuthError): UiText {
+        val name = branding.value.companyName
+        return when (error) {
+            AuthError.INVALID_EMAIL -> UiText.res(R.string.login_error_invalid_email)
+            AuthError.WRONG_CREDENTIALS -> UiText.res(R.string.login_error_wrong)
+            AuthError.EMAIL_IN_USE -> UiText.res(R.string.login_error_email_in_use)
+            AuthError.WEAK_PASSWORD -> UiText.res(R.string.login_error_weak_password)
+            AuthError.USER_DISABLED -> UiText.res(R.string.login_error_disabled, name)
+            AuthError.TOO_MANY_ATTEMPTS -> UiText.res(R.string.login_error_too_many)
+            AuthError.NETWORK -> UiText.res(R.string.login_error_network)
+            AuthError.PROVIDER_DISABLED -> UiText.res(R.string.login_error_provider_disabled, name)
+            AuthError.NOT_CONFIGURED -> UiText.res(R.string.login_error_not_configured, name)
+            AuthError.FAILED -> UiText.res(R.string.login_error_failed)
+        }
+    }
+
+    private fun validEmail(email: String): Boolean = EMAIL.matches(email.trim())
 
     fun register(registration: AccountRegistration) {
         if (registration.salonName.isBlank() || registration.ownerName.isBlank() || registration.phone.isBlank()) {
@@ -99,5 +142,10 @@ class AccessViewModel(private val container: AppContainer) : BaseViewModel() {
         } else {
             _notice.value = UiText.res(R.string.device_erase_failed)
         }
+    }
+
+    private companion object {
+        const val MIN_PASSWORD = 6
+        val EMAIL = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
     }
 }

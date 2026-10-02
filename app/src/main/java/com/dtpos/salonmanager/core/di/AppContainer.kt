@@ -91,7 +91,7 @@ class AppContainer(
     val uiPreferences = UiPreferences(app)
     val soundEffects by lazy { SoundEffects(app, uiPreferences) }
 
-    /** Google sign-in + admin approval. Only the account lives online; salon data stays in Room. */
+    /** Email sign-in + account and phone approval. Only the account lives online; salon data stays in Room. */
     private val accountBackendOverride = accountBackend
 
     val accountManager by lazy {

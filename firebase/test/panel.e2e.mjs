@@ -56,6 +56,8 @@ await admin(async (db) => {
     ownerNameLower: 'ali raza', phone: '03001234567', phoneDigits: '923001234567', city: 'Burewala', status: 'APPROVED',
     plan: 'MONTHLY', monthlyFee: 1500, customerId: 'DTC-0001', businessId: 'DTB-AAAA2222', licenseId: 'DTL-ABCD-EFGH',
     expiresAt: Timestamp.fromMillis(now + 20 * DAY), createdAt: Timestamp.fromMillis(now - 40 * DAY),
+    deviceId: 'a-old-phone-1111', deviceModel: 'Samsung A15',
+    pendingDeviceId: 'a-new-phone-2222', pendingDeviceModel: 'Infinix Hot 40', pendingDeviceAt: Timestamp.fromMillis(now - 3600000),
   });
   await setDoc(doc(db, 'accounts/late1'), {
     uid: 'late1', email: 'late@gmail.com', salonName: 'Classic Barber', salonNameLower: 'classic barber', ownerName: 'Usman',
@@ -81,13 +83,24 @@ const base = `http://127.0.0.1:${PORT}`;
 const step = (name) => console.log(`  ✓ ${name}`);
 
 try {
+  // The admin login is created once in Firebase console (Authentication → Add user).
+  const signUp = await fetch('http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signUp?key=demo-key', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email: 'owner@digitaltarget.test', password: 'Secret#2026', returnSecureToken: true }),
+  });
+  assert.equal(signUp.status, 200, await signUp.text());
   await page.goto(`${base}/index.html`);
   await page.getByText('Super Admin').waitFor();
-  await page.fill('#emu-email', 'owner@digitaltarget.test');
-  await page.click('#emu');
+  await page.fill('#email', 'owner@digitaltarget.test');
+  await page.fill('#password', 'wrong-password');
+  await page.click('#signin');
+  await page.getByText('Email or password is incorrect.').waitFor();
+  await page.fill('#email', 'owner@digitaltarget.test');
+  await page.fill('#password', 'Secret#2026');
+  await page.click('#signin');
   await page.getByText('No admin access').waitFor();
   const uid = (await page.textContent('#uid')).trim();
-  step('a signed-in Google account without admin rights is refused');
+  step('email login: wrong password refused; a login without admin rights is refused');
 
   await admin((db) => setDoc(doc(db, 'admins', uid), { email: 'owner@digitaltarget.test' }));
   await page.click('#retry');
@@ -97,6 +110,7 @@ try {
   assert.equal(await statValue('Total salons'), '3');
   assert.equal(await statValue('Waiting for approval'), '1');
   assert.equal((await statValue('Expired')).trim(), '1');
+  assert.equal(await statValue('New phone requests'), '1');
   await page.screenshot({ path: join(SHOTS, '1-dashboard.png'), fullPage: true });
   step('admin dashboard shows the right counts');
 
@@ -114,6 +128,19 @@ try {
   const days = Math.round((approved.expiresAt.toMillis() - now) / DAY);
   assert.ok(days >= 28 && days <= 32, `expiry in ${days} days`);
   step('approving a salon assigns IDs, plan, fee and expiry');
+
+  await page.goto(`${base}/index.html#/salons?filter=DEVICE`);
+  await page.locator('tr', { hasText: 'Royal Cuts' }).getByText('New phone').waitFor();
+  await page.goto(`${base}/index.html#/salon/royal1`);
+  await page.getByText('Infinix Hot 40').first().waitFor();
+  await page.click('[data-act="approve-device"]');
+  await page.click('.modal button[type=submit]');
+  await page.getByText('Phone approved').waitFor();
+  const moved = await admin(async (db) => (await getDoc(doc(db, 'accounts/royal1'))).data());
+  assert.equal(moved.deviceId, 'a-new-phone-2222');
+  assert.equal(moved.deviceModel, 'Infinix Hot 40');
+  assert.equal(moved.pendingDeviceId, undefined);
+  step('a new phone request is listed and approved from the salon page');
 
   await page.goto(`${base}/index.html#/salons`);
   await page.fill('#q', 'roy');

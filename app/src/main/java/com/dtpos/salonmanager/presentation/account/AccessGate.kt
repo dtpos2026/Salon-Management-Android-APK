@@ -45,6 +45,9 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material.icons.filled.HourglassTop
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.automirrored.filled.Login
+import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.PauseCircle
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.PhonelinkLock
@@ -100,7 +103,6 @@ import com.dtpos.salonmanager.presentation.components.GlassCard
 import com.dtpos.salonmanager.presentation.components.GlassOutlinedButton
 import com.dtpos.salonmanager.presentation.components.GlassPrimaryButton
 import com.dtpos.salonmanager.presentation.components.GlassTextField
-import com.dtpos.salonmanager.presentation.components.GoogleSignInButton
 import com.dtpos.salonmanager.presentation.components.PoweredByFooter
 import com.dtpos.salonmanager.presentation.theme.SalonTheme
 import com.dtpos.salonmanager.services.account.AccessPolicy
@@ -169,6 +171,7 @@ fun AccessGate(content: @Composable () -> Unit) {
             is AccessState.NeedsProfile -> RegistrationScreen(vm, s.user)
             is AccessState.Restricted -> StatusScreen(vm, s.account, s.status)
             is AccessState.NeedsVerification -> VerificationScreen(vm, s)
+            is AccessState.DeviceNotApproved -> DeviceApprovalScreen(vm, s)
             is AccessState.WrongDevice -> WrongDeviceScreen(vm, s)
             is AccessState.UpdateRequired -> UpdateRequiredScreen(vm, s.config)
             is AccessState.Allowed -> content()
@@ -292,33 +295,102 @@ private fun SupportRow(branding: Branding, reference: String) {
 }
 
 @Composable
+private fun InfoText(info: UiText?) {
+    if (info == null) return
+    Spacer(Modifier.height(14.dp))
+    Text(
+        info.asString(),
+        color = Color(0xFFD8FFE4),
+        fontSize = 14.sp,
+        textAlign = TextAlign.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color(0x3341D17A))
+            .padding(12.dp),
+    )
+}
+
+/** Email + password: sign in, or create a new login (the salon details form follows). */
+@Composable
 private fun LoginScreen(vm: AccessViewModel) {
     val busy by vm.busy.collectAsStateWithLifecycle()
     val notice by vm.notice.collectAsStateWithLifecycle()
+    val info by vm.info.collectAsStateWithLifecycle()
     val branding by vm.branding.collectAsStateWithLifecycle()
-    val activity = LocalContext.current.findActivity()
+    var creating by rememberSaveable { mutableStateOf(false) }
+    var email by rememberSaveable { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var confirm by remember { mutableStateOf("") }
     GlassPage {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) { LanguageMenu() }
+        Spacer(Modifier.height(20.dp))
+        BrandHeader(stringResource(R.string.brand_tagline), compact = creating)
         Spacer(Modifier.height(28.dp))
-        BrandHeader(stringResource(R.string.brand_tagline))
-        Spacer(Modifier.height(36.dp))
         GlassCard(Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.login_welcome), color = Glass.TextPrimary, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+            Text(
+                stringResource(if (creating) R.string.login_create_title else R.string.login_welcome),
+                color = Glass.TextPrimary,
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Bold,
+            )
             Spacer(Modifier.height(6.dp))
-            Text(stringResource(R.string.login_subtitle), color = Glass.TextSecondary, fontSize = 15.sp)
-            Spacer(Modifier.height(22.dp))
-            GoogleSignInButton(stringResource(R.string.login_google), loading = busy, onClick = { activity?.let(vm::signIn) })
+            Text(
+                stringResource(if (creating) R.string.login_create_subtitle else R.string.login_subtitle),
+                color = Glass.TextSecondary,
+                fontSize = 15.sp,
+            )
+            Spacer(Modifier.height(18.dp))
+            GlassTextField(email, { email = it.trim() }, stringResource(R.string.login_email), keyboardType = KeyboardType.Email)
+            Spacer(Modifier.height(10.dp))
+            GlassTextField(password, { password = it }, stringResource(R.string.login_password), password = true)
+            if (creating) {
+                Spacer(Modifier.height(10.dp))
+                GlassTextField(confirm, { confirm = it }, stringResource(R.string.login_confirm_password), password = true)
+            }
+            Spacer(Modifier.height(18.dp))
+            if (creating) {
+                GlassPrimaryButton(
+                    stringResource(R.string.login_create_account),
+                    loading = busy,
+                    icon = Icons.Filled.PersonAdd,
+                    onClick = { vm.createLogin(email, password, confirm) },
+                )
+            } else {
+                GlassPrimaryButton(
+                    stringResource(R.string.login_sign_in),
+                    loading = busy,
+                    icon = Icons.AutoMirrored.Filled.Login,
+                    onClick = { vm.signIn(email, password) },
+                )
+                TextButton(onClick = { vm.forgotPassword(email) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.login_forgot), color = Glass.TextSecondary)
+                }
+            }
             NoticeText(notice)
+            InfoText(info)
         }
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(10.dp))
+        TextButton(onClick = {
+            creating = !creating
+            confirm = ""
+            vm.clearNotice()
+        }) {
+            Text(
+                stringResource(if (creating) R.string.login_switch_to_sign_in else R.string.login_switch_to_create),
+                color = SalonTheme.glass.accent,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+        Spacer(Modifier.height(6.dp))
         Text(
             stringResource(R.string.login_new_salon_hint, branding.appName),
             color = Glass.TextMuted,
             fontSize = 13.sp,
             textAlign = TextAlign.Center,
         )
-        Spacer(Modifier.height(28.dp))
-        SupportRow(branding, reference = "-")
+        Spacer(Modifier.height(24.dp))
+        SupportRow(branding, reference = email.ifBlank { "-" })
         Spacer(Modifier.height(24.dp))
         PoweredByFooter(stringResource(R.string.brand_by, branding.companyName))
     }
@@ -509,6 +581,28 @@ private fun VerificationScreen(vm: AccessViewModel, state: AccessState.NeedsVeri
         title = stringResource(R.string.status_verify_title),
         message = state.daysSinceVerified?.let { stringResource(R.string.status_verify_message_days, it) }
             ?: stringResource(R.string.status_verify_message),
+        account = state.account,
+    ) {
+        CheckAgainButton(vm)
+        Spacer(Modifier.height(4.dp))
+        SignOutButton(vm)
+    }
+}
+
+/** The account is approved for another phone; this one waits for the admin. */
+@Composable
+private fun DeviceApprovalScreen(vm: AccessViewModel, state: AccessState.DeviceNotApproved) {
+    val branding by vm.branding.collectAsStateWithLifecycle()
+    val model = state.account.deviceModel ?: stringResource(R.string.device_unknown_model)
+    StatusPage(
+        vm = vm,
+        icon = Icons.Filled.PhoneAndroid,
+        title = stringResource(R.string.device_pending_title),
+        message = stringResource(
+            if (state.requested) R.string.device_pending_message else R.string.device_pending_offline,
+            model,
+            branding.appName,
+        ),
         account = state.account,
     ) {
         CheckAgainButton(vm)

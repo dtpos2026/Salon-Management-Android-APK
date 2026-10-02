@@ -9,7 +9,7 @@ export async function render(el, ctx) {
     <div class="notice info">An admin can see and change every salon. Add only people you trust. They must sign in to this panel once to get their UID.</div>
     <div class="card">
       <div class="card-head"><h2>Your account</h2></div>
-      <dl class="kv"><dt>Gmail</dt><dd>${esc(ctx.user.email || '')}</dd><dt>UID</dt><dd class="mono">${esc(ctx.user.uid)} <a href="#" id="copy">copy</a></dd></dl>
+      <dl class="kv"><dt>Email</dt><dd>${esc(ctx.user.email || '')}</dd><dt>UID</dt><dd class="mono">${esc(ctx.user.uid)} <a href="#" id="copy">copy</a></dd></dl>
     </div>
     <div class="card">
       <table class="list"><thead><tr><th>Admin</th><th>UID</th><th>Added</th><th></th></tr></thead><tbody>
@@ -29,7 +29,7 @@ export async function render(el, ctx) {
       confirm: 'Add admin',
       body: `<div class="form-grid">
         <div class="field full"><label>UID</label><input name="uid" required placeholder="Shown to them after they sign in"></div>
-        <div class="field"><label>Gmail</label><input name="email" type="email" required></div>
+        <div class="field"><label>Email</label><input name="email" type="email" required></div>
         <div class="field"><label>Name</label><input name="name"></div></div>`,
     });
     if (!form) return;

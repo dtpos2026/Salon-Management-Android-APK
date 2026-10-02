@@ -1,6 +1,6 @@
 import {
   getAccount, getNotes, saveNotes, updateAccount, effectiveStatus, PLANS, STATUS_LABELS, planExpiry,
-  listInvoices, deleteAccount, ensureIds,
+  listInvoices, deleteAccount, ensureIds, approveDevice, dismissDeviceRequest,
 } from '../data.js';
 import {
   esc, fmtDate, fmtDateTime, inputDate, fromInputDate, money, relativeDays, toast, errorMessage,
@@ -45,6 +45,15 @@ export async function render(el, ctx) {
         ${statusPill(status)}
       </div>
       ${account.messageToUser ? `<div class="notice info">Message shown in the app: ${esc(account.messageToUser)}</div>` : ''}
+      ${account.pendingDeviceId ? `<div class="notice warn" id="device-request">
+        <b>New phone wants to use this account:</b> ${esc(account.pendingDeviceModel || 'Unknown phone')}
+        <span class="cell-sub">(asked ${fmtDateTime(account.pendingDeviceAt)}; current phone: ${esc(account.deviceModel || '—')})</span>
+        <div class="actions" style="margin-top:10px">
+          <button class="btn btn-success btn-sm" data-act="approve-device">Approve this phone</button>
+          <button class="btn btn-ghost btn-sm" data-act="dismiss-device">Ignore</button>
+        </div>
+        <div class="help">Approving moves the account to the new phone; the old phone stops opening.</div>
+      </div>` : ''}
       <div class="actions">
         ${statusButtons.join('')}
         ${wa ? `<a class="btn btn-wa" target="_blank" rel="noopener" href="https://wa.me/${wa}">WhatsApp</a>` : ''}
@@ -77,12 +86,12 @@ export async function render(el, ctx) {
           <dt>Business ID</dt><dd class="mono">${esc(account.businessId || '—')}</dd>
           <dt>License ID</dt><dd class="mono">${esc(account.licenseId || '—')}</dd>
           <dt>Firebase UID</dt><dd class="mono">${esc(account.id)} <a href="#" id="copy-uid">copy</a></dd>
-          <dt>Gmail</dt><dd>${esc(account.email || '—')}</dd>
+          <dt>Email</dt><dd>${esc(account.email || '—')}</dd>
           <dt>Registered</dt><dd>${fmtDateTime(account.createdAt)}</dd>
           <dt>Approved</dt><dd>${fmtDateTime(account.approvedAt)}</dd>
           <dt>Last seen</dt><dd>${fmtDateTime(account.lastSeenAt)}</dd>
           <dt>App version</dt><dd>${esc(account.appVersion || '—')}</dd>
-          <dt>Device</dt><dd>${esc(account.deviceModel || '—')}</dd>
+          <dt>Approved phone</dt><dd>${esc(account.deviceModel || '—')}${account.deviceId ? ` <span class="cell-sub mono">${esc(String(account.deviceId).slice(-8))}</span>` : ''}</dd>
         </dl>
       </div>
     </div>
@@ -135,6 +144,23 @@ export async function render(el, ctx) {
     if (await statusDialog(account, b.dataset.st)) { ctx.refreshBadge(); reload(); }
   }));
   el.querySelector('#copy-uid').addEventListener('click', (e) => { e.preventDefault(); copyText(account.id); });
+  el.querySelector('[data-act="approve-device"]')?.addEventListener('click', async () => {
+    if (!(await confirmDialog('Approve this phone?', `${account.salonName || 'This salon'} will open on ${account.pendingDeviceModel || 'the new phone'}. The old phone (${account.deviceModel || '—'}) will stop opening.`, 'Approve'))) return;
+    try {
+      await approveDevice(account);
+      toast('Phone approved', 'success');
+      ctx.refreshBadge();
+      reload();
+    } catch (e) { toast(errorMessage(e), 'error'); }
+  });
+  el.querySelector('[data-act="dismiss-device"]')?.addEventListener('click', async () => {
+    try {
+      await dismissDeviceRequest(account);
+      toast('Request ignored');
+      ctx.refreshBadge();
+      reload();
+    } catch (e) { toast(errorMessage(e), 'error'); }
+  });
   el.querySelector('#ids')?.addEventListener('click', async () => {
     try {
       await updateAccount(account.id, await ensureIds(account));

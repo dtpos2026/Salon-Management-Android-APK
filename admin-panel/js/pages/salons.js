@@ -3,7 +3,7 @@ import { esc, fmtDate, relativeDays, debounce, money, errorMessage } from '../ut
 import { statusPill } from '../actions.js';
 
 const FILTERS = [
-  ['ALL', 'All'], ['PENDING', 'Pending'], ['APPROVED', 'Approved'], ['PAYMENT_PENDING', 'Payment pending'],
+  ['ALL', 'All'], ['PENDING', 'Pending'], ['DEVICE', 'New phone requests'], ['APPROVED', 'Approved'], ['PAYMENT_PENDING', 'Payment pending'],
   ['SOON', 'Expiring soon'], ['LAPSED', 'Licence ended'], ['EXPIRED', 'Marked expired'], ['SUSPENDED', 'Suspended'],
   ['BLOCKED', 'Blocked'], ['REJECTED', 'Rejected'],
 ];
@@ -16,7 +16,7 @@ function row(a) {
       <td data-label="Contact"><div>${esc(a.phone || '—')}</div><div class="cell-sub">${esc(a.email || '')}</div></td>
       <td data-label="IDs"><div class="mono">${esc(a.customerId || '—')}</div><div class="cell-sub mono">${esc(a.licenseId || '')}</div></td>
       <td data-label="Plan"><div>${esc(plan)}${a.monthlyFee ? ` · ${money(a.monthlyFee)}` : ''}</div><div class="cell-sub">${a.expiresAt ? `Until ${fmtDate(a.expiresAt)} (${esc(relativeDays(a.expiresAt))})` : a.plan === 'LIFETIME' ? 'No expiry' : ''}</div></td>
-      <td data-label="Status">${statusPill(effectiveStatus(a))}</td>
+      <td data-label="Status">${statusPill(effectiveStatus(a))}${a.pendingDeviceId ? ' <span class="pill st-PENDING">New phone</span>' : ''}</td>
       <td data-label="Last seen" class="cell-sub">${a.lastSeenAt ? fmtDate(a.lastSeenAt) : '—'}</td>
     </tr>`;
 }
@@ -27,7 +27,7 @@ export async function render(el, ctx) {
   let last = null;
   el.innerHTML = `
     <div class="toolbar">
-      <div class="search"><input id="q" placeholder="Search name, Gmail, phone, Customer ID, License ID, UID…" autocomplete="off"></div>
+      <div class="search"><input id="q" placeholder="Search name, email, phone, Customer ID, License ID, UID…" autocomplete="off"></div>
     </div>
     <div class="chips" id="chips" style="margin-bottom:14px">${FILTERS.map(([k, l]) => `<button class="chip ${k === filter ? 'active' : ''}" data-f="${k}">${l}</button>`).join('')}</div>
     <div class="card" style="padding:8px 12px">
@@ -71,7 +71,7 @@ export async function render(el, ctx) {
       rows.innerHTML = items.map(row).join('');
       bindRows();
       stateEl.className = items.length ? 'hidden' : 'empty';
-      stateEl.textContent = items.length ? '' : 'Nothing found. Search uses the start of the salon/owner name, or the exact Gmail, phone or ID.';
+      stateEl.textContent = items.length ? '' : 'Nothing found. Search uses the start of the salon/owner name, or the exact email, phone or ID.';
     } catch (e) {
       stateEl.className = 'empty';
       stateEl.textContent = errorMessage(e);

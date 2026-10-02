@@ -11,12 +11,36 @@
 
     <!-- Login -->
     <string name="login_welcome">Welcome</string>
-    <string name="login_subtitle">Sign in with your Gmail account to continue.</string>
-    <string name="login_google">Continue with Google</string>
-    <string name="login_new_salon_hint">New salon? Sign in with Google and your account will be sent to %1$s for approval.</string>
-    <string name="login_error_no_account">No Google account found on this phone. Add one in phone Settings &gt; Accounts, then try again.</string>
-    <string name="login_error_not_configured">Google sign-in is not set up yet. Please contact %1$s.</string>
-    <string name="login_error_failed">Google sign-in failed. Please try again.</string>
+    <string name="login_email">Email</string>
+    <string name="login_password">Password</string>
+    <string name="login_confirm_password">Confirm password</string>
+    <string name="login_sign_in">Sign in</string>
+    <string name="login_create_account">Create account</string>
+    <string name="login_create_title">Create your account</string>
+    <string name="login_create_subtitle">Choose your email and a password (at least 6 characters).</string>
+    <string name="login_switch_to_create">New salon? Create an account</string>
+    <string name="login_switch_to_sign_in">Already have an account? Sign in</string>
+    <string name="login_forgot">Forgot password?</string>
+    <string name="login_show_password">Show password</string>
+    <string name="login_hide_password">Hide password</string>
+    <string name="login_reset_sent">A password reset link was sent to %1$s. Check your email (also the Spam folder).</string>
+    <string name="login_reset_need_email">Type your email above, then tap Forgot password.</string>
+    <string name="login_error_invalid_email">Please enter a valid email address.</string>
+    <string name="login_error_wrong">Email or password is incorrect.</string>
+    <string name="login_error_email_in_use">This email already has an account. Sign in instead.</string>
+    <string name="login_error_weak_password">Password must be at least 6 characters.</string>
+    <string name="login_error_password_mismatch">The two passwords do not match.</string>
+    <string name="login_error_disabled">This login has been disabled. Please contact %1$s.</string>
+    <string name="login_error_too_many">Too many attempts. Please wait a few minutes and try again.</string>
+    <string name="login_error_provider_disabled">Email login is not switched on yet. Please contact %1$s.</string>
+    <string name="device_pending_title">New phone needs approval</string>
+    <string name="device_pending_message">This account is approved on another phone (%1$s). A request for this phone has been sent to %2$s. Once it is approved, tap Check again.</string>
+    <string name="device_pending_offline">This account is approved on another phone (%1$s). Connect to the internet and tap Check again to ask %2$s to approve this phone.</string>
+    <string name="device_unknown_model">unknown phone</string>
+    <string name="login_subtitle">Sign in with your email and password.</string>
+    <string name="login_new_salon_hint">New salon? Create an account. It is sent to %1$s for approval, and works on this phone only.</string>
+    <string name="login_error_not_configured">Login is not set up yet. Please contact %1$s.</string>
+    <string name="login_error_failed">Could not sign in. Please try again.</string>
     <string name="login_error_network">Could not sign in. Check your internet connection and try again.</string>
 
     <!-- Registration -->
@@ -29,7 +53,7 @@
     <string name="register_city">City</string>
     <string name="register_address">Address</string>
     <string name="register_submit">Submit for approval</string>
-    <string name="register_use_other">Use another Google account</string>
+    <string name="register_use_other">Use another account</string>
     <string name="register_error_required">Please enter the salon name, owner name and phone number.</string>
     <string name="register_error_failed">Could not submit. Check your internet connection and try again.</string>
 
@@ -66,8 +90,8 @@
 
     <!-- Account screen -->
     <string name="account_title">Account &amp; subscription</string>
-    <string name="account_sub">Gmail, licence, expiry and sign out</string>
-    <string name="account_email">Gmail</string>
+    <string name="account_sub">Email, licence, expiry and sign out</string>
+    <string name="account_email">Email</string>
     <string name="account_salon">Salon</string>
     <string name="account_owner">Owner</string>
     <string name="account_phone">Phone</string>
@@ -83,7 +107,7 @@
     <string name="account_check_now">Verify now</string>
     <string name="account_verified">Account verified.</string>
     <string name="account_signout_title">Sign out?</string>
-    <string name="account_signout_message">Your salon data stays on this phone. Sign in again with the same Gmail account to continue.</string>
+    <string name="account_signout_message">Your salon data stays on this phone. Sign in again with the same email to continue.</string>
     <string name="account_status_pending">Pending approval</string>
     <string name="account_status_approved">Active</string>
     <string name="account_status_payment_pending">Payment pending</string>
@@ -94,7 +118,7 @@
 
     <!-- Another account owns this phone's data -->
     <string name="device_title">This phone is linked to another account</string>
-    <string name="device_message">The salon data on this phone belongs to %1$s. Sign in with that Gmail account, or erase this phone\'s salon data to use it with your account.</string>
+    <string name="device_message">The salon data on this phone belongs to %1$s. Sign in with that email, or erase this phone\'s salon data to use it with your account.</string>
     <string name="device_erase">Erase data and use my account</string>
     <string name="device_erase_title">Erase salon data?</string>
     <string name="device_erase_message">All sales, customers, staff and expenses on this phone will be deleted. A safety backup is saved first (Settings &gt; Backup). This cannot be undone.</string>

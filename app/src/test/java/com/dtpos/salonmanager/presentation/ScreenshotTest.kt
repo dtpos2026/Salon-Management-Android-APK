@@ -126,6 +126,18 @@ class ScreenshotTest {
     }
 
     @Test
+    fun newPhoneNeedsApproval() {
+        backend.user = SignedInUser("u1", "royalcuts@gmail.com")
+        backend.accounts["u1"] = CloudAccount(
+            uid = "u1", email = "royalcuts@gmail.com", salonName = "Royal Cuts", status = AccountStatus.APPROVED,
+            customerId = "DTC-0002", deviceId = "a-first-phone", deviceModel = "Samsung Galaxy A15",
+        )
+        startAccounts()
+        showGate(ColorTheme.ROYAL_PURPLE, dark = false)
+        capture("09-new-phone-approval")
+    }
+
+    @Test
     fun paymentPendingRoseGold() {
         backend.user = SignedInUser("u1", "glam@gmail.com", "Sara", null)
         backend.accounts["u1"] = CloudAccount(

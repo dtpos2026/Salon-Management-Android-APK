@@ -8,8 +8,8 @@ budgets, reports and offline business insights. English, Urdu and Roman Urdu; th
 themes with light and dark modes.
 
 It is **offline-first**: all salon data lives in a local Room (SQLite) database on the phone and
-never goes online. Internet is used only for **Google (Gmail) sign-in and admin approval**: each
-salon account is approved, suspended or renewed by you from the **Super Admin web panel**
+never goes online. Internet is used only for **email sign-in and admin approval**: each
+salon account (and the one phone it runs on) is approved, suspended or renewed by you from the **Super Admin web panel**
 (`admin-panel/`), backed by Firebase Authentication and Firestore. An approved phone keeps working
 offline (30 days by default, configurable).
 
@@ -17,7 +17,7 @@ offline (30 days by default, configurable).
 
 ```
 Salon phone (DT Salon app)                    You (Super Admin panel in a browser)
-  Gmail login, salon data stays on the phone    approve salons, plans, fees, expiry,
+  email login, salon data stays on the phone    approve salons and phones, plans, fees,
   account / licence checked online              suspend/block, invoices, app settings
                  \                              /
                   \-------  Firebase (Auth + Firestore)  -------/
@@ -46,7 +46,7 @@ Salon phone (DT Salon app)                    You (Super Admin panel in a browse
 | **Insights** | Offline rule engine: target pace, sales and expense trends vs. last month, best service, top staff, busiest/slowest weekday, returning customers, high household spending, loss warnings. Designed so an AI engine can be plugged in later (see below). |
 | **Backup & restore** | Save / share backup files (`SalonBackup_YYYY-MM-DD.salonbak`), optional AES-256 password, automatic daily backup on the phone (last 10 kept), restore with warning, integrity check and automatic safety backup + rollback. CSV export of all data. |
 | **Security** | Optional PIN or password (salted PBKDF2 hash, never plain text), fingerprint/face unlock, escalating lockout after wrong attempts, one-time recovery code, per-area protection (app start, reports, expenses, settings/backup/licence), auto re-lock after 2 minutes in background. |
-| **Account & licence** | Google sign-in (Credential Manager + Firebase Auth); new salons register and wait for admin approval. Statuses: pending, approved, payment pending, suspended, blocked, expired, rejected, each with its own screen, admin message and support buttons (WhatsApp / call / email). Licence expiry applies offline; the phone must verify online at least every N days (admin setting); clock-rollback detection; minimum app version and notices from the admin; one Google account per phone's data. (The older offline signed-key licence remains in the code, off by default.) |
+| **Account & licence** | Email + password sign-in, account creation and password reset (Firebase Auth); new salons register and wait for admin approval. Each account is bound to one phone; another phone asks the admin, who approves it in the panel. Statuses: pending, approved, payment pending, suspended, blocked, expired, rejected, each with its own screen, admin message and support buttons (WhatsApp / call / email). Licence expiry applies offline; the phone must verify online at least every N days (admin setting); clock-rollback detection; minimum app version and notices from the admin; one account per phone's data. (The older offline signed-key licence remains in the code, off by default.) |
 | **Settings** | Account & subscription, app preferences (colour theme, light/dark, language, sound effects), business profile (name, logo, phone, address, currency – default PKR/Rs.), receipt settings, printer, services, staff, expense categories, targets, backup & restore, security, about, erase all data (with safety backup). |
 | **Super Admin panel** | Web panel for Digital Target: dashboard (waiting, active, payment pending, expired, expiring, revenue), salons list with search and filters, approve with plan / fee / expiry (auto Customer, Business and License IDs), suspend / block / re-activate with a message, renew, private notes; subscription invoices in A4 and receipt designs with QR verification, PNG / print / WhatsApp, payments that extend the licence; branding, billing and app-control settings; admins. |
 
@@ -67,7 +67,7 @@ Languages: English, Urdu (اردو, right-to-left) and Roman Urdu – all 816 st
 * MVVM: ViewModels + `StateFlow`, Kotlin Coroutines/Flow, manual dependency injection (`AppContainer`)
 * AndroidX Biometric, Core SplashScreen, Activity Result APIs (Storage Access Framework, Photo Picker)
 * Android Bluetooth Classic (RFCOMM/SPP) + own ESC/POS encoder, `PdfDocument` for PDFs
-* Firebase Auth + Firestore (accounts only), AndroidX Credential Manager for Google sign-in
+* Firebase Auth (email/password) + Firestore (accounts only)
 * Super Admin panel: plain HTML/CSS/JavaScript modules + Firebase JS SDK (bundled), no build step
 * No analytics, ads or DI frameworks
 
@@ -87,7 +87,7 @@ app/src/main/java/com/dtpos/salonmanager/
 │   ├── database/    SalonDatabase, entities, DAOs, converters, migrations, default data
 │   ├── repository/  one repository per module (sale transaction lives in SaleRepository)
 │   └── DemoDataSeeder.kt
-├── services/        account (Google sign-in, approval, offline cache), printer (ESC/POS, Bluetooth,
+├── services/        account (email sign-in, account and phone approval, offline cache), printer (ESC/POS, Bluetooth,
 │                    layouts, branded receipt image), backup, export (PDF/CSV/images/WhatsApp),
 │                    prefs (theme, language, sounds), security (lock, biometrics), license, branding
 └── presentation/    theme, components, navigation, and one package per screen
@@ -269,10 +269,10 @@ engine testable and language-independent.
 
 * **Cloud sync of salon data** – not implemented on purpose (offline-only by request); every record
   already carries a `businessId` for a future sync.
-* **Activation keys** – replaced by Google sign-in + admin approval + licence expiry.
-* **Google sign-in needs your signing key's SHA-1 in Firebase** and the `GOOGLE_SERVICES_JSON`,
-  `DT_KEYSTORE_BASE64` and `DT_SIGNING_PASSWORD` GitHub secrets (see the guide). Without them the
-  app builds but shows "App setup incomplete" / cannot sign in.
+* **Activation keys** – replaced by email sign-in + account/phone approval + licence expiry.
+* **Firebase needs the `GOOGLE_SERVICES_JSON` GitHub secret** (see the guide); without it the app
+  builds but shows "App setup incomplete". The signing secrets are recommended so new APKs install
+  over old ones (a different key forces a reinstall, which erases the phone's data).
 * **Text printer mode** prints English labels when the app is in Urdu (printer fonts are Latin);
   image mode (default) prints every language.
 * **Online payment gateway** – payments are recorded by the admin.
@@ -280,8 +280,8 @@ engine testable and language-independent.
 * **Multi-salon UI** – data model ready, UI supports one business per phone.
 * **Appointments / booking, SMS reminders, inventory** – not in scope.
 * Printers that only support Bluetooth Low Energy (not Classic SPP) are not supported.
-* Not yet tried on a physical Bluetooth printer or with real Google accounts in this project's
-  Firebase (needs the secrets above); everything else is covered by CI tests and emulators.
+* Not yet tried on a physical Bluetooth printer or against this project's live Firebase
+  (needs the secret above); everything else is covered by CI tests and emulators.
 
 ## Roadmap
 

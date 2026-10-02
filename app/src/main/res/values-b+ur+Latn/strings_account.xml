@@ -4,12 +4,36 @@
     <string name="brand_by">By %1$s</string>
 
     <string name="login_welcome">Khush aamdeed</string>
-    <string name="login_subtitle">Aage barhne ke liye apne Gmail account se sign in karein.</string>
-    <string name="login_google">Google ke saath jaari rakhein</string>
-    <string name="login_new_salon_hint">Naya salon? Google se sign in karein, aap ka account approval ke liye %1$s ko bhej diya jayega.</string>
-    <string name="login_error_no_account">Is phone par koi Google account nahi mila. Phone Settings &gt; Accounts mein shamil kar ke dobara koshish karein.</string>
-    <string name="login_error_not_configured">Google sign in abhi set nahi hua. Barah-e-karam %1$s se rabta karein.</string>
-    <string name="login_error_failed">Google sign in nakam ho gaya. Dobara koshish karein.</string>
+    <string name="login_email">Email</string>
+    <string name="login_password">Password</string>
+    <string name="login_confirm_password">Password dobara likhein</string>
+    <string name="login_sign_in">Sign in</string>
+    <string name="login_create_account">Account banayein</string>
+    <string name="login_create_title">Apna account banayein</string>
+    <string name="login_create_subtitle">Apni email aur password (kam az kam 6 huroof) chunein.</string>
+    <string name="login_switch_to_create">Naya salon? Account banayein</string>
+    <string name="login_switch_to_sign_in">Pehle se account hai? Sign in karein</string>
+    <string name="login_forgot">Password bhool gaye?</string>
+    <string name="login_show_password">Password dikhayein</string>
+    <string name="login_hide_password">Password chhupayein</string>
+    <string name="login_reset_sent">Password badalne ka link %1$s par bhej diya gaya hai. Apni email (Spam folder bhi) dekhein.</string>
+    <string name="login_reset_need_email">Upar apni email likhein, phir \"Password bhool gaye?\" dabayein.</string>
+    <string name="login_error_invalid_email">Sahi email likhein.</string>
+    <string name="login_error_wrong">Email ya password ghalat hai.</string>
+    <string name="login_error_email_in_use">Is email ka account pehle se mojood hai. Sign in karein.</string>
+    <string name="login_error_weak_password">Password kam az kam 6 huroof ka hona chahiye.</string>
+    <string name="login_error_password_mismatch">Dono password ek jaise nahi hain.</string>
+    <string name="login_error_disabled">Yeh login band kar diya gaya hai. Barah-e-karam %1$s se rabta karein.</string>
+    <string name="login_error_too_many">Bohat zyada koshishein ho gayin. Chand minute baad dobara koshish karein.</string>
+    <string name="login_error_provider_disabled">Email login abhi on nahi hua. Barah-e-karam %1$s se rabta karein.</string>
+    <string name="device_pending_title">Naye phone ki approval chahiye</string>
+    <string name="device_pending_message">Yeh account kisi aur phone (%1$s) ke liye approved hai. Is phone ki request %2$s ko bhej di gayi hai. Approval ke baad \"Dobara check karein\" dabayein.</string>
+    <string name="device_pending_offline">Yeh account kisi aur phone (%1$s) ke liye approved hai. Internet chala kar \"Dobara check karein\" dabayein taake %2$s ko is phone ki approval ki request jaye.</string>
+    <string name="device_unknown_model">na-maloom phone</string>
+    <string name="login_subtitle">Apni email aur password se sign in karein.</string>
+    <string name="login_new_salon_hint">Naya salon? Account banayein. Yeh approval ke liye %1$s ko jayega aur sirf isi phone par chalega.</string>
+    <string name="login_error_not_configured">Login abhi set nahi hua. Barah-e-karam %1$s se rabta karein.</string>
+    <string name="login_error_failed">Sign in nahi ho saka. Dobara koshish karein.</string>
     <string name="login_error_network">Sign in nahi ho saka. Internet check kar ke dobara koshish karein.</string>
 
     <string name="register_title">Apna salon register karein</string>
@@ -21,7 +45,7 @@
     <string name="register_city">Shehar</string>
     <string name="register_address">Pata</string>
     <string name="register_submit">Approval ke liye bhejein</string>
-    <string name="register_use_other">Koi aur Google account istemal karein</string>
+    <string name="register_use_other">Koi aur account istemal karein</string>
     <string name="register_error_required">Salon ka naam, maalik ka naam aur phone number likhein.</string>
     <string name="register_error_failed">Bheja nahi ja saka. Internet check kar ke dobara koshish karein.</string>
 
@@ -55,8 +79,8 @@
     <string name="action_sign_out">Sign out</string>
 
     <string name="account_title">Account aur subscription</string>
-    <string name="account_sub">Gmail, licence, muddat aur sign out</string>
-    <string name="account_email">Gmail</string>
+    <string name="account_sub">Email, licence, muddat aur sign out</string>
+    <string name="account_email">Email</string>
     <string name="account_salon">Salon</string>
     <string name="account_owner">Maalik</string>
     <string name="account_phone">Phone</string>
@@ -72,7 +96,7 @@
     <string name="account_check_now">Abhi tasdeeq karein</string>
     <string name="account_verified">Account ki tasdeeq ho gayi.</string>
     <string name="account_signout_title">Sign out karein?</string>
-    <string name="account_signout_message">Aap ke salon ka data isi phone mein rahega. Jaari rakhne ke liye usi Gmail se dobara sign in karein.</string>
+    <string name="account_signout_message">Aap ke salon ka data isi phone mein rahega. Jaari rakhne ke liye usi email se dobara sign in karein.</string>
     <string name="account_status_pending">Approval baqi</string>
     <string name="account_status_approved">Active</string>
     <string name="account_status_payment_pending">Payment baqi</string>
@@ -82,7 +106,7 @@
     <string name="account_status_rejected">Reject</string>
 
     <string name="device_title">Yeh phone kisi aur account se juda hai</string>
-    <string name="device_message">Is phone ka salon data %1$s ka hai. Usi Gmail se sign in karein, ya apne account ke liye is phone ka salon data mita dein.</string>
+    <string name="device_message">Is phone ka salon data %1$s ka hai. Usi email se sign in karein, ya apne account ke liye is phone ka salon data mita dein.</string>
     <string name="device_erase">Data mitayein aur mera account istemal karein</string>
     <string name="device_erase_title">Salon ka data mitayein?</string>
     <string name="device_erase_message">Is phone ki tamam sales, customers, staff aur kharche mit jayenge. Pehle safety backup banta hai (Settings &gt; Backup). Yeh wapas nahi ho sakta.</string>

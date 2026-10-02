@@ -91,7 +91,8 @@ export async function dashboardCounts() {
     count(query(accounts, where('status', '==', 'APPROVED'), where('expiresAt', '<', now))),
     count(query(accounts, where('status', '==', 'APPROVED'), where('expiresAt', '>=', now), where('expiresAt', '<=', soon))),
   ]);
-  const result = { total, lapsed, expiringSoon };
+  const deviceRequests = await count(query(accounts, where('pendingDeviceId', '>', ''))).catch(() => 0);
+  const result = { total, lapsed, expiringSoon, deviceRequests };
   STATUSES.forEach((s, i) => { result[s] = byStatus[i]; });
   // Approved accounts whose licence date has passed are effectively expired.
   result.active = result.APPROVED - lapsed;
@@ -113,12 +114,15 @@ export async function expiringSoon(n = 6) {
 }
 
 /**
- * One page of accounts. filter: ALL | a status | LAPSED (approved but past expiry) | SOON.
+ * One page of accounts. filter: ALL | a status | LAPSED (approved but past expiry) | SOON |
+ * DEVICE (a new phone asks for approval).
  */
 export async function listAccounts({ filter = 'ALL', after = null, pageSize = 20 } = {}) {
   const accounts = collection(db(), 'accounts');
   const parts = [];
-  if (filter === 'LAPSED') {
+  if (filter === 'DEVICE') {
+    parts.push(where('pendingDeviceId', '>', ''), orderBy('pendingDeviceId'));
+  } else if (filter === 'LAPSED') {
     parts.push(where('status', '==', 'APPROVED'), where('expiresAt', '<', Timestamp.now()), orderBy('expiresAt', 'asc'));
   } else if (filter === 'SOON') {
     parts.push(where('status', '==', 'APPROVED'), where('expiresAt', '>=', Timestamp.now()),
@@ -221,6 +225,29 @@ export async function setStatus(account, status, message) {
   const patch = { status, messageToUser: message || '' };
   if (status === 'APPROVED') Object.assign(patch, await ensureIds(account));
   await updateAccount(account.id, patch);
+}
+
+/** Moves the account to the phone that asked for approval (the old phone stops opening). */
+export async function approveDevice(account) {
+  await updateDoc(doc(db(), 'accounts', account.id), {
+    deviceId: account.pendingDeviceId,
+    deviceModel: account.pendingDeviceModel || 'Unknown phone',
+    deviceApprovedAt: serverTimestamp(),
+    pendingDeviceId: deleteField(),
+    pendingDeviceModel: deleteField(),
+    pendingDeviceAt: deleteField(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/** Ignores a new-phone request; the account stays on its current phone. */
+export async function dismissDeviceRequest(account) {
+  await updateDoc(doc(db(), 'accounts', account.id), {
+    pendingDeviceId: deleteField(),
+    pendingDeviceModel: deleteField(),
+    pendingDeviceAt: deleteField(),
+    updatedAt: serverTimestamp(),
+  });
 }
 
 export async function deleteAccount(uid) {

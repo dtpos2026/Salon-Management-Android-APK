@@ -55,7 +55,7 @@ export async function render(el, ctx) {
       <div class="card-head"><h2>Bill to</h2></div>
       <div class="form-grid">
         <div class="field full"><label>Find salon</label>
-          <div class="search"><input id="find" placeholder="Type salon name, Gmail, phone or Customer ID…" autocomplete="off"></div>
+          <div class="search"><input id="find" placeholder="Type salon name, email, phone or Customer ID…" autocomplete="off"></div>
           <div id="found" class="chips" style="margin-top:8px"></div>
         </div>
         <div class="field"><label>Salon / client name</label><input name="salonName" required value="${esc(inv.salonName || '')}"></div>

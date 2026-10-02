@@ -35,13 +35,21 @@ data class CloudAccount(
     val pendingAmount: Long? = null,
     /** Message from the admin, shown on the status screen. */
     val messageToUser: String? = null,
-)
+    /** The phone this account is approved for (see [DeviceIds]). Null = not bound (older accounts). */
+    val deviceId: String? = null,
+    val deviceModel: String? = null,
+    /** Another phone asking the admin for approval. */
+    val pendingDeviceId: String? = null,
+    val pendingDeviceModel: String? = null,
+) {
+    fun approvedFor(device: String): Boolean = deviceId == null || deviceId == device
+}
 
 data class SignedInUser(
     val uid: String,
     val email: String?,
-    val displayName: String?,
-    val photoUrl: String?,
+    val displayName: String? = null,
+    val photoUrl: String? = null,
 )
 
 /** What a new salon owner enters before the account goes to the admin for approval. */
@@ -107,6 +115,10 @@ object AccountParser {
         paymentStatus = data.str("paymentStatus"),
         pendingAmount = data.long("pendingAmount"),
         messageToUser = data.str("messageToUser"),
+        deviceId = data.str("deviceId"),
+        deviceModel = data.str("deviceModel"),
+        pendingDeviceId = data.str("pendingDeviceId"),
+        pendingDeviceModel = data.str("pendingDeviceModel"),
     )
 
     fun branding(data: Map<String, Any?>): Branding = Branding(

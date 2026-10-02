@@ -12,7 +12,7 @@ sealed interface AccessState {
 
     data object SignedOut : AccessState
 
-    /** Signed in with Google but the salon has not registered yet. */
+    /** Signed in but the salon has not registered yet. */
     data class NeedsProfile(val user: SignedInUser) : AccessState
 
     /** Account exists but may not use the app (pending, suspended, expired, ...). */
@@ -21,7 +21,10 @@ sealed interface AccessState {
     /** Approved, but the phone must reach the server once (offline grace used up, or first sign-in offline). */
     data class NeedsVerification(val account: CloudAccount?, val daysSinceVerified: Int?) : AccessState
 
-    /** Another Google account owns the salon data on this phone. */
+    /** The account is approved for another phone; [requested] = this phone already asked the admin. */
+    data class DeviceNotApproved(val account: CloudAccount, val requested: Boolean) : AccessState
+
+    /** Another account owns the salon data on this phone. */
     data class WrongDevice(val user: SignedInUser, val ownerEmail: String) : AccessState
 
     data class UpdateRequired(val config: RemoteAppConfig) : AccessState
@@ -45,8 +48,12 @@ object AccessPolicy {
 
     /**
      * @param verifiedAtMillis when the account was last read from the server.
+     * @param deviceId this phone (see [DeviceIds]).
      */
-    fun decide(account: CloudAccount, verifiedAtMillis: Long, nowMillis: Long, offlineGraceDays: Int): AccessState {
+    fun decide(account: CloudAccount, verifiedAtMillis: Long, nowMillis: Long, offlineGraceDays: Int, deviceId: String): AccessState {
+        if (!account.approvedFor(deviceId)) {
+            return AccessState.DeviceNotApproved(account, requested = account.pendingDeviceId == deviceId)
+        }
         val status = effectiveStatus(account, nowMillis)
         if (status != AccountStatus.APPROVED) return AccessState.Restricted(account, status)
         val clockMovedBack = nowMillis < verifiedAtMillis - CLOCK_TOLERANCE_MS

@@ -28,11 +28,21 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.IconButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -208,31 +218,6 @@ fun BrandHeader(tagline: String, modifier: Modifier = Modifier, compact: Boolean
     }
 }
 
-/** White pill "Continue with Google" button following Google's branding. */
-@Composable
-fun GoogleSignInButton(text: String, loading: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    androidx.compose.material3.Button(
-        onClick = onClick,
-        enabled = !loading,
-        modifier = modifier.fillMaxWidth().height(54.dp),
-        shape = RoundedCornerShape(27.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = Color.White,
-            contentColor = Color(0xFF1F1F1F),
-            disabledContainerColor = Color.White.copy(alpha = 0.8f),
-            disabledContentColor = Color(0xFF1F1F1F),
-        ),
-    ) {
-        if (loading) {
-            CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = SalonTheme.glass.buttonStart)
-        } else {
-            Image(painterResource(R.drawable.ic_google), contentDescription = null, modifier = Modifier.size(20.dp))
-        }
-        Spacer(Modifier.width(12.dp))
-        Text(text, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-    }
-}
-
 /** Primary action on glass screens: luminous violet gradient pill. */
 @Composable
 fun GlassPrimaryButton(
@@ -299,14 +284,29 @@ fun GlassTextField(
     modifier: Modifier = Modifier,
     keyboardType: KeyboardType = KeyboardType.Text,
     singleLine: Boolean = true,
+    /** Hidden input with a show/hide eye button. */
+    password: Boolean = false,
 ) {
     val accent = SalonTheme.glass.accent
+    var visible by rememberSaveable { mutableStateOf(false) }
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
         singleLine = singleLine,
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        keyboardOptions = KeyboardOptions(keyboardType = if (password) KeyboardType.Password else keyboardType),
+        visualTransformation = if (password && !visible) PasswordVisualTransformation() else VisualTransformation.None,
+        trailingIcon = if (!password) null else {
+            {
+                IconButton(onClick = { visible = !visible }) {
+                    Icon(
+                        if (visible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                        contentDescription = stringResource(if (visible) R.string.login_hide_password else R.string.login_show_password),
+                        tint = Glass.TextSecondary,
+                    )
+                }
+            }
+        },
         textStyle = TextStyle(color = Color.White, fontSize = 16.sp),
         shape = RoundedCornerShape(16.dp),
         colors = OutlinedTextFieldDefaults.colors(

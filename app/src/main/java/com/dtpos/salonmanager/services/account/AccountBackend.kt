@@ -3,9 +3,16 @@ package com.dtpos.salonmanager.services.account
 import android.content.Context
 import com.dtpos.salonmanager.core.util.PhoneNumbers
 import com.google.firebase.FirebaseApp
+import com.google.firebase.FirebaseNetworkException
+import com.google.firebase.FirebaseTooManyRequestsException
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.auth.FirebaseAuthException
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.auth.FirebaseAuthWeakPasswordException
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -14,13 +21,28 @@ import com.google.firebase.firestore.Source
 import kotlinx.coroutines.tasks.await
 import java.util.Locale
 
+/** Why an email/password action failed. */
+enum class AuthError {
+    INVALID_EMAIL, WRONG_CREDENTIALS, EMAIL_IN_USE, WEAK_PASSWORD, USER_DISABLED,
+    TOO_MANY_ATTEMPTS, NETWORK, PROVIDER_DISABLED, NOT_CONFIGURED, FAILED,
+}
+
+class AuthException(val error: AuthError, cause: Throwable? = null) : Exception(error.name, cause)
+
 /** Online side of the account system. Firebase in the app; a fake in unit tests. */
 interface AccountBackend {
     val isConfigured: Boolean
 
     fun currentUser(): SignedInUser?
 
-    suspend fun signInWithGoogleIdToken(idToken: String): SignedInUser
+    /** Throws [AuthException]. */
+    suspend fun signInWithEmail(email: String, password: String): SignedInUser
+
+    /** Creates the login (email + password) and signs in. Throws [AuthException]. */
+    suspend fun createLogin(email: String, password: String): SignedInUser
+
+    /** Throws [AuthException]. */
+    suspend fun sendPasswordReset(email: String)
 
     fun signOut()
 
@@ -30,7 +52,10 @@ interface AccountBackend {
     /** Server updates of accounts/{uid}; [onChange] receives null when the document is deleted. */
     fun listenAccount(uid: String, onChange: (CloudAccount?) -> Unit): AutoCloseable
 
-    suspend fun register(user: SignedInUser, registration: AccountRegistration, appVersion: String, deviceModel: String)
+    suspend fun register(user: SignedInUser, registration: AccountRegistration, appVersion: String, deviceId: String, deviceModel: String)
+
+    /** Asks the admin to approve this phone for the account. */
+    suspend fun requestDevice(uid: String, deviceId: String, deviceModel: String)
 
     suspend fun heartbeat(uid: String, appVersion: String, deviceModel: String)
 
@@ -54,14 +79,50 @@ class FirebaseAccountBackend(private val context: Context) : AccountBackend {
 
     private fun accountDoc(uid: String) = db.collection(ACCOUNTS).document(uid)
 
-    override fun currentUser(): SignedInUser? = if (!isConfigured) null else auth.currentUser?.let {
-        SignedInUser(it.uid, it.email, it.displayName, it.photoUrl?.toString())
+    override fun currentUser(): SignedInUser? = if (!isConfigured) null else auth.currentUser?.toSignedIn()
+
+    private fun FirebaseUser.toSignedIn() = SignedInUser(uid, email, displayName, photoUrl?.toString())
+
+    override suspend fun signInWithEmail(email: String, password: String): SignedInUser = authCall {
+        auth.signInWithEmailAndPassword(email.trim(), password).await().user?.toSignedIn() ?: error("No user")
     }
 
-    override suspend fun signInWithGoogleIdToken(idToken: String): SignedInUser {
-        val result = auth.signInWithCredential(GoogleAuthProvider.getCredential(idToken, null)).await()
-        val user = result.user ?: error("Sign-in returned no user")
-        return SignedInUser(user.uid, user.email, user.displayName, user.photoUrl?.toString())
+    override suspend fun createLogin(email: String, password: String): SignedInUser = authCall {
+        auth.createUserWithEmailAndPassword(email.trim(), password).await().user?.toSignedIn() ?: error("No user")
+    }
+
+    override suspend fun sendPasswordReset(email: String) = authCall {
+        auth.sendPasswordResetEmail(email.trim()).await()
+        Unit
+    }
+
+    private inline fun <T> authCall(block: () -> T): T {
+        if (!isConfigured) throw AuthException(AuthError.NOT_CONFIGURED)
+        return try {
+            block()
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            throw AuthException(classify(e), e)
+        }
+    }
+
+    private fun classify(e: Exception): AuthError = when (e) {
+        is FirebaseAuthWeakPasswordException -> AuthError.WEAK_PASSWORD
+        is FirebaseAuthUserCollisionException -> AuthError.EMAIL_IN_USE
+        is FirebaseAuthInvalidUserException ->
+            if (e.errorCode == "ERROR_USER_DISABLED") AuthError.USER_DISABLED else AuthError.WRONG_CREDENTIALS
+        is FirebaseAuthInvalidCredentialsException ->
+            if (e.errorCode == "ERROR_INVALID_EMAIL") AuthError.INVALID_EMAIL else AuthError.WRONG_CREDENTIALS
+        is FirebaseTooManyRequestsException -> AuthError.TOO_MANY_ATTEMPTS
+        is FirebaseNetworkException -> AuthError.NETWORK
+        is FirebaseAuthException -> when (e.errorCode) {
+            "ERROR_OPERATION_NOT_ALLOWED" -> AuthError.PROVIDER_DISABLED
+            "ERROR_TOO_MANY_REQUESTS" -> AuthError.TOO_MANY_ATTEMPTS
+            "ERROR_NETWORK_REQUEST_FAILED" -> AuthError.NETWORK
+            else -> AuthError.FAILED
+        }
+        else -> AuthError.FAILED
     }
 
     override fun signOut() {
@@ -83,7 +144,7 @@ class FirebaseAccountBackend(private val context: Context) : AccountBackend {
         return AutoCloseable { registration.remove() }
     }
 
-    override suspend fun register(user: SignedInUser, registration: AccountRegistration, appVersion: String, deviceModel: String) {
+    override suspend fun register(user: SignedInUser, registration: AccountRegistration, appVersion: String, deviceId: String, deviceModel: String) {
         val data = hashMapOf<String, Any?>(
             "uid" to user.uid,
             "email" to user.email,
@@ -100,11 +161,23 @@ class FirebaseAccountBackend(private val context: Context) : AccountBackend {
             "status" to AccountStatus.PENDING.name,
             "platform" to "android",
             "appVersion" to appVersion,
-            "deviceModel" to deviceModel,
+            "deviceId" to deviceId,
+            "deviceModel" to deviceModel.take(120),
             "createdAt" to FieldValue.serverTimestamp(),
             "lastSeenAt" to FieldValue.serverTimestamp(),
         )
         accountDoc(user.uid).set(data).await()
+    }
+
+    override suspend fun requestDevice(uid: String, deviceId: String, deviceModel: String) {
+        accountDoc(uid).update(
+            mapOf(
+                "pendingDeviceId" to deviceId,
+                "pendingDeviceModel" to deviceModel.take(120),
+                "pendingDeviceAt" to FieldValue.serverTimestamp(),
+                "lastSeenAt" to FieldValue.serverTimestamp(),
+            ),
+        ).await()
     }
 
     override suspend fun heartbeat(uid: String, appVersion: String, deviceModel: String) {
@@ -112,7 +185,7 @@ class FirebaseAccountBackend(private val context: Context) : AccountBackend {
             mapOf(
                 "lastSeenAt" to FieldValue.serverTimestamp(),
                 "appVersion" to appVersion,
-                "deviceModel" to deviceModel,
+                "deviceModel" to deviceModel.take(120),
             ),
         ).await()
     }

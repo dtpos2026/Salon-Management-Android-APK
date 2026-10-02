@@ -4,12 +4,36 @@
     <string name="brand_by">%1$s کی جانب سے</string>
 
     <string name="login_welcome">خوش آمدید</string>
-    <string name="login_subtitle">جاری رکھنے کے لیے اپنے Gmail اکاؤنٹ سے سائن ان کریں۔</string>
-    <string name="login_google">Google کے ساتھ جاری رکھیں</string>
-    <string name="login_new_salon_hint">نیا سیلون؟ Google سے سائن ان کریں، آپ کا اکاؤنٹ منظوری کے لیے %1$s کو بھیج دیا جائے گا۔</string>
-    <string name="login_error_no_account">اس فون پر کوئی Google اکاؤنٹ نہیں ملا۔ فون کی سیٹنگز &gt; اکاؤنٹس میں شامل کر کے دوبارہ کوشش کریں۔</string>
-    <string name="login_error_not_configured">Google سائن ان ابھی ترتیب نہیں دیا گیا۔ براہ کرم %1$s سے رابطہ کریں۔</string>
-    <string name="login_error_failed">Google سائن ان ناکام ہو گیا۔ دوبارہ کوشش کریں۔</string>
+    <string name="login_email">ای میل</string>
+    <string name="login_password">پاس ورڈ</string>
+    <string name="login_confirm_password">پاس ورڈ دوبارہ لکھیں</string>
+    <string name="login_sign_in">سائن ان</string>
+    <string name="login_create_account">اکاؤنٹ بنائیں</string>
+    <string name="login_create_title">اپنا اکاؤنٹ بنائیں</string>
+    <string name="login_create_subtitle">اپنی ای میل اور پاس ورڈ (کم از کم 6 حروف) چنیں۔</string>
+    <string name="login_switch_to_create">نیا سیلون؟ اکاؤنٹ بنائیں</string>
+    <string name="login_switch_to_sign_in">پہلے سے اکاؤنٹ ہے؟ سائن ان کریں</string>
+    <string name="login_forgot">پاس ورڈ بھول گئے؟</string>
+    <string name="login_show_password">پاس ورڈ دکھائیں</string>
+    <string name="login_hide_password">پاس ورڈ چھپائیں</string>
+    <string name="login_reset_sent">پاس ورڈ بدلنے کا لنک %1$s پر بھیج دیا گیا ہے۔ اپنی ای میل (Spam فولڈر بھی) دیکھیں۔</string>
+    <string name="login_reset_need_email">اوپر اپنی ای میل لکھیں، پھر \"پاس ورڈ بھول گئے؟\" دبائیں۔</string>
+    <string name="login_error_invalid_email">درست ای میل لکھیں۔</string>
+    <string name="login_error_wrong">ای میل یا پاس ورڈ غلط ہے۔</string>
+    <string name="login_error_email_in_use">اس ای میل کا اکاؤنٹ پہلے سے موجود ہے۔ سائن ان کریں۔</string>
+    <string name="login_error_weak_password">پاس ورڈ کم از کم 6 حروف کا ہونا چاہیے۔</string>
+    <string name="login_error_password_mismatch">دونوں پاس ورڈ ایک جیسے نہیں ہیں۔</string>
+    <string name="login_error_disabled">یہ لاگ اِن بند کر دیا گیا ہے۔ براہ کرم %1$s سے رابطہ کریں۔</string>
+    <string name="login_error_too_many">بہت زیادہ کوششیں ہو گئیں۔ چند منٹ بعد دوبارہ کوشش کریں۔</string>
+    <string name="login_error_provider_disabled">ای میل لاگ اِن ابھی چالو نہیں ہوا۔ براہ کرم %1$s سے رابطہ کریں۔</string>
+    <string name="device_pending_title">نئے فون کی منظوری درکار ہے</string>
+    <string name="device_pending_message">یہ اکاؤنٹ کسی اور فون (%1$s) کے لیے منظور ہے۔ اس فون کی درخواست %2$s کو بھیج دی گئی ہے۔ منظوری کے بعد \"دوبارہ چیک کریں\" دبائیں۔</string>
+    <string name="device_pending_offline">یہ اکاؤنٹ کسی اور فون (%1$s) کے لیے منظور ہے۔ انٹرنیٹ چلا کر \"دوبارہ چیک کریں\" دبائیں تاکہ %2$s کو اس فون کی منظوری کی درخواست جائے۔</string>
+    <string name="device_unknown_model">نامعلوم فون</string>
+    <string name="login_subtitle">اپنی ای میل اور پاس ورڈ سے سائن ان کریں۔</string>
+    <string name="login_new_salon_hint">نیا سیلون؟ اکاؤنٹ بنائیں۔ یہ منظوری کے لیے %1$s کو بھیجا جائے گا اور صرف اسی فون پر چلے گا۔</string>
+    <string name="login_error_not_configured">لاگ اِن ابھی ترتیب نہیں دیا گیا۔ براہ کرم %1$s سے رابطہ کریں۔</string>
+    <string name="login_error_failed">سائن ان نہیں ہو سکا۔ دوبارہ کوشش کریں۔</string>
     <string name="login_error_network">سائن ان نہیں ہو سکا۔ انٹرنیٹ چیک کر کے دوبارہ کوشش کریں۔</string>
 
     <string name="register_title">اپنا سیلون رجسٹر کریں</string>
@@ -21,7 +45,7 @@
     <string name="register_city">شہر</string>
     <string name="register_address">پتہ</string>
     <string name="register_submit">منظوری کے لیے بھیجیں</string>
-    <string name="register_use_other">کوئی اور Google اکاؤنٹ استعمال کریں</string>
+    <string name="register_use_other">کوئی اور اکاؤنٹ استعمال کریں</string>
     <string name="register_error_required">سیلون کا نام، مالک کا نام اور فون نمبر لکھیں۔</string>
     <string name="register_error_failed">بھیجا نہیں جا سکا۔ انٹرنیٹ چیک کر کے دوبارہ کوشش کریں۔</string>
 
@@ -55,8 +79,8 @@
     <string name="action_sign_out">سائن آؤٹ</string>
 
     <string name="account_title">اکاؤنٹ اور سبسکرپشن</string>
-    <string name="account_sub">Gmail، لائسنس، میعاد اور سائن آؤٹ</string>
-    <string name="account_email">Gmail</string>
+    <string name="account_sub">ای میل، لائسنس، میعاد اور سائن آؤٹ</string>
+    <string name="account_email">ای میل</string>
     <string name="account_salon">سیلون</string>
     <string name="account_owner">مالک</string>
     <string name="account_phone">فون</string>
@@ -72,7 +96,7 @@
     <string name="account_check_now">ابھی تصدیق کریں</string>
     <string name="account_verified">اکاؤنٹ کی تصدیق ہو گئی۔</string>
     <string name="account_signout_title">سائن آؤٹ کریں؟</string>
-    <string name="account_signout_message">آپ کے سیلون کا ڈیٹا اسی فون میں رہے گا۔ جاری رکھنے کے لیے اسی Gmail سے دوبارہ سائن ان کریں۔</string>
+    <string name="account_signout_message">آپ کے سیلون کا ڈیٹا اسی فون میں رہے گا۔ جاری رکھنے کے لیے اسی ای میل سے دوبارہ سائن ان کریں۔</string>
     <string name="account_status_pending">منظوری باقی</string>
     <string name="account_status_approved">فعال</string>
     <string name="account_status_payment_pending">ادائیگی باقی</string>
@@ -82,7 +106,7 @@
     <string name="account_status_rejected">مسترد</string>
 
     <string name="device_title">یہ فون کسی اور اکاؤنٹ سے جڑا ہے</string>
-    <string name="device_message">اس فون کا سیلون ڈیٹا %1$s کا ہے۔ اسی Gmail سے سائن ان کریں، یا اپنے اکاؤنٹ کے لیے اس فون کا سیلون ڈیٹا مٹا دیں۔</string>
+    <string name="device_message">اس فون کا سیلون ڈیٹا %1$s کا ہے۔ اسی ای میل سے سائن ان کریں، یا اپنے اکاؤنٹ کے لیے اس فون کا سیلون ڈیٹا مٹا دیں۔</string>
     <string name="device_erase">ڈیٹا مٹائیں اور میرا اکاؤنٹ استعمال کریں</string>
     <string name="device_erase_title">سیلون کا ڈیٹا مٹائیں؟</string>
     <string name="device_erase_message">اس فون کی تمام فروخت، گاہک، عملہ اور اخراجات مٹ جائیں گے۔ پہلے حفاظتی بیک اپ بنتا ہے (سیٹنگز &gt; بیک اپ)۔ یہ واپس نہیں ہو سکتا۔</string>

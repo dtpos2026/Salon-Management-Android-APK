@@ -41,10 +41,8 @@ android {
         buildConfigField("int", "TRIAL_DAYS", gradleProp("salon.trialDays", "30"))
         buildConfigField("String", "LICENSE_PUBLIC_KEY", "\"${gradleProp("salon.licensePublicKey", "")}\"")
 
-        // Account approval (Firebase). The Google web client id normally comes from
-        // google-services.json (default_web_client_id); this property is only an override.
+        // Account approval (Firebase, email + password sign-in).
         buildConfigField("boolean", "FIREBASE_CONFIGURED", hasFirebaseConfig.toString())
-        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${gradleProp("dt.googleWebClientId", "")}\"")
     }
 
     signingConfigs {
@@ -149,13 +147,10 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.play.services)
 
-    // Google sign-in + account approval (Firebase Auth, Firestore). Salon data stays in Room.
+    // Email sign-in + account and phone approval (Firebase Auth, Firestore). Salon data stays in Room.
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
-    implementation(libs.androidx.credentials)
-    implementation(libs.androidx.credentials.play.services)
-    implementation(libs.googleid)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

@@ -1,7 +1,6 @@
-// Super Admin panel shell: configuration, Google sign-in, admin check, navigation and routing.
+// Super Admin panel shell: configuration, email sign-in, admin check, navigation and routing.
 import {
-  GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged,
-  signOut, signInWithCredential,
+  onAuthStateChanged, signOut, signInWithEmailAndPassword, sendPasswordResetEmail,
 } from '../vendor/firebase.js';
 import { firebase, initFirebase, parseConfigText, saveConfigInBrowser, forgetBrowserConfig, usingEmulators } from './fb.js';
 import { isAdmin, dashboardCounts } from './data.js';
@@ -51,10 +50,19 @@ function renderSetup(error) {
 
 function authErrorText(e) {
   switch (e?.code) {
-    case 'auth/unauthorized-domain':
-      return `This website (${location.hostname}) is not authorised. Firebase console → Authentication → Settings → Authorized domains → Add domain.`;
+    case 'auth/invalid-credential':
+    case 'auth/wrong-password':
+    case 'auth/user-not-found':
+    case 'auth/invalid-login-credentials':
+      return 'Email or password is incorrect.';
+    case 'auth/invalid-email':
+      return 'Please enter a valid email address.';
+    case 'auth/user-disabled':
+      return 'This login has been disabled in Firebase console.';
+    case 'auth/too-many-requests':
+      return 'Too many attempts. Wait a few minutes and try again.';
     case 'auth/operation-not-allowed':
-      return 'Google sign-in is not enabled. Firebase console → Authentication → Sign-in method → Google → Enable.';
+      return 'Email/Password sign-in is not enabled. Firebase console → Authentication → Sign-in method → Email/Password → Enable.';
     case 'auth/network-request-failed':
       return 'No internet connection.';
     default:
@@ -62,37 +70,40 @@ function authErrorText(e) {
   }
 }
 
-function renderLogin(error) {
+function renderLogin(error, info) {
   glass(`${brand}
     <h2>Super Admin</h2>
-    <p>Sign in with the Google account that has admin access.</p>
-    <button class="btn-google" id="google">${ICONS.google}<span>Continue with Google</span></button>
-    ${usingEmulators ? `<div style="margin-top:14px"><input id="emu-email" placeholder="admin@example.com" style="width:100%;height:40px;border-radius:10px;border:0;padding:0 10px;color:#111"><button class="btn btn-primary" id="emu" style="width:100%">Sign in (emulator)</button></div>` : ''}
+    <p>Sign in with the admin email and password.</p>
+    <form id="login" class="login-form" autocomplete="on">
+      <input id="email" type="email" placeholder="Email" autocomplete="username" required>
+      <input id="password" type="password" placeholder="Password" autocomplete="current-password" required>
+      <button class="btn btn-primary" id="signin" type="submit" style="width:100%">Sign in</button>
+    </form>
+    <button class="btn btn-ghost btn-sm" id="forgot" type="button" style="margin-top:8px">Forgot password?</button>
     ${error ? `<p style="color:#ffb4ab;margin-top:16px">${esc(error)}</p>` : ''}
-    <div class="glass-note">Only accounts listed as admins in Firestore can open the panel.</div>`);
-  $('#google').onclick = googleSignIn;
-  if (usingEmulators) {
-    $('#emu').onclick = async () => {
-      const email = $('#emu-email').value.trim() || 'admin@example.com';
-      const token = JSON.stringify({ sub: email, email, email_verified: true, name: email.split('@')[0] });
-      await signInWithCredential(firebase().auth, GoogleAuthProvider.credential(token)).catch((e) => renderLogin(authErrorText(e)));
-    };
-  }
-}
-
-async function googleSignIn() {
-  const { auth } = firebase();
-  const provider = new GoogleAuthProvider();
-  provider.setCustomParameters({ prompt: 'select_account' });
-  try {
-    await signInWithPopup(auth, provider);
-  } catch (e) {
-    if (['auth/popup-blocked', 'auth/operation-not-supported-in-this-environment'].includes(e.code)) {
-      await signInWithRedirect(auth, provider);
-    } else if (!['auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(e.code)) {
+    ${info ? `<p style="color:#b8f5cc;margin-top:16px">${esc(info)}</p>` : ''}
+    <div class="glass-note">Create the admin login once in Firebase console → Authentication → Users → Add user. Only logins listed as admins in Firestore can open the panel.</div>`);
+  $('#login').onsubmit = async (ev) => {
+    ev.preventDefault();
+    const btn = $('#signin');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Signing in…';
+    try {
+      await signInWithEmailAndPassword(firebase().auth, $('#email').value.trim(), $('#password').value);
+    } catch (e) {
       renderLogin(authErrorText(e));
     }
-  }
+  };
+  $('#forgot').onclick = async () => {
+    const email = $('#email').value.trim();
+    if (!email) return renderLogin('Type your email first, then press Forgot password.');
+    try {
+      await sendPasswordResetEmail(firebase().auth, email);
+      renderLogin(null, `Password reset link sent to ${email}. Check the inbox and Spam folder.`);
+    } catch (e) {
+      renderLogin(authErrorText(e));
+    }
+  };
 }
 
 function renderNotAdmin(user) {
@@ -105,7 +116,7 @@ function renderNotAdmin(user) {
     <ol>
       <li>Open <a href="https://console.firebase.google.com/project/${esc(projectId)}/firestore/data" target="_blank" rel="noopener" style="color:#c9a4ff">Firestore Database</a>.</li>
       <li>Start collection <b>admins</b> (or open it).</li>
-      <li>Document ID: paste the UID above. Add field <b>email</b> (string) = your Gmail. Save.</li>
+      <li>Document ID: paste the UID above. Add field <b>email</b> (string) = your email. Save.</li>
       <li>Come back and press Retry.</li>
     </ol>
     <div class="actions" style="justify-content:center;margin-top:12px">
@@ -249,7 +260,6 @@ async function boot() {
     return;
   }
   renderLoading();
-  getRedirectResult(services.auth).catch((e) => toast(authErrorText(e), 'error'));
   onAuthStateChanged(services.auth, (user) => {
     if (!user) {
       currentUser = null;

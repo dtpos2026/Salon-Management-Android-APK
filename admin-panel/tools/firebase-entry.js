@@ -1,8 +1,8 @@
 // Only the Firebase functions the panel uses, bundled into vendor/firebase.js.
 export { initializeApp } from 'firebase/app';
 export {
-  getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
-  onAuthStateChanged, signOut, connectAuthEmulator, signInWithCredential,
+  getAuth, onAuthStateChanged, signOut, connectAuthEmulator,
+  signInWithEmailAndPassword, sendPasswordResetEmail,
 } from 'firebase/auth';
 export {
   getFirestore, connectFirestoreEmulator, doc, getDoc, setDoc, updateDoc, deleteDoc,

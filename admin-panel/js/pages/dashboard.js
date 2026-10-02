@@ -20,7 +20,8 @@ export async function render(el, ctx) {
   el.innerHTML = `
     <div class="stats">
       ${stat('Total salons', counts.total, 'All registered accounts', '#/salons', 'rgba(255,255,255,.12)', true)}
-      ${stat('Waiting for approval', counts.PENDING, 'New Google sign-ups', '#/salons?filter=PENDING', 'rgba(36,87,197,.12)')}
+      ${stat('Waiting for approval', counts.PENDING, 'New sign-ups', '#/salons?filter=PENDING', 'rgba(36,87,197,.12)')}
+      ${stat('New phone requests', counts.deviceRequests, 'Approve on the salon page', '#/salons?filter=DEVICE', 'rgba(233,201,135,.35)')}
       ${stat('Active', counts.active, 'Approved and valid', '#/salons?filter=APPROVED', 'rgba(30,138,74,.12)')}
       ${stat('Payment pending', counts.PAYMENT_PENDING, '', '#/salons?filter=PAYMENT_PENDING', 'rgba(138,90,0,.14)')}
       ${stat('Expired', counts.expiredTotal, `${counts.lapsed} licence date passed`, '#/salons?filter=LAPSED', 'rgba(198,40,40,.12)')}

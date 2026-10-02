@@ -1,6 +1,5 @@
 package com.dtpos.salonmanager.services.account
 
-import android.app.Activity
 import android.content.Context
 import android.os.Build
 import kotlinx.coroutines.CancellationException
@@ -24,14 +23,12 @@ sealed interface RefreshResult {
 
 sealed interface SignInOutcome {
     data object Success : SignInOutcome
-    data class Failed(val error: GoogleSignInError) : SignInOutcome
-    /** Google worked but Firebase sign-in failed (usually no internet). */
-    data class FirebaseFailed(val cause: Throwable) : SignInOutcome
+    data class Failed(val error: AuthError) : SignInOutcome
 }
 
 /**
- * Decides whether this phone may open the salon app: Google sign-in, admin approval, licence
- * expiry and offline grace. The decision is made instantly from the local cache (so the app
+ * Decides whether this phone may open the salon app: email sign-in, admin approval of the account
+ * and of this phone, licence expiry and offline grace. The decision is made instantly from the local cache (so the app
  * opens offline) and then refreshed from Firestore when the internet is available.
  */
 class AccountManager(
@@ -42,7 +39,8 @@ class AccountManager(
     private val versionCode: Int,
     private val versionName: String,
     private val clock: () -> Long = System::currentTimeMillis,
-    private val signOutHook: suspend () -> Unit = { GoogleSignIn.clear(context) },
+    /** This phone, see [DeviceIds]. */
+    val deviceId: String = DeviceIds.forThisPhone(context),
 ) {
     private val _state = MutableStateFlow<AccessState>(AccessState.Loading)
     val state: StateFlow<AccessState> = _state.asStateFlow()
@@ -94,7 +92,7 @@ class AccountManager(
                 _checking.value -> AccessState.Loading
                 else -> AccessState.NeedsVerification(null, null)
             }
-        return AccessPolicy.decide(entry.account, entry.verifiedAtMillis, clock(), config.offlineGraceDays)
+        return AccessPolicy.decide(entry.account, entry.verifiedAtMillis, clock(), config.offlineGraceDays, deviceId)
     }
 
     /** Re-reads the account, branding and app settings from the server. Safe to call any time. */
@@ -122,7 +120,7 @@ class AccountManager(
                     _branding.value = it
                 }
                 val account = backend.fetchAccount(user.uid)
-                if (account == null) cache.markNoProfile(user.uid) else cache.putAccount(account, clock())
+                if (account == null) cache.markNoProfile(user.uid) else cache.putAccount(requestDeviceIfNeeded(account), clock())
             }
             ensureListener(user.uid)
             heartbeatIfDue(user.uid)
@@ -139,33 +137,50 @@ class AccountManager(
         }
     }
 
-    suspend fun signInWithGoogle(activity: Activity): SignInOutcome {
-        if (!backend.isConfigured) return SignInOutcome.Failed(GoogleSignInError.NOT_CONFIGURED)
-        val token = try {
-            GoogleSignIn.requestIdToken(activity)
-        } catch (e: GoogleSignInException) {
-            return SignInOutcome.Failed(e.error)
-        }
-        return completeSignIn(token)
+    suspend fun signIn(email: String, password: String): SignInOutcome =
+        authAction { backend.signInWithEmail(email, password) }
+
+    /** Creates the login; the salon details form (registration) follows. */
+    suspend fun createLogin(email: String, password: String): SignInOutcome =
+        authAction { backend.createLogin(email, password) }
+
+    /** Null on success, else why the reset email could not be sent. */
+    suspend fun sendPasswordReset(email: String): AuthError? = try {
+        backend.sendPasswordReset(email)
+        null
+    } catch (e: AuthException) {
+        e.error
     }
 
-    /** Second half of sign-in, separated so it can be tested without Credential Manager. */
-    suspend fun completeSignIn(idToken: String): SignInOutcome {
+    private suspend fun authAction(block: suspend () -> SignedInUser): SignInOutcome {
+        if (!backend.isConfigured) return SignInOutcome.Failed(AuthError.NOT_CONFIGURED)
         try {
-            backend.signInWithGoogleIdToken(idToken)
+            block()
+        } catch (e: AuthException) {
+            return SignInOutcome.Failed(e.error)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            return SignInOutcome.FirebaseFailed(e)
+            return SignInOutcome.Failed(AuthError.FAILED)
         }
         refresh()
         return SignInOutcome.Success
     }
 
+    /**
+     * When the account is approved for another phone, asks the admin to approve this one (once).
+     * Returns the account as it now is on the server.
+     */
+    private suspend fun requestDeviceIfNeeded(account: CloudAccount): CloudAccount {
+        if (account.approvedFor(deviceId) || account.pendingDeviceId == deviceId) return account
+        val sent = optional { backend.requestDevice(account.uid, deviceId, deviceModel()) } != null
+        return if (sent) account.copy(pendingDeviceId = deviceId, pendingDeviceModel = deviceModel()) else account
+    }
+
     suspend fun register(registration: AccountRegistration): RefreshResult {
         val user = currentUser() ?: return RefreshResult.SignedOut
         try {
-            backend.register(user, registration, versionName, deviceModel())
+            backend.register(user, registration, versionName, deviceId, deviceModel())
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -174,11 +189,10 @@ class AccountManager(
         return refresh()
     }
 
-    /** Signs out of Google. Salon data stays on the phone for the same account to sign in again. */
+    /** Signs out. Salon data stays on the phone for the same account to sign in again. */
     suspend fun signOut() {
         stopListener()
         backend.signOut()
-        signOutHook()
         cache.clearAccount()
         recompute()
     }
@@ -220,7 +234,8 @@ class AccountManager(
     }
 
     private suspend fun heartbeatIfDue(uid: String) {
-        if (cache.account(uid) == null) return
+        // Only the approved phone reports itself; another phone must not overwrite its details.
+        if (cache.account(uid)?.account?.approvedFor(deviceId) != true) return
         val now = clock()
         if (now - cache.lastHeartbeatMillis < HEARTBEAT_INTERVAL_MS) return
         if (optional { backend.heartbeat(uid, versionName, deviceModel()) } != null) cache.lastHeartbeatMillis = now

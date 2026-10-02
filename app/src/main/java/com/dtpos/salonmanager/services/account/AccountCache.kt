@@ -14,7 +14,7 @@ class AccountCache(context: Context) {
 
     data class Entry(val account: CloudAccount, val verifiedAtMillis: Long)
 
-    /** Google account that owns the salon data on this phone. */
+    /** Account that owns the salon data on this phone. */
     data class DeviceOwner(val uid: String, val email: String)
 
     fun account(uid: String): Entry? {
@@ -84,6 +84,8 @@ class AccountCache(context: Context) {
         put("licenseId", licenseId); put("plan", plan); put("expiresAt", expiresAtMillis)
         put("monthlyFee", monthlyFee); put("paymentStatus", paymentStatus)
         put("pendingAmount", pendingAmount); put("messageToUser", messageToUser)
+        put("deviceId", deviceId); put("deviceModel", deviceModel)
+        put("pendingDeviceId", pendingDeviceId); put("pendingDeviceModel", pendingDeviceModel)
     }
 
     private fun Branding.toJson() = JSONObject().apply {

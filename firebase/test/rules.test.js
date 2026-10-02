@@ -34,7 +34,7 @@ beforeEach(async () => {
   });
 });
 
-const salon = () => env.authenticatedContext('salon1', { email: 'salon1@gmail.com', email_verified: true }).firestore();
+const salon = () => env.authenticatedContext('salon1', { email: 'salon1@gmail.com', email_verified: false }).firestore();
 const admin = () => env.authenticatedContext('boss', { email: 'boss@gmail.com', email_verified: true }).firestore();
 const anon = () => env.unauthenticatedContext().firestore();
 
@@ -42,7 +42,7 @@ const registration = (extra = {}) => ({
   uid: 'salon1', email: 'salon1@gmail.com', displayName: 'Ali', photoUrl: null,
   salonName: 'Royal Cuts', ownerName: 'Ali', phone: '03001234567', city: 'Burewala', address: 'Main Bazar',
   salonNameLower: 'royal cuts', ownerNameLower: 'ali', phoneDigits: '923001234567',
-  status: 'PENDING', platform: 'android', appVersion: '2.0.0', deviceModel: 'Test',
+  status: 'PENDING', platform: 'android', appVersion: '2.0.0', deviceId: 'dev-aaaa-1111', deviceModel: 'Test',
   createdAt: serverTimestamp(), lastSeenAt: serverTimestamp(), ...extra,
 });
 
@@ -75,6 +75,23 @@ test('a salon updates only device fields of its own account', async () => {
   await assertFails(updateDoc(doc(salon(), 'accounts/salon1'), { status: 'APPROVED' }));
   await assertFails(updateDoc(doc(salon(), 'accounts/salon1'), { lastSeenAt: serverTimestamp(), expiresAt: new Date(2099, 1, 1) }));
   await assertFails(deleteDoc(doc(salon(), 'accounts/salon1')));
+});
+
+test('a new phone can only be requested; the admin approves it', async () => {
+  await assertSucceeds(setDoc(doc(salon(), 'accounts/salon1'), registration()));
+  await assertFails(setDoc(doc(salon(), 'accounts/salon1'), registration({ deviceId: 'x' })));
+  await assertSucceeds(updateDoc(doc(salon(), 'accounts/salon1'), {
+    pendingDeviceId: 'dev-bbbb-2222', pendingDeviceModel: 'Samsung A15',
+    pendingDeviceAt: serverTimestamp(), lastSeenAt: serverTimestamp(),
+  }));
+  // The salon cannot approve the phone itself.
+  await assertFails(updateDoc(doc(salon(), 'accounts/salon1'), { deviceId: 'dev-bbbb-2222', lastSeenAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(salon(), 'accounts/salon1'), {
+    pendingDeviceId: 'dev-cccc-3333', pendingDeviceAt: new Date(2099, 1, 1), lastSeenAt: serverTimestamp(),
+  }));
+  await assertSucceeds(updateDoc(doc(admin(), 'accounts/salon1'), {
+    deviceId: 'dev-bbbb-2222', deviceModel: 'Samsung A15', pendingDeviceId: null, pendingDeviceModel: null, pendingDeviceAt: null,
+  }));
 });
 
 test('salons never see other salons', async () => {
