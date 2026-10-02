@@ -98,4 +98,44 @@ Thank you!</string>
     <string name="ai_error_network">No internet or AI is busy. Try again in a minute.</string>
     <string name="ai_error_not_set_up">AI is not set up yet. Please contact DT support.</string>
     <string name="ai_error_failed">No answer this time. Please rephrase and try again.</string>
+    <string name="nav_tokens">Tokens</string>
+    <string name="tokens_title">Tokens &amp; booking</string>
+    <string name="tokens_settings_sub">Queue tokens at rush time and advance bookings (on/off)</string>
+    <string name="tokens_switch">Tokens &amp; booking</string>
+    <string name="tokens_switch_hint">Give token numbers at rush time and take advance bookings, so everyone waits their turn calmly.</string>
+    <string name="tokens_today">Today</string>
+    <string name="tokens_now_serving">NOW SERVING</string>
+    <string name="tokens_now_serving_msg">Now serving token #%1$d</string>
+    <string name="tokens_waiting_count">%1$d waiting</string>
+    <string name="tokens_call_next">Call next</string>
+    <string name="tokens_none_waiting">No one is waiting</string>
+    <string name="tokens_new">New token</string>
+    <string name="tokens_book">Advance booking</string>
+    <string name="tokens_empty_title">No tokens for this day</string>
+    <string name="tokens_empty_message">Give a token to each walk-in customer, or book a time for later.</string>
+    <string name="tokens_walk_in">Walk-in</string>
+    <string name="tokens_status_waiting">Waiting</string>
+    <string name="tokens_status_serving">Serving</string>
+    <string name="tokens_status_done">Done</string>
+    <string name="tokens_status_cancelled">Cancelled</string>
+    <string name="tokens_serve">Serve now</string>
+    <string name="tokens_done">Done</string>
+    <string name="tokens_cancel">Cancel</string>
+    <string name="tokens_print">Print</string>
+    <string name="tokens_printed">Token printed</string>
+    <string name="tokens_print_failed">Could not print. Check the printer in Settings &gt; Printer.</string>
+    <string name="tokens_issued">Token issued</string>
+    <string name="tokens_booked">Booking confirmed</string>
+    <string name="tokens_name">Customer name</string>
+    <string name="tokens_phone">WhatsApp / phone (optional)</string>
+    <string name="tokens_service">Service (optional)</string>
+    <string name="tokens_date">Date</string>
+    <string name="tokens_time">Time</string>
+    <string name="tokens_slip_title">YOUR TOKEN</string>
+    <string name="tokens_slip_wait">Please wait for your number. Thank you!</string>
+    <string name="tokens_wa_confirm">Assalam o Alaikum %1$s,
+Your booking is confirmed. Token #%2$d on %3$s at %4$s.
+Please come 5 minutes early. Thank you!</string>
+    <string name="tokens_wa_turn">Assalam o Alaikum %1$s,
+Your turn is coming: token #%2$d at %3$s. Please come now. Thank you!</string>
 </resources>

@@ -8,6 +8,7 @@ import androidx.room.TypeConverters
 import com.dtpos.salonmanager.data.database.dao.BusinessDao
 import com.dtpos.salonmanager.data.database.dao.CashDao
 import com.dtpos.salonmanager.data.database.dao.DueDao
+import com.dtpos.salonmanager.data.database.dao.BookingDao
 import com.dtpos.salonmanager.data.database.dao.CustomerDao
 import com.dtpos.salonmanager.data.database.dao.ExpenseDao
 import com.dtpos.salonmanager.data.database.dao.LicenseDao
@@ -22,6 +23,7 @@ import com.dtpos.salonmanager.data.database.entities.CashSessionEntity
 import com.dtpos.salonmanager.data.database.entities.CashTransactionEntity
 import com.dtpos.salonmanager.data.database.entities.CustomerEntity
 import com.dtpos.salonmanager.data.database.entities.DueEntity
+import com.dtpos.salonmanager.data.database.entities.BookingEntity
 import com.dtpos.salonmanager.data.database.entities.ExpenseCategoryEntity
 import com.dtpos.salonmanager.data.database.entities.ExpenseEntity
 import com.dtpos.salonmanager.data.database.entities.LicenseEntity
@@ -55,6 +57,7 @@ import com.dtpos.salonmanager.data.database.entities.VisitEntity
         CashSessionEntity::class,
         CashTransactionEntity::class,
         DueEntity::class,
+        BookingEntity::class,
     ],
     version = SalonDatabase.VERSION,
     exportSchema = true,
@@ -72,6 +75,7 @@ abstract class SalonDatabase : RoomDatabase() {
     abstract fun expenseDao(): ExpenseDao
     abstract fun cashDao(): CashDao
     abstract fun dueDao(): DueDao
+    abstract fun bookingDao(): BookingDao
 
     companion object {
         const val NAME = "salon.db"

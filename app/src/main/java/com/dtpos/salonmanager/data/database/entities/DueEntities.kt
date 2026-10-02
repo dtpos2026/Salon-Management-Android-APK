@@ -27,3 +27,29 @@ data class DueEntity(
 ) {
     val balanceMinor: Long get() = (amountMinor - paidMinor).coerceAtLeast(0)
 }
+
+/**
+ * A queue token: a walk-in (timeMinutes = null) or an advance booking for a date and time.
+ * Token numbers start at 1 every day; walk-ins and bookings share the day's numbers.
+ */
+@Entity(
+    tableName = "bookings",
+    indices = [Index(value = ["businessId", "dateEpochDay", "tokenNumber"], unique = true)],
+)
+data class BookingEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val businessId: Long,
+    val dateEpochDay: Long,
+    val tokenNumber: Int,
+    /** Minutes after midnight for an advance booking; null for a walk-in token. */
+    val timeMinutes: Int?,
+    val customerId: Long?,
+    val customerName: String,
+    val customerPhone: String?,
+    val service: String?,
+    val staffName: String?,
+    val note: String?,
+    val status: com.dtpos.salonmanager.domain.model.BookingStatus,
+    val createdAt: Long,
+    val updatedAt: Long,
+)

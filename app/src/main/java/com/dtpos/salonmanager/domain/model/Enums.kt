@@ -25,6 +25,9 @@ enum class StaffPaymentType { SALARY, ADVANCE, COMMISSION, BONUS, OTHER }
 
 enum class SaleStatus { COMPLETED, VOIDED }
 
+/** Token / booking queue states. */
+enum class BookingStatus { WAITING, SERVING, DONE, CANCELLED }
+
 enum class DiscountType { AMOUNT, PERCENT }
 
 /** Movements in the physical cash drawer. Amounts are signed: + into the drawer, - out of it. */

@@ -79,6 +79,7 @@ class AppContainer(
     val businessRepository by lazy { BusinessRepository(database, businessId) }
     val customerRepository by lazy { CustomerRepository(database, businessId) }
     val dueRepository by lazy { DueRepository(database, businessId) }
+    val bookingRepository by lazy { com.dtpos.salonmanager.data.repository.BookingRepository(database, businessId) }
     val supportChat by lazy { com.dtpos.salonmanager.services.support.SupportChat(app) }
     val aiAssistant by lazy { com.dtpos.salonmanager.services.ai.AiAssistant(app) }
     val serviceRepository by lazy { ServiceRepository(database, businessId) }

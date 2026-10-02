@@ -274,6 +274,13 @@ apps ke login, approval aur About screens par dikhte hain (WhatsApp/Call buttons
   "Verify now", Sign out (data phone mein hi rehta hai).
 - **Settings → App preferences:** 3 themes (Royal Purple, Black & Gold, Rose Gold), Light/Dark/Phone
   setting, zabaan (English, اردو, Roman Urdu), awaazein ON/OFF.
+- **Tokens aur booking (Settings → Tokens & booking, ON/OFF):** rush mein har gahak ko token
+  number (#1, #2…), "Call next" se agla bulayein, token ki parchi print ya WhatsApp. Advance booking:
+  din aur waqt chun kar token mil jata hai aur WhatsApp par confirmation bhej sakte hain.
+- **Udhaar:** Home → Udhaar: baqi bill darj karein, WhatsApp reminder, wasooli (poori ya thori).
+- **Promotions:** Home → Promotions: offer/Eid/naya service templates, gahak chunein, WhatsApp.
+- **Support:** Home → Support: DT se chat; AI foran jawab deta hai (agar chalu ho).
+- **AI Assistant:** Home → AI Assistant → ON: business barhane ke mashwaray, A se Z tajziya.
 - **Receipt:** sale ke baad branded receipt ki preview, Print, **Save PNG**, **Save JPEG** (Gallery →
   Pictures/DT Salon), Share aur **WhatsApp** (customer ke number par receipt ki tasveer aur paigham;
   bhejne ka button aap khud dabate hain).

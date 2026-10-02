@@ -40,6 +40,7 @@ object SettingKeys {
     const val BACKUP_AUTO_ENABLED = "backup.autoEnabled"
 
     const val DEMO_DATA = "app.demoData"
+    const val TOKENS_ENABLED = "tokens.enabled"
 }
 
 class SettingsRepository(private val dao: SettingsDao) {

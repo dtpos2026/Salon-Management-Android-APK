@@ -4,6 +4,7 @@ import com.dtpos.salonmanager.presentation.messages.DuesScreen
 import com.dtpos.salonmanager.presentation.messages.PromotionsScreen
 import com.dtpos.salonmanager.presentation.support.SupportScreen
 import com.dtpos.salonmanager.presentation.ai.AiAssistantScreen
+import com.dtpos.salonmanager.presentation.tokens.TokensScreen
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -262,6 +263,7 @@ private fun SalonNavHost(nav: NavHostController) {
         composable(Routes.DUES) { DuesScreen(onBack = back) }
         composable(Routes.PROMOTIONS) { PromotionsScreen(onBack = back) }
         composable(Routes.SUPPORT) { SupportScreen(onBack = back) }
+        composable(Routes.TOKENS) { TokensScreen(onBack = back) }
         composable(Routes.AI) { SecuredArea(ProtectedArea.REPORTS) { AiAssistantScreen(onBack = back, onOpenInsights = { nav.navigate(Routes.INSIGHTS) }) } }
         composable(Routes.INSIGHTS) { SecuredArea(ProtectedArea.REPORTS) { InsightsScreen(onBack = back) } }
 

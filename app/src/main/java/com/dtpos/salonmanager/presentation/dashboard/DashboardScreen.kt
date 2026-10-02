@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.ContentCut
 import androidx.compose.material.icons.filled.Campaign
+import androidx.compose.material.icons.filled.ConfirmationNumber
 import androidx.compose.material.icons.filled.SupportAgent
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Groups
@@ -405,6 +406,7 @@ private fun InsightsPreview(insights: List<Insight>, onViewAll: () -> Unit) {
 private data class QuickAction(val route: String, val labelRes: Int, val icon: ImageVector)
 
 private val quickActions = listOf(
+    QuickAction(Routes.TOKENS, R.string.nav_tokens, Icons.Filled.ConfirmationNumber),
     QuickAction(Routes.DUES, R.string.nav_dues, Icons.AutoMirrored.Filled.ReceiptLong),
     QuickAction(Routes.PROMOTIONS, R.string.nav_promotions, Icons.Filled.Campaign),
     QuickAction(Routes.AI, R.string.nav_ai, Icons.Filled.AutoAwesome),

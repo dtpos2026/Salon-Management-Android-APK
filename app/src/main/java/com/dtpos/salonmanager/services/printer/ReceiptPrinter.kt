@@ -42,6 +42,25 @@ class ReceiptPrinter(
         return bluetooth.send(settings.address, bytes, settings.copies)
     }
 
+    /** Small queue slip: salon, big token number, name, date / booked time. */
+    suspend fun printToken(booking: com.dtpos.salonmanager.data.database.entities.BookingEntity, salonName: String): PrintResult {
+        val settings = settingsStore.current()
+        val address = settings.address ?: return PrintResult.Failure(PrinterError.NO_PRINTER_SELECTED)
+        val date = com.dtpos.salonmanager.core.util.DateTimeUtils.formatDate(java.time.LocalDate.ofEpochDay(booking.dateEpochDay))
+        val lines = listOfNotNull(
+            salonName.takeIf { it.isNotBlank() }?.let { PrintLine.Text(it, PrintAlign.CENTER, bold = true) },
+            PrintLine.Separator(),
+            PrintLine.Text(context.getString(R.string.tokens_slip_title), PrintAlign.CENTER, bold = true),
+            PrintLine.Text("#${booking.tokenNumber}", PrintAlign.CENTER, bold = true, large = true),
+            PrintLine.Text(booking.customerName, PrintAlign.CENTER),
+            PrintLine.Text(date + (booking.timeMinutes?.let { "  " + com.dtpos.salonmanager.presentation.tokens.formatSlot(it) } ?: ""), PrintAlign.CENTER),
+            booking.service?.let { PrintLine.Text(it, PrintAlign.CENTER) },
+            PrintLine.Separator(),
+            PrintLine.Text(context.getString(R.string.tokens_slip_wait), PrintAlign.CENTER),
+        )
+        return bluetooth.send(address, buildBytes(lines, settings, null), copies = 1)
+    }
+
     /** Prints a short page that shows alignment, width and characters. */
     suspend fun printTest(overrideAddress: String? = null): PrintResult {
         val settings = settingsStore.current()

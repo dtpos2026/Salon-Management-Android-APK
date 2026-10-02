@@ -98,4 +98,44 @@ Shukriya!</string>
     <string name="ai_error_network">Internet nahi ya AI masroof hai. Ek minute baad koshish karein.</string>
     <string name="ai_error_not_set_up">AI abhi set nahi hua. DT support se rabta karein.</string>
     <string name="ai_error_failed">Is baar jawab nahi mila. Sawal badal kar dobara poochein.</string>
+    <string name="nav_tokens">Tokens</string>
+    <string name="tokens_title">Tokens aur booking</string>
+    <string name="tokens_settings_sub">Rush ke waqt token aur advance booking (on/off)</string>
+    <string name="tokens_switch">Tokens aur booking</string>
+    <string name="tokens_switch_hint">Rush mein token number dein aur advance booking lein, taake sab aaram se apni baari ka intezar karein.</string>
+    <string name="tokens_today">Aaj</string>
+    <string name="tokens_now_serving">AB BAARI</string>
+    <string name="tokens_now_serving_msg">Ab token #%1$d ki baari</string>
+    <string name="tokens_waiting_count">%1$d intezar mein</string>
+    <string name="tokens_call_next">Agla bulayein</string>
+    <string name="tokens_none_waiting">Koi intezar mein nahi</string>
+    <string name="tokens_new">Naya token</string>
+    <string name="tokens_book">Advance booking</string>
+    <string name="tokens_empty_title">Is din koi token nahi</string>
+    <string name="tokens_empty_message">Har aane wale customer ko token dein, ya baad ka waqt book karein.</string>
+    <string name="tokens_walk_in">Walk-in</string>
+    <string name="tokens_status_waiting">Intezar</string>
+    <string name="tokens_status_serving">Jari</string>
+    <string name="tokens_status_done">Mukammal</string>
+    <string name="tokens_status_cancelled">Mansookh</string>
+    <string name="tokens_serve">Abhi shuru karein</string>
+    <string name="tokens_done">Mukammal</string>
+    <string name="tokens_cancel">Mansookh karein</string>
+    <string name="tokens_print">Print</string>
+    <string name="tokens_printed">Token print ho gaya</string>
+    <string name="tokens_print_failed">Print nahi hua. Settings &gt; Printer check karein.</string>
+    <string name="tokens_issued">Token jari</string>
+    <string name="tokens_booked">Booking confirm</string>
+    <string name="tokens_name">Customer ka naam</string>
+    <string name="tokens_phone">WhatsApp / phone (ikhtiyari)</string>
+    <string name="tokens_service">Service (ikhtiyari)</string>
+    <string name="tokens_date">Tareekh</string>
+    <string name="tokens_time">Waqt</string>
+    <string name="tokens_slip_title">AAP KA TOKEN</string>
+    <string name="tokens_slip_wait">Barah-e-karam apne number ka intezar karein. Shukriya!</string>
+    <string name="tokens_wa_confirm">Assalam o Alaikum %1$s,
+Aap ki booking confirm hai. Token #%2$d, %3$s, %4$s par.
+Barah-e-karam 5 minute pehle tashreef layein. Shukriya!</string>
+    <string name="tokens_wa_turn">Assalam o Alaikum %1$s,
+Aap ki baari aa rahi hai: token #%2$d, %3$s. Barah-e-karam abhi tashreef layein. Shukriya!</string>
 </resources>

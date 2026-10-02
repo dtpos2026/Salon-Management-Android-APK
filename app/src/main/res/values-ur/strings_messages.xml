@@ -98,4 +98,44 @@
     <string name="ai_error_network">انٹرنیٹ نہیں یا AI مصروف ہے۔ ایک منٹ بعد کوشش کریں۔</string>
     <string name="ai_error_not_set_up">AI ابھی سیٹ نہیں ہوا۔ ڈی ٹی سپورٹ سے رابطہ کریں۔</string>
     <string name="ai_error_failed">اس بار جواب نہیں ملا۔ سوال بدل کر دوبارہ پوچھیں۔</string>
+    <string name="nav_tokens">ٹوکن</string>
+    <string name="tokens_title">ٹوکن اور بکنگ</string>
+    <string name="tokens_settings_sub">رش کے وقت ٹوکن اور ایڈوانس بکنگ (آن/آف)</string>
+    <string name="tokens_switch">ٹوکن اور بکنگ</string>
+    <string name="tokens_switch_hint">رش میں ٹوکن نمبر دیں اور ایڈوانس بکنگ لیں، تاکہ سب آرام سے اپنی باری کا انتظار کریں۔</string>
+    <string name="tokens_today">آج</string>
+    <string name="tokens_now_serving">اب باری</string>
+    <string name="tokens_now_serving_msg">اب ٹوکن نمبر %1$d کی باری</string>
+    <string name="tokens_waiting_count">%1$d انتظار میں</string>
+    <string name="tokens_call_next">اگلا بلائیں</string>
+    <string name="tokens_none_waiting">کوئی انتظار میں نہیں</string>
+    <string name="tokens_new">نیا ٹوکن</string>
+    <string name="tokens_book">ایڈوانس بکنگ</string>
+    <string name="tokens_empty_title">اس دن کوئی ٹوکن نہیں</string>
+    <string name="tokens_empty_message">ہر آنے والے گاہک کو ٹوکن دیں، یا بعد کا وقت بک کریں۔</string>
+    <string name="tokens_walk_in">واک اِن</string>
+    <string name="tokens_status_waiting">انتظار</string>
+    <string name="tokens_status_serving">جاری</string>
+    <string name="tokens_status_done">مکمل</string>
+    <string name="tokens_status_cancelled">منسوخ</string>
+    <string name="tokens_serve">ابھی شروع کریں</string>
+    <string name="tokens_done">مکمل</string>
+    <string name="tokens_cancel">منسوخ کریں</string>
+    <string name="tokens_print">پرنٹ</string>
+    <string name="tokens_printed">ٹوکن پرنٹ ہو گیا</string>
+    <string name="tokens_print_failed">پرنٹ نہیں ہوا۔ سیٹنگز &gt; پرنٹر چیک کریں۔</string>
+    <string name="tokens_issued">ٹوکن جاری</string>
+    <string name="tokens_booked">بکنگ کنفرم</string>
+    <string name="tokens_name">گاہک کا نام</string>
+    <string name="tokens_phone">واٹس ایپ / فون (اختیاری)</string>
+    <string name="tokens_service">سروس (اختیاری)</string>
+    <string name="tokens_date">تاریخ</string>
+    <string name="tokens_time">وقت</string>
+    <string name="tokens_slip_title">آپ کا ٹوکن</string>
+    <string name="tokens_slip_wait">براہ کرم اپنے نمبر کا انتظار کریں۔ شکریہ!</string>
+    <string name="tokens_wa_confirm">السلام علیکم %1$s،
+آپ کی بکنگ کنفرم ہے۔ ٹوکن نمبر %2$d، %3$s، %4$s پر۔
+براہ کرم 5 منٹ پہلے تشریف لائیں۔ شکریہ!</string>
+    <string name="tokens_wa_turn">السلام علیکم %1$s،
+آپ کی باری آ رہی ہے: ٹوکن نمبر %2$d، %3$s۔ براہ کرم ابھی تشریف لائیں۔ شکریہ!</string>
 </resources>

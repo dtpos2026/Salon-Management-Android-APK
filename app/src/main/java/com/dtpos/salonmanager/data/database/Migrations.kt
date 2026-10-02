@@ -20,7 +20,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * }
  */
 object Migrations {
-    /** Version 2: customer dues (udhaar / pending bills). Existing data is untouched. */
+    /** Version 2: customer dues (udhaar / pending bills) and tokens / bookings. Existing data is untouched. */
     val MIGRATION_1_2 = object : Migration(1, 2) {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL(
@@ -31,6 +31,17 @@ object Migrations {
             )
             db.execSQL("CREATE INDEX IF NOT EXISTS `index_customer_dues_businessId_settledAt` ON `customer_dues` (`businessId`, `settledAt`)")
             db.execSQL("CREATE INDEX IF NOT EXISTS `index_customer_dues_customerId` ON `customer_dues` (`customerId`)")
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `bookings` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`businessId` INTEGER NOT NULL, `dateEpochDay` INTEGER NOT NULL, `tokenNumber` INTEGER NOT NULL, " +
+                    "`timeMinutes` INTEGER, `customerId` INTEGER, `customerName` TEXT NOT NULL, `customerPhone` TEXT, " +
+                    "`service` TEXT, `staffName` TEXT, `note` TEXT, `status` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, " +
+                    "`updatedAt` INTEGER NOT NULL)",
+            )
+            db.execSQL(
+                "CREATE UNIQUE INDEX IF NOT EXISTS `index_bookings_businessId_dateEpochDay_tokenNumber` " +
+                    "ON `bookings` (`businessId`, `dateEpochDay`, `tokenNumber`)",
+            )
         }
     }
 

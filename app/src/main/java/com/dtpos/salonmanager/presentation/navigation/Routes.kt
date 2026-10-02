@@ -43,6 +43,7 @@ object Routes {
     const val PROMOTIONS = "promotions"
     const val SUPPORT = "support"
     const val AI = "ai"
+    const val TOKENS = "tokens"
 
     const val SETTINGS = "settings"
     const val BUSINESS_PROFILE = "settings/business"

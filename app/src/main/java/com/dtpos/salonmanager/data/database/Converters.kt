@@ -3,6 +3,7 @@ package com.dtpos.salonmanager.data.database
 import androidx.room.TypeConverter
 import com.dtpos.salonmanager.domain.model.BudgetGroup
 import com.dtpos.salonmanager.domain.model.CashSessionStatus
+import com.dtpos.salonmanager.domain.model.BookingStatus
 import com.dtpos.salonmanager.domain.model.CashTxType
 import com.dtpos.salonmanager.domain.model.DiscountType
 import com.dtpos.salonmanager.domain.model.ExpenseType
@@ -36,6 +37,9 @@ class Converters {
 
     @TypeConverter fun fromStaffPaymentType(value: StaffPaymentType): String = value.name
     @TypeConverter fun toStaffPaymentType(value: String): StaffPaymentType = enumOrDefault(value, StaffPaymentType.OTHER)
+
+    @TypeConverter fun fromBookingStatus(value: BookingStatus): String = value.name
+    @TypeConverter fun toBookingStatus(value: String): BookingStatus = enumOrDefault(value, BookingStatus.WAITING)
 
     @TypeConverter fun fromSaleStatus(value: SaleStatus): String = value.name
     @TypeConverter fun toSaleStatus(value: String): SaleStatus = enumOrDefault(value, SaleStatus.COMPLETED)

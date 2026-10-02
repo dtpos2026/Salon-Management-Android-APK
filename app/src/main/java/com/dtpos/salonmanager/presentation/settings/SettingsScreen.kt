@@ -22,6 +22,8 @@ import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.ConfirmationNumber
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -79,6 +81,8 @@ fun SettingsScreen(onBack: () -> Unit, onNavigate: (String) -> Unit) {
     )
     val app = listOf(
         SettingsEntry(Routes.PREFERENCES, R.string.prefs_title, R.string.prefs_sub, Icons.Filled.Palette),
+        SettingsEntry(Routes.TOKENS, R.string.tokens_title, R.string.tokens_settings_sub, Icons.Filled.ConfirmationNumber),
+        SettingsEntry(Routes.AI, R.string.ai_title, R.string.ai_switch_hint, Icons.Filled.AutoAwesome),
     )
     val account = listOf(
         SettingsEntry(Routes.ACCOUNT, R.string.account_title, R.string.account_sub, Icons.Filled.AccountCircle),
