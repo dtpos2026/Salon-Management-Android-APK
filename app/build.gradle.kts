@@ -104,11 +104,6 @@ android {
         }
     }
 
-    lint {
-        // CI prints the errors from the XML report.
-        xmlReport = true
-    }
-
     sourceSets {
         // Exported Room schemas are used by migration tests.
         getByName("androidTest").assets.srcDir("$projectDir/schemas")

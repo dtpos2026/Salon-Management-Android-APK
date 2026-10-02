@@ -75,17 +75,9 @@ jobs:
         run: |
           status=0
           ./gradlew lintDebug || status=$?
-          python3 - <<'EOF'
-          import xml.etree.ElementTree as ET
-          from pathlib import Path
-          report = Path("app/build/reports/lint-results-debug.xml")
-          if report.exists():
-              for issue in ET.parse(report).getroot().iter("issue"):
-                  if issue.get("severity") in ("Error", "Fatal"):
-                      loc = issue.find("location")
-                      where = f'{loc.get("file")}:{loc.get("line")}' if loc is not None else "?"
-                      print(f'::warning::lint {issue.get("id")} at {where}: {issue.get("message")}')
-          EOF
+          # Lint prints only the first error; list them all.
+          report=$(find app/build -name 'lint-results-debug.txt' | head -n 1)
+          [ -n "$report" ] && grep -E ': (Error|Fatal): ' "$report" | sed 's/^/::warning::lint /' || true
           exit $status
         continue-on-error: true
 

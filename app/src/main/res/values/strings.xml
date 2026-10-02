@@ -5,8 +5,9 @@
     Always use positional format arguments (%1$s, %2$d) and escape apostrophes (\').
 -->
 <resources>
-    <string name="app_name">DT Salon Management</string>
-    <string name="launcher_name">DT Salon</string>
+    <!-- Brand names stay the same in every language. -->
+    <string name="app_name" translatable="false">DT Salon Management</string>
+    <string name="launcher_name" translatable="false">DT Salon</string>
 
     <!-- Navigation -->
     <string name="nav_dashboard">Home</string>
