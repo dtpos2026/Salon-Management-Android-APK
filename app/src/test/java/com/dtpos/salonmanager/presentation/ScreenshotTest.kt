@@ -4,10 +4,9 @@ import android.app.Application
 import android.graphics.Bitmap
 import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.graphics.asAndroidBitmap
-import androidx.compose.ui.test.captureToImage
-import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onRoot
+import android.graphics.Canvas
+import androidx.activity.ComponentActivity
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.core.app.ApplicationProvider
 import com.dtpos.salonmanager.core.di.AppContainer
 import com.dtpos.salonmanager.core.util.CurrencyConfig
@@ -52,7 +51,7 @@ import java.util.concurrent.TimeUnit
 class ScreenshotTest {
 
     @get:Rule
-    val compose = createComposeRule()
+    val compose = createAndroidComposeRule<ComponentActivity>()
 
     private val app: Application = ApplicationProvider.getApplicationContext()
     private val backend = FakeAccountBackend()
@@ -77,9 +76,21 @@ class ScreenshotTest {
         FileOutputStream(File(outDir, "$name.jpg")).use { bitmap.compress(Bitmap.CompressFormat.JPEG, 78, it) }
     }
 
+    /** Draws the whole window (software canvas, real pixels with native graphics). */
+    private fun windowBitmap(): Bitmap {
+        var bitmap: Bitmap? = null
+        compose.runOnIdle {
+            val view = compose.activity.window.decorView
+            bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888).also { view.draw(Canvas(it)) }
+        }
+        return bitmap!!
+    }
+
     private fun capture(name: String) {
         compose.waitForIdle()
-        save(name, compose.onRoot().captureToImage().asAndroidBitmap())
+        Thread.sleep(300)
+        compose.waitForIdle()
+        save(name, windowBitmap())
     }
 
     private fun showGate(theme: ColorTheme, dark: Boolean) {
@@ -131,7 +142,12 @@ class ScreenshotTest {
         compose.mainClock.autoAdvance = false
         compose.setContent { SalonTheme { IntroSplash(onFinished = {}) } }
         compose.mainClock.advanceTimeBy(950)
-        save("00-intro", compose.onRoot().captureToImage().asAndroidBitmap())
+        var bitmap: Bitmap? = null
+        compose.runOnUiThread {
+            val view = compose.activity.window.decorView
+            bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888).also { view.draw(Canvas(it)) }
+        }
+        save("00-intro", bitmap!!)
     }
 
     private fun dashboard(theme: ColorTheme, dark: Boolean, name: String) {
@@ -147,7 +163,11 @@ class ScreenshotTest {
             container.accountManager.refresh()
         }
         showGate(theme, dark)
-        compose.mainClock.advanceTimeBy(2_000)
+        // Room queries run on background threads; give the dashboard time to load.
+        repeat(5) {
+            Thread.sleep(400)
+            compose.waitForIdle()
+        }
         capture(name)
     }
 
