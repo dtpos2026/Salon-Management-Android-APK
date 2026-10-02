@@ -2,6 +2,7 @@ package com.dtpos.salonmanager.presentation.navigation
 
 import com.dtpos.salonmanager.presentation.messages.DuesScreen
 import com.dtpos.salonmanager.presentation.messages.PromotionsScreen
+import com.dtpos.salonmanager.presentation.support.SupportScreen
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -259,6 +260,7 @@ private fun SalonNavHost(nav: NavHostController) {
         composable(Routes.BUDGET) { SecuredArea(ProtectedArea.REPORTS) { BudgetScreen(onBack = back) } }
         composable(Routes.DUES) { DuesScreen(onBack = back) }
         composable(Routes.PROMOTIONS) { PromotionsScreen(onBack = back) }
+        composable(Routes.SUPPORT) { SupportScreen(onBack = back) }
         composable(Routes.INSIGHTS) { SecuredArea(ProtectedArea.REPORTS) { InsightsScreen(onBack = back) } }
 
         composable(Routes.SETTINGS) {

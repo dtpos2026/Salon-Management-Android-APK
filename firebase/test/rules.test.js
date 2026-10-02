@@ -95,6 +95,20 @@ test('a new phone can only be requested; the admin approves it', async () => {
   }));
 });
 
+test('support chat: a salon talks only in its own thread', async () => {
+  const db = salon();
+  const thread = { uid: 'salon1', salonName: 'Royal Cuts', email: 'salon1@gmail.com', lastMessage: 'Printer help', lastFrom: 'user', lastAt: serverTimestamp(), unreadForAdmin: true, unreadForUser: false };
+  await assertSucceeds(setDoc(doc(db, 'support/salon1'), thread));
+  await assertSucceeds(setDoc(doc(db, 'support/salon1/messages/m1'), { from: 'user', text: 'Printer help', at: serverTimestamp() }));
+  await assertFails(setDoc(doc(db, 'support/salon1/messages/m2'), { from: 'admin', text: 'Fake reply', at: serverTimestamp() }));
+  await assertFails(setDoc(doc(db, 'support/other/messages/m1'), { from: 'user', text: 'Hi', at: serverTimestamp() }));
+  await assertFails(getDoc(doc(db, 'support/other')));
+  await assertFails(getDocs(collection(db, 'support')));
+  await assertSucceeds(getDocs(collection(db, 'support/salon1/messages')));
+  await assertSucceeds(setDoc(doc(admin(), 'support/salon1/messages/m3'), { from: 'admin', text: 'Restart the printer', at: serverTimestamp() }));
+  await assertSucceeds(getDocs(collection(admin(), 'support')));
+});
+
 test('salons never see other salons', async () => {
   await assertFails(getDoc(doc(salon(), 'accounts/other')));
   await assertFails(getDocs(collection(salon(), 'accounts')));

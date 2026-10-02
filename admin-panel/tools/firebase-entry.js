@@ -7,5 +7,5 @@ export {
 export {
   getFirestore, connectFirestoreEmulator, doc, getDoc, setDoc, updateDoc, deleteDoc,
   collection, query, where, orderBy, limit, startAfter, getDocs, getCountFromServer,
-  runTransaction, serverTimestamp, Timestamp, writeBatch, deleteField,
+  runTransaction, serverTimestamp, Timestamp, writeBatch, deleteField, onSnapshot, addDoc,
 } from 'firebase/firestore';

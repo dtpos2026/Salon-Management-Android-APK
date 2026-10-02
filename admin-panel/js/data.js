@@ -462,6 +462,7 @@ export async function revenueSummary() {
 // ------------------------------------------------------------------ config
 
 export const CONFIG_DEFAULTS = {
+  ai: { enabled: false, supportAutoReply: true, businessAssistant: true, dailyLimitPerSalon: 30, extraInstructions: '' },
   branding: {
     appName: 'DT Salon Management', companyName: 'Digital Target', contactNumber: '', whatsapp: '',
     email: '', website: '', supportText: '', logoDataUrl: '',

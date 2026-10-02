@@ -163,9 +163,9 @@ class AccountManagerTest {
         val allowed = accounts.state.value as AccessState.Allowed
         assertEquals("DTC-0001", allowed.account.customerId)
 
-        // Offline for 10 days: still opens from the cache.
+        // Offline for 5 days (the weekly check allows 7): still opens from the cache.
         backend.online = false
-        now += 10 * day
+        now += 5 * day
         assertTrue(accounts.refresh() is RefreshResult.Failed)
         assertTrue(accounts.state.value is AccessState.Allowed)
 
@@ -174,8 +174,14 @@ class AccountManagerTest {
         restarted.recompute()
         assertTrue(restarted.state.value is AccessState.Allowed)
 
+        // After a week without internet the phone must check in once.
+        now += 3 * day
+        restarted.recompute()
+        assertTrue(restarted.state.value is AccessState.NeedsVerification)
+        now -= 3 * day
+
         // Licence end passes while offline: expired, data stays.
-        now += 25 * day
+        now += 30 * day
         restarted.recompute()
         assertEquals(AccountStatus.EXPIRED, (restarted.state.value as AccessState.Restricted).status)
     }

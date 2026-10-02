@@ -60,4 +60,16 @@ Shukriya!</string>
     <string name="promo_thanks_text">%1$s ko chunne ka shukriya. Dobara khidmat ka intezar rahega!</string>
     <string name="nav_dues">Udhaar</string>
     <string name="nav_promotions">Promotions</string>
+    <string name="nav_support">Support</string>
+    <string name="support_title">Madad aur support</string>
+    <string name="support_subtitle">DT Salon support se baat karein</string>
+    <string name="support_hint">Apna sawal likhein…</string>
+    <string name="support_send">Bhejein</string>
+    <string name="support_send_failed">Paigham nahi gaya. Internet check kar ke dobara koshish karein.</string>
+    <string name="support_from_admin">DT Support</string>
+    <string name="support_from_ai">DT Assistant (AI)</string>
+    <string name="support_empty_title">Hum kaise madad karein?</string>
+    <string name="support_empty_message">App ke baare mein kuch bhi English, Urdu ya Roman Urdu mein poochein. Assistant foran jawab deta hai aur hamari team jald jawab degi.</string>
+    <string name="support_offline_title">Support ke liye internet zaroori hai</string>
+    <string name="support_offline_message">Support se baat ke liye sign in karein aur internet chalayein. Aap About mein WhatsApp button bhi istemal kar sakte hain.</string>
 </resources>

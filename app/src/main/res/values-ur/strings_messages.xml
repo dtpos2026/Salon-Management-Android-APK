@@ -60,4 +60,16 @@
     <string name="promo_thanks_text">%1$s کو چننے کا شکریہ۔ دوبارہ خدمت کا انتظار رہے گا!</string>
     <string name="nav_dues">ادھار</string>
     <string name="nav_promotions">پروموشن</string>
+    <string name="nav_support">مدد</string>
+    <string name="support_title">مدد اور سپورٹ</string>
+    <string name="support_subtitle">ڈی ٹی سیلون سپورٹ سے بات کریں</string>
+    <string name="support_hint">اپنا سوال لکھیں…</string>
+    <string name="support_send">بھیجیں</string>
+    <string name="support_send_failed">پیغام نہیں گیا۔ انٹرنیٹ چیک کر کے دوبارہ کوشش کریں۔</string>
+    <string name="support_from_admin">ڈی ٹی سپورٹ</string>
+    <string name="support_from_ai">ڈی ٹی اسسٹنٹ (AI)</string>
+    <string name="support_empty_title">ہم کیسے مدد کریں؟</string>
+    <string name="support_empty_message">ایپ کے بارے میں کچھ بھی انگریزی، اردو یا رومن اردو میں پوچھیں۔ اسسٹنٹ فوراً جواب دیتا ہے اور ہماری ٹیم جلد جواب دے گی۔</string>
+    <string name="support_offline_title">سپورٹ کے لیے انٹرنیٹ ضروری ہے</string>
+    <string name="support_offline_message">سپورٹ سے بات کے لیے سائن ان کریں اور انٹرنیٹ چلائیں۔ آپ \"بارے میں\" میں واٹس ایپ بٹن بھی استعمال کر سکتے ہیں۔</string>
 </resources>

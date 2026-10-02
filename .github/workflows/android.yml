@@ -64,6 +64,7 @@ jobs:
       # so re-run KSP without the cache. Any change means an entity changed without a
       # committed schema (and usually without a version bump and migration).
       - name: Check the committed Room schema is up to date
+        if: success() || failure()
         run: |
           ./gradlew :app:kspDebugKotlin --rerun --no-build-cache
           if [ -n "$(git status --porcelain app/schemas)" ]; then

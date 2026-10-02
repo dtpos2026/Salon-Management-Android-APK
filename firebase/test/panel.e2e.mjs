@@ -65,6 +65,8 @@ await admin(async (db) => {
     expiresAt: Timestamp.fromMillis(now - 3 * DAY), createdAt: Timestamp.fromMillis(now - 90 * DAY),
   });
   await setDoc(doc(db, 'counters/customers'), { next: 2 });
+  await setDoc(doc(db, 'support/royal1'), { uid: 'royal1', salonName: 'Royal Cuts', lastMessage: 'Printer not printing', lastFrom: 'user', lastAt: Timestamp.fromMillis(now - 60000), unreadForAdmin: true, unreadForUser: false });
+  await setDoc(doc(db, 'support/royal1/messages/m1'), { from: 'user', text: 'Printer not printing', at: Timestamp.fromMillis(now - 60000) });
   await setDoc(doc(db, 'config/billing'), {
     companyName: 'Digital Target', phone: '+923451873354', bankAccountTitle: 'TEST ACCOUNT', bankName: 'Test Bank', accountNumber: '0000000000',
   });
@@ -225,6 +227,17 @@ try {
   await verifyPage.getByText('Not found').waitFor();
   step('public QR verification page');
 
+  await page.goto(`${base}/index.html#/support?uid=royal1`);
+  await page.locator('.bubble.from-user', { hasText: 'Printer not printing' }).waitFor();
+  await page.fill('#reply textarea', 'Please turn the printer off and on, then press Test print.');
+  await page.click('#reply button[type=submit]');
+  await page.locator('.bubble.from-admin', { hasText: 'Test print' }).waitFor();
+  const thread = await admin(async (db) => (await getDoc(doc(db, 'support/royal1'))).data());
+  assert.equal(thread.lastFrom, 'admin');
+  assert.equal(thread.unreadForUser, true);
+  assert.equal(thread.unreadForAdmin, false);
+  step('support inbox: salon message shown live, admin reply delivered');
+
   await page.goto(`${base}/index.html#/settings`);
   await page.fill('input[name=appName]', 'DT Salon Management');
   await page.fill('input[name=whatsapp]', '0345-1873354');
@@ -235,9 +248,12 @@ try {
   await page.click('[data-t=app]');
   await page.fill('input[name=offlineGraceDays]', '15');
   await page.click('#form button[type=submit]');
-  await page.getByText('Settings saved').first().waitFor();
-  const appConfig = await admin(async (db) => (await getDoc(doc(db, 'config/app'))).data());
-  assert.equal(appConfig.offlineGraceDays, 15);
+  let appConfig;
+  for (let i = 0; i < 50 && appConfig?.offlineGraceDays !== 15; i += 1) {
+    await page.waitForTimeout(200);
+    appConfig = await admin(async (db) => (await getDoc(doc(db, 'config/app'))).data());
+  }
+  assert.equal(appConfig?.offlineGraceDays, 15);
   step('branding and app control settings are saved');
 
   const mobile = await context.newPage();
