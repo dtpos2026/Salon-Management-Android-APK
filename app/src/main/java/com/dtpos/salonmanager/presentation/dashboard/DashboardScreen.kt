@@ -177,7 +177,7 @@ private fun SalonHeader(logoPath: String?, isDemo: Boolean) {
             if (logo != null) {
                 Image(logo, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             } else {
-                Icon(Icons.Filled.ContentCut, contentDescription = null, tint = SalonTheme.extended.gold, modifier = Modifier.size(26.dp))
+                Icon(Icons.Filled.ContentCut, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(26.dp))
             }
         }
         Spacer(Modifier.width(12.dp))

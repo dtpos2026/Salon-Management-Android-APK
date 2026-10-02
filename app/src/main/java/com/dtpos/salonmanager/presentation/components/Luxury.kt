@@ -39,11 +39,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.CompositingStrategy
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -142,20 +143,26 @@ fun BrandMonogram(modifier: Modifier = Modifier, width: Dp = 168.dp, shine: Floa
         contentDescription = null,
         modifier = modifier
             .width(width)
-            .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
             .drawWithContent {
-                drawContent()
-                if (shine != null) {
-                    val x = size.width * shine
-                    drawRect(
-                        brush = Brush.linearGradient(
-                            listOf(Color.Transparent, Color.White.copy(alpha = 0.7f), Color.Transparent),
-                            start = Offset(x - size.width * 0.25f, 0f),
-                            end = Offset(x + size.width * 0.05f, size.height),
-                        ),
-                        blendMode = BlendMode.SrcAtop,
-                    )
+                if (shine == null) {
+                    drawContent()
+                    return@drawWithContent
                 }
+                // An explicit layer so SrcAtop keeps the light inside the logo's own pixels,
+                // with hardware and software rendering alike.
+                val bounds = Rect(Offset.Zero, size)
+                drawIntoCanvas { it.saveLayer(bounds, Paint()) }
+                drawContent()
+                val x = size.width * shine
+                drawRect(
+                    brush = Brush.linearGradient(
+                        listOf(Color.Transparent, Color.White.copy(alpha = 0.7f), Color.Transparent),
+                        start = Offset(x - size.width * 0.25f, 0f),
+                        end = Offset(x + size.width * 0.05f, size.height),
+                    ),
+                    blendMode = BlendMode.SrcAtop,
+                )
+                drawIntoCanvas { it.restore() }
             },
     )
 }
