@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dues_title">Udhaar / Baqi bills</string>
+    <string name="dues_add">Udhaar darj karein</string>
+    <string name="dues_total">Kul wasooli baqi</string>
+    <string name="dues_count">%1$d baqi bills</string>
+    <string name="dues_tab_open">Baqi</string>
+    <string name="dues_tab_paid">Ada shuda</string>
+    <string name="dues_empty_title">Koi udhaar baqi nahi</string>
+    <string name="dues_empty_paid">Abhi koi ada shuda bill nahi</string>
+    <string name="dues_empty_message">Jab customer baad mein payment kare to bill darj karein, phir ek tap se WhatsApp reminder bhejein.</string>
+    <string name="dues_customer">Customer ka naam</string>
+    <string name="dues_phone">WhatsApp / phone</string>
+    <string name="dues_amount">Baqi raqam</string>
+    <string name="dues_note">Note (ikhtiyari)</string>
+    <string name="dues_remind">Reminder</string>
+    <string name="dues_received">Wasool hua</string>
+    <string name="dues_receive_title">%1$s se wasooli</string>
+    <string name="dues_balance">Baqi: %1$s</string>
+    <string name="dues_amount_received">Wasool shuda raqam</string>
+    <string name="dues_paid_of">%2$s mein se %1$s ada</string>
+    <string name="dues_paid_on">Ada %1$s</string>
+    <string name="dues_reminded_on">Reminder %1$s</string>
+    <string name="dues_added">Udhaar mehfooz ho gaya</string>
+    <string name="dues_settled">Mukammal ada ho gaya.</string>
+    <string name="dues_payment_saved">Payment mehfooz ho gayi</string>
+    <string name="dues_error_name">Customer ka naam likhein</string>
+    <string name="dues_error_amount">Sahi raqam likhein</string>
+    <string name="dues_delete_title">Udhaar delete karein?</string>
+    <string name="dues_delete_message">%1$s ka udhaar hata diya jayega.</string>
+    <string name="dues_reminder_message">Assalam o Alaikum %1$s,
+Yaad dehani: %3$s par aap ka %2$s baqi hai. Barah-e-karam sahulat se ada kar dein.
+Shukriya!</string>
+    <string name="promo_title">WhatsApp promotions</string>
+    <string name="promo_template">Paigham ki qisam</string>
+    <string name="promo_message">Paigham</string>
+    <string name="promo_greet_by_name">Customer ke naam se shuru karein</string>
+    <string name="promo_greeting">Assalam o Alaikum %1$s,</string>
+    <string name="promo_audience">Kis ko bhejein</string>
+    <string name="promo_audience_all">Tamam customers</string>
+    <string name="promo_audience_inactive">30 din se nahi aaye</string>
+    <string name="promo_audience_top">Behtareen customers</string>
+    <string name="promo_how">Phone number wale %1$d customers · %2$d ko bheja. Har chat WhatsApp mein tayyar paigham ke saath khulti hai, wahan send dabayein.</string>
+    <string name="promo_recipients">Customers</string>
+    <string name="promo_empty_title">Phone number wala koi customer nahi</string>
+    <string name="promo_empty_message">Offers bhejne ke liye customers ke phone number shamil karein.</string>
+    <string name="promo_last_visit">Aakhri aamad %1$s</string>
+    <string name="promo_send">Bhejein</string>
+    <string name="promo_send_again">Dobara</string>
+    <string name="promo_sent">Bhej diya</string>
+    <string name="promo_offer">Discount offer</string>
+    <string name="promo_festival">Eid / tehwar</string>
+    <string name="promo_new_service">Nayi service</string>
+    <string name="promo_miss_you">Aap ki kami</string>
+    <string name="promo_thanks">Shukriya</string>
+    <string name="promo_offer_text">%1$s par khaas offer! Is hafte tamam services par 20%% discount. Aaj hi tashreef layein.</string>
+    <string name="promo_festival_text">%1$s ki taraf se Eid Mubarak! Eid ki tayyari ke liye hamare khaas packages. Intezar se bachne ke liye pehle waqt lein.</string>
+    <string name="promo_new_service_text">%1$s par ab dastiyab: hamari nayi premium service. Aaj hi tashreef layein!</string>
+    <string name="promo_miss_you_text">%1$s par hamein aap ki kami mehsoos ho rahi hai! Is hafte aayein aur khaas discount payein.</string>
+    <string name="promo_thanks_text">%1$s ko chunne ka shukriya. Dobara khidmat ka intezar rahega!</string>
+    <string name="nav_dues">Udhaar</string>
+    <string name="nav_promotions">Promotions</string>
+</resources>

@@ -1,6 +1,7 @@
 package com.dtpos.salonmanager.data.database
 
 import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
  * Schema migrations. Rules that keep salon data safe across app updates:
@@ -19,5 +20,19 @@ import androidx.room.migration.Migration
  * }
  */
 object Migrations {
-    val ALL: Array<Migration> = arrayOf()
+    /** Version 2: customer dues (udhaar / pending bills). Existing data is untouched. */
+    val MIGRATION_1_2 = object : Migration(1, 2) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `customer_dues` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`businessId` INTEGER NOT NULL, `customerId` INTEGER, `customerName` TEXT NOT NULL, `customerPhone` TEXT, " +
+                    "`amountMinor` INTEGER NOT NULL, `paidMinor` INTEGER NOT NULL, `note` TEXT, `createdAt` INTEGER NOT NULL, " +
+                    "`settledAt` INTEGER, `lastReminderAt` INTEGER)",
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_customer_dues_businessId_settledAt` ON `customer_dues` (`businessId`, `settledAt`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_customer_dues_customerId` ON `customer_dues` (`customerId`)")
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2)
 }

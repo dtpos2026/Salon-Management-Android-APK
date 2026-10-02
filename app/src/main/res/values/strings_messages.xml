@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dues_title">Pending bills (Udhaar)</string>
+    <string name="dues_add">Add pending bill</string>
+    <string name="dues_total">Total to collect</string>
+    <string name="dues_count">%1$d open bills</string>
+    <string name="dues_tab_open">Pending</string>
+    <string name="dues_tab_paid">Paid</string>
+    <string name="dues_empty_title">No pending bills</string>
+    <string name="dues_empty_paid">No paid bills yet</string>
+    <string name="dues_empty_message">Add a bill when a customer will pay later, then send a WhatsApp reminder in one tap.</string>
+    <string name="dues_customer">Customer name</string>
+    <string name="dues_phone">WhatsApp / phone</string>
+    <string name="dues_amount">Amount due</string>
+    <string name="dues_note">Note (optional)</string>
+    <string name="dues_remind">Remind</string>
+    <string name="dues_received">Received</string>
+    <string name="dues_receive_title">Payment from %1$s</string>
+    <string name="dues_balance">Balance: %1$s</string>
+    <string name="dues_amount_received">Amount received</string>
+    <string name="dues_paid_of">%1$s paid of %2$s</string>
+    <string name="dues_paid_on">Paid %1$s</string>
+    <string name="dues_reminded_on">Reminded %1$s</string>
+    <string name="dues_added">Pending bill saved</string>
+    <string name="dues_settled">Fully paid. Moved to Paid.</string>
+    <string name="dues_payment_saved">Payment saved</string>
+    <string name="dues_error_name">Enter the customer name</string>
+    <string name="dues_error_amount">Enter a valid amount</string>
+    <string name="dues_delete_title">Delete pending bill?</string>
+    <string name="dues_delete_message">The pending bill of %1$s will be removed.</string>
+    <string name="dues_reminder_message">Assalam o Alaikum %1$s,
+This is a friendly reminder that %2$s is pending at %3$s. Please clear it at your convenience.
+Thank you!</string>
+    <string name="promo_title">WhatsApp promotions</string>
+    <string name="promo_template">Message type</string>
+    <string name="promo_message">Message</string>
+    <string name="promo_greet_by_name">Start with the customer\'s name</string>
+    <string name="promo_greeting">Assalam o Alaikum %1$s,</string>
+    <string name="promo_audience">Send to</string>
+    <string name="promo_audience_all">All customers</string>
+    <string name="promo_audience_inactive">Not visited in 30 days</string>
+    <string name="promo_audience_top">Top customers</string>
+    <string name="promo_how">%1$d customers with a phone number · %2$d sent. Each chat opens in WhatsApp with the message ready; tap send there.</string>
+    <string name="promo_recipients">Customers</string>
+    <string name="promo_empty_title">No customers with a phone number</string>
+    <string name="promo_empty_message">Add phone numbers to customers to send them offers.</string>
+    <string name="promo_last_visit">Last visit %1$s</string>
+    <string name="promo_send">Send</string>
+    <string name="promo_send_again">Again</string>
+    <string name="promo_sent">Sent</string>
+    <string name="promo_offer">Discount offer</string>
+    <string name="promo_festival">Eid / festival</string>
+    <string name="promo_new_service">New service</string>
+    <string name="promo_miss_you">We miss you</string>
+    <string name="promo_thanks">Thank you</string>
+    <string name="promo_offer_text">Special offer at %1$s! Get 20%% off on all services this week. Book your visit today.</string>
+    <string name="promo_festival_text">Eid Mubarak from %1$s! Get ready for Eid with our special packages. Book early to avoid waiting.</string>
+    <string name="promo_new_service_text">Now available at %1$s: our new premium service. Visit us and try it today!</string>
+    <string name="promo_miss_you_text">We miss you at %1$s! Come back this week and enjoy a special welcome-back discount.</string>
+    <string name="promo_thanks_text">Thank you for choosing %1$s. We look forward to serving you again!</string>
+    <string name="nav_dues">Udhaar</string>
+    <string name="nav_promotions">Promotions</string>
+</resources>

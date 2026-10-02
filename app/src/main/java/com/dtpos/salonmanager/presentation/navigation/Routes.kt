@@ -39,6 +39,8 @@ object Routes {
     const val TARGETS = "targets"
     const val BUDGET = "budget"
     const val INSIGHTS = "insights"
+    const val DUES = "dues"
+    const val PROMOTIONS = "promotions"
 
     const val SETTINGS = "settings"
     const val BUSINESS_PROFILE = "settings/business"

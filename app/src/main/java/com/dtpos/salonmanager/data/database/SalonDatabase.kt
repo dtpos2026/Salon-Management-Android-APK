@@ -7,6 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.dtpos.salonmanager.data.database.dao.BusinessDao
 import com.dtpos.salonmanager.data.database.dao.CashDao
+import com.dtpos.salonmanager.data.database.dao.DueDao
 import com.dtpos.salonmanager.data.database.dao.CustomerDao
 import com.dtpos.salonmanager.data.database.dao.ExpenseDao
 import com.dtpos.salonmanager.data.database.dao.LicenseDao
@@ -20,6 +21,7 @@ import com.dtpos.salonmanager.data.database.entities.BusinessEntity
 import com.dtpos.salonmanager.data.database.entities.CashSessionEntity
 import com.dtpos.salonmanager.data.database.entities.CashTransactionEntity
 import com.dtpos.salonmanager.data.database.entities.CustomerEntity
+import com.dtpos.salonmanager.data.database.entities.DueEntity
 import com.dtpos.salonmanager.data.database.entities.ExpenseCategoryEntity
 import com.dtpos.salonmanager.data.database.entities.ExpenseEntity
 import com.dtpos.salonmanager.data.database.entities.LicenseEntity
@@ -52,6 +54,7 @@ import com.dtpos.salonmanager.data.database.entities.VisitEntity
         StaffPaymentEntity::class,
         CashSessionEntity::class,
         CashTransactionEntity::class,
+        DueEntity::class,
     ],
     version = SalonDatabase.VERSION,
     exportSchema = true,
@@ -68,10 +71,11 @@ abstract class SalonDatabase : RoomDatabase() {
     abstract fun saleDao(): SaleDao
     abstract fun expenseDao(): ExpenseDao
     abstract fun cashDao(): CashDao
+    abstract fun dueDao(): DueDao
 
     companion object {
         const val NAME = "salon.db"
-        const val VERSION = 1
+        const val VERSION = 2
 
         /**
          * No destructive fallback is configured on purpose: if a migration is ever missing the

@@ -7,6 +7,7 @@ import com.dtpos.salonmanager.data.database.SalonDatabase
 import com.dtpos.salonmanager.data.repository.BusinessRepository
 import com.dtpos.salonmanager.data.repository.CashRepository
 import com.dtpos.salonmanager.data.repository.CustomerRepository
+import com.dtpos.salonmanager.data.repository.DueRepository
 import com.dtpos.salonmanager.data.repository.ExpenseRepository
 import com.dtpos.salonmanager.data.repository.ReportRepository
 import com.dtpos.salonmanager.data.repository.SaleRepository
@@ -77,6 +78,7 @@ class AppContainer(
     val settingsRepository by lazy { SettingsRepository(database.settingsDao()) }
     val businessRepository by lazy { BusinessRepository(database, businessId) }
     val customerRepository by lazy { CustomerRepository(database, businessId) }
+    val dueRepository by lazy { DueRepository(database, businessId) }
     val serviceRepository by lazy { ServiceRepository(database, businessId) }
     val staffRepository by lazy { StaffRepository(database, businessId) }
     val expenseRepository by lazy { ExpenseRepository(database, businessId) }

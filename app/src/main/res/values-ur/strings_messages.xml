@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dues_title">ادھار / باقی بل</string>
+    <string name="dues_add">ادھار درج کریں</string>
+    <string name="dues_total">کل وصولی باقی</string>
+    <string name="dues_count">%1$d باقی بل</string>
+    <string name="dues_tab_open">باقی</string>
+    <string name="dues_tab_paid">ادا شدہ</string>
+    <string name="dues_empty_title">کوئی ادھار باقی نہیں</string>
+    <string name="dues_empty_paid">ابھی کوئی ادا شدہ بل نہیں</string>
+    <string name="dues_empty_message">جب گاہک بعد میں ادائیگی کرے تو بل درج کریں، پھر ایک ٹیپ سے واٹس ایپ یاد دہانی بھیجیں۔</string>
+    <string name="dues_customer">گاہک کا نام</string>
+    <string name="dues_phone">واٹس ایپ / فون</string>
+    <string name="dues_amount">باقی رقم</string>
+    <string name="dues_note">نوٹ (اختیاری)</string>
+    <string name="dues_remind">یاد دہانی</string>
+    <string name="dues_received">وصول ہوا</string>
+    <string name="dues_receive_title">%1$s سے وصولی</string>
+    <string name="dues_balance">باقی: %1$s</string>
+    <string name="dues_amount_received">وصول شدہ رقم</string>
+    <string name="dues_paid_of">%2$s میں سے %1$s ادا</string>
+    <string name="dues_paid_on">ادا %1$s</string>
+    <string name="dues_reminded_on">یاد دہانی %1$s</string>
+    <string name="dues_added">ادھار محفوظ ہو گیا</string>
+    <string name="dues_settled">مکمل ادا ہو گیا۔</string>
+    <string name="dues_payment_saved">ادائیگی محفوظ ہو گئی</string>
+    <string name="dues_error_name">گاہک کا نام لکھیں</string>
+    <string name="dues_error_amount">درست رقم لکھیں</string>
+    <string name="dues_delete_title">ادھار حذف کریں؟</string>
+    <string name="dues_delete_message">%1$s کا ادھار ہٹا دیا جائے گا۔</string>
+    <string name="dues_reminder_message">السلام علیکم %1$s،
+یاد دہانی: %3$s پر آپ کا %2$s باقی ہے۔ براہ کرم سہولت سے ادا کر دیں۔
+شکریہ!</string>
+    <string name="promo_title">واٹس ایپ پروموشن</string>
+    <string name="promo_template">پیغام کی قسم</string>
+    <string name="promo_message">پیغام</string>
+    <string name="promo_greet_by_name">گاہک کے نام سے شروع کریں</string>
+    <string name="promo_greeting">السلام علیکم %1$s،</string>
+    <string name="promo_audience">کس کو بھیجیں</string>
+    <string name="promo_audience_all">تمام گاہک</string>
+    <string name="promo_audience_inactive">30 دن سے نہیں آئے</string>
+    <string name="promo_audience_top">بہترین گاہک</string>
+    <string name="promo_how">فون نمبر والے %1$d گاہک · %2$d کو بھیجا۔ ہر چیٹ واٹس ایپ میں تیار پیغام کے ساتھ کھلتی ہے، وہاں بھیجیں دبائیں۔</string>
+    <string name="promo_recipients">گاہک</string>
+    <string name="promo_empty_title">فون نمبر والا کوئی گاہک نہیں</string>
+    <string name="promo_empty_message">آفرز بھیجنے کے لیے گاہکوں کے فون نمبر شامل کریں۔</string>
+    <string name="promo_last_visit">آخری آمد %1$s</string>
+    <string name="promo_send">بھیجیں</string>
+    <string name="promo_send_again">دوبارہ</string>
+    <string name="promo_sent">بھیج دیا</string>
+    <string name="promo_offer">رعایتی آفر</string>
+    <string name="promo_festival">عید / تہوار</string>
+    <string name="promo_new_service">نئی سروس</string>
+    <string name="promo_miss_you">آپ کی کمی</string>
+    <string name="promo_thanks">شکریہ</string>
+    <string name="promo_offer_text">%1$s پر خاص آفر! اس ہفتے تمام سروسز پر 20%% رعایت۔ آج ہی تشریف لائیں۔</string>
+    <string name="promo_festival_text">%1$s کی طرف سے عید مبارک! عید کی تیاری کے لیے ہمارے خاص پیکجز۔ انتظار سے بچنے کے لیے پہلے وقت لیں۔</string>
+    <string name="promo_new_service_text">%1$s پر اب دستیاب: ہماری نئی پریمیم سروس۔ آج ہی تشریف لائیں!</string>
+    <string name="promo_miss_you_text">%1$s پر ہمیں آپ کی کمی محسوس ہو رہی ہے! اس ہفتے آئیں اور خاص رعایت پائیں۔</string>
+    <string name="promo_thanks_text">%1$s کو چننے کا شکریہ۔ دوبارہ خدمت کا انتظار رہے گا!</string>
+    <string name="nav_dues">ادھار</string>
+    <string name="nav_promotions">پروموشن</string>
+</resources>
