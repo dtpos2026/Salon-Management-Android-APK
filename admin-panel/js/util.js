@@ -209,7 +209,10 @@ export function errorMessage(error) {
   if (code === 'unavailable') return 'Cannot reach Firebase. Check the internet connection.';
   if (code === 'failed-precondition' && /index/i.test(error.message)) {
     console.warn(error.message);
-    return 'This list needs a Firestore index. Deploy firebase/firestore.indexes.json (see the guide) or open the link in the browser console.';
+    const link = String(error.message).match(/https:\/\/console\.firebase\.google\.com\S+/)?.[0];
+    return 'This list needs a Firestore index (it can take 5-10 minutes to build after deploying). '
+      + 'Run "npx firebase-tools deploy --only firestore:indexes" in the project folder, then wait and reload.'
+      + (link ? ` Or open this link once and press "Create index": ${link}` : '');
   }
   return error?.message || String(error);
 }
