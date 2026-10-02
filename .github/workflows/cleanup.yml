@@ -30,6 +30,7 @@ jobs:
       REPO: ${{ github.repository }}
       KEEP_CACHES: 2
       KEEP_RUNS: 3
+      KEEP_WORKFLOW_RUNS: 10
     steps:
       - name: Storage before
         run: |
@@ -60,6 +61,18 @@ jobs:
             fi
           done < artifacts.txt
           echo "Artifacts left: $(gh api "repos/$REPO/actions/artifacts?per_page=1" --jq .total_count)"
+
+      - name: Delete old workflow runs
+        run: |
+          # Keeps the newest $KEEP_WORKFLOW_RUNS finished runs (with their logs); older ones are
+          # deleted. Runs that are queued or in progress are never touched.
+          gh api --paginate "repos/$REPO/actions/runs?per_page=100&status=completed" \
+            --jq '.workflow_runs[] | select(.id != ${{ github.run_id }}) | .id' \
+            | tail -n +$((KEEP_WORKFLOW_RUNS + 1)) | while read -r id; do
+              [ -n "$id" ] || continue
+              gh api -X DELETE "repos/$REPO/actions/runs/$id" >/dev/null && echo "deleted run $id"
+            done
+          echo "Runs left: $(gh api "repos/$REPO/actions/runs?per_page=1" --jq .total_count)"
 
       - name: Storage after
         run: |
