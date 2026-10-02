@@ -16,7 +16,7 @@ class CsvWriter(private val out: Appendable) {
 
     companion object {
         /** UTF-8 byte-order mark so Excel opens Urdu / accented names correctly. */
-        const val BOM = "﻿"
+        const val BOM = "\uFEFF"
 
         fun escape(value: String): String {
             // Neutralise spreadsheet formula injection from free-text fields such as notes.

@@ -71,7 +71,7 @@ jobs:
           fi
           echo "Committed Room schema matches the entities."
 
-      - name: Android lint (report only)
+      - name: Android lint (errors fail the build)
         run: |
           status=0
           ./gradlew lintDebug || status=$?
@@ -79,7 +79,6 @@ jobs:
           report=$(find app/build -name 'lint-results-debug.txt' | head -n 1)
           [ -n "$report" ] && grep -E ': (Error|Fatal): ' "$report" | sed 's/^/::warning::lint /' || true
           exit $status
-        continue-on-error: true
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
