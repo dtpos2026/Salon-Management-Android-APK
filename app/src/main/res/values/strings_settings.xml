@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Setup -->
-    <string name="setup_welcome">Welcome to Salon Manager</string>
+    <string name="setup_welcome">Welcome to DT Salon Management</string>
     <string name="setup_subtitle">Set up your salon in less than a minute. Everything is stored on this phone.</string>
     <string name="setup_add_services">Add common salon services</string>
     <string name="setup_add_services_hint">Hair cut, beard, facial and more with suggested prices you can edit later.</string>
     <string name="setup_demo">Explore with demo data</string>
     <string name="setup_demo_hint">Adds sample staff, customers and 30 days of sales to try the app. Erase it later from Settings.</string>
-    <string name="setup_start">Start using Salon Manager</string>
+    <string name="setup_start">Start using DT Salon</string>
     <string name="setup_offline_note">Your salon data is stored only on this phone and works without internet.</string>
 
     <!-- Lock -->
     <string name="lock_enter_pin">Enter PIN</string>
     <string name="lock_enter_password">Enter password</string>
-    <string name="lock_area_app">Unlock to open Salon Manager</string>
+    <string name="lock_area_app">Unlock to open DT Salon</string>
     <string name="lock_area_reports">Reports are protected</string>
     <string name="lock_area_expenses">Expenses are protected</string>
     <string name="lock_area_settings">Settings are protected</string>
@@ -25,7 +25,7 @@
     <string name="lock_locked_out">Too many attempts. Please wait.</string>
     <string name="lock_locked_out_until">Too many attempts. Try again after %1$s.</string>
     <string name="lock_use_biometric">Use fingerprint / face</string>
-    <string name="lock_biometric_title">Unlock Salon Manager</string>
+    <string name="lock_biometric_title">Unlock DT Salon</string>
     <string name="lock_biometric_subtitle">Confirm it is you</string>
     <string name="lock_use_pin">Use PIN</string>
     <string name="lock_use_password">Use password</string>
@@ -104,7 +104,7 @@
     <string name="printer_paper">Paper width</string>
     <string name="printer_mode">Print mode</string>
     <string name="printer_mode_text">Text (fast)</string>
-    <string name="printer_mode_image">Image (any language)</string>
+    <string name="printer_mode_image">Image (styled receipt, any language)</string>
     <string name="printer_mode_hint">Use Image mode if names in Urdu or special characters do not print correctly.</string>
     <string name="printer_auto_print">Print automatically after sale</string>
     <string name="printer_auto_print_hint">Prints the receipt as soon as a sale is saved</string>
@@ -154,7 +154,7 @@
     <string name="backup_restored_title">Restore complete</string>
     <string name="backup_restored_message">Your data has been restored. The app will restart now.</string>
     <string name="backup_restart">Restart app</string>
-    <string name="backup_error_not_backup">This file is not a Salon Manager backup.</string>
+    <string name="backup_error_not_backup">This file is not a DT Salon backup.</string>
     <string name="backup_error_password">Wrong password</string>
     <string name="backup_error_corrupt">The backup file is damaged and cannot be restored.</string>
     <string name="backup_error_newer">This backup was made with a newer version of the app. Please update the app first.</string>

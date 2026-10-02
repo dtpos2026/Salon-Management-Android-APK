@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="brand_tagline">سمارٹ سیلون اور باربر مینجمنٹ</string>
+    <string name="brand_by">%1$s کی جانب سے</string>
+
+    <string name="login_welcome">خوش آمدید</string>
+    <string name="login_subtitle">جاری رکھنے کے لیے اپنے Gmail اکاؤنٹ سے سائن ان کریں۔</string>
+    <string name="login_google">Google کے ساتھ جاری رکھیں</string>
+    <string name="login_new_salon_hint">نیا سیلون؟ Google سے سائن ان کریں، آپ کا اکاؤنٹ منظوری کے لیے %1$s کو بھیج دیا جائے گا۔</string>
+    <string name="login_error_no_account">اس فون پر کوئی Google اکاؤنٹ نہیں ملا۔ فون کی سیٹنگز &gt; اکاؤنٹس میں شامل کر کے دوبارہ کوشش کریں۔</string>
+    <string name="login_error_not_configured">Google سائن ان ابھی ترتیب نہیں دیا گیا۔ براہ کرم %1$s سے رابطہ کریں۔</string>
+    <string name="login_error_failed">Google سائن ان ناکام ہو گیا۔ دوبارہ کوشش کریں۔</string>
+    <string name="login_error_network">سائن ان نہیں ہو سکا۔ انٹرنیٹ چیک کر کے دوبارہ کوشش کریں۔</string>
+
+    <string name="register_title">اپنا سیلون رجسٹر کریں</string>
+    <string name="register_subtitle">آپ کی تفصیلات منظوری کے لیے %1$s کو جائیں گی۔ منظوری کے بعد آپ ایپ استعمال کر سکیں گے۔</string>
+    <string name="register_signed_in_as">بطور %1$s سائن ان</string>
+    <string name="register_salon_name">سیلون / دکان کا نام</string>
+    <string name="register_owner_name">مالک کا نام</string>
+    <string name="register_phone">موبائل / واٹس ایپ نمبر</string>
+    <string name="register_city">شہر</string>
+    <string name="register_address">پتہ</string>
+    <string name="register_submit">منظوری کے لیے بھیجیں</string>
+    <string name="register_use_other">کوئی اور Google اکاؤنٹ استعمال کریں</string>
+    <string name="register_error_required">سیلون کا نام، مالک کا نام اور فون نمبر لکھیں۔</string>
+    <string name="register_error_failed">بھیجا نہیں جا سکا۔ انٹرنیٹ چیک کر کے دوبارہ کوشش کریں۔</string>
+
+    <string name="status_pending_title">منظوری کا انتظار</string>
+    <string name="status_pending_message">آپ کا اکاؤنٹ منظوری کا منتظر ہے۔ براہ کرم %1$s سے رابطہ کریں۔</string>
+    <string name="status_payment_title">ادائیگی باقی ہے</string>
+    <string name="status_payment_message">آپ کی سبسکرپشن کی ادائیگی باقی ہے۔ ایپ جاری رکھنے کے لیے ادائیگی کریں۔ آپ کا ڈیٹا اس فون میں محفوظ ہے۔</string>
+    <string name="status_amount_due">واجب الادا رقم: Rs %1$s</string>
+    <string name="status_suspended_title">اکاؤنٹ معطل</string>
+    <string name="status_suspended_message">آپ کا اکاؤنٹ معطل کر دیا گیا ہے۔ براہ کرم %1$s سے رابطہ کریں۔</string>
+    <string name="status_blocked_title">اکاؤنٹ بلاک</string>
+    <string name="status_blocked_message">یہ اکاؤنٹ بلاک کر دیا گیا ہے۔ براہ کرم %1$s سے رابطہ کریں۔</string>
+    <string name="status_expired_title">سبسکرپشن ختم</string>
+    <string name="status_expired_message">آپ کی سبسکرپشن %1$s کو ختم ہو گئی۔ جاری رکھنے کے لیے تجدید کریں۔ آپ کا ڈیٹا اس فون میں محفوظ ہے۔</string>
+    <string name="status_expired_message_nodate">آپ کی سبسکرپشن ختم ہو گئی ہے۔ جاری رکھنے کے لیے تجدید کریں۔ آپ کا ڈیٹا اس فون میں محفوظ ہے۔</string>
+    <string name="status_rejected_title">رجسٹریشن منظور نہیں ہوئی</string>
+    <string name="status_rejected_message">آپ کی رجسٹریشن منظور نہیں ہوئی۔ براہ کرم %1$s سے رابطہ کریں۔</string>
+    <string name="status_verify_title">انٹرنیٹ درکار ہے</string>
+    <string name="status_verify_message">اکاؤنٹ کی تصدیق کے لیے ایک بار انٹرنیٹ سے جڑیں۔</string>
+    <string name="status_verify_message_days">آپ کے اکاؤنٹ کی آخری تصدیق %1$d دن پہلے ہوئی۔ جاری رکھنے کے لیے ایک بار انٹرنیٹ سے جڑیں۔</string>
+    <string name="status_admin_message">%1$s کا پیغام</string>
+    <string name="status_check_again">دوبارہ چیک کریں</string>
+    <string name="status_check_failed">سرور سے رابطہ نہیں ہو سکا۔ انٹرنیٹ چیک کریں۔</string>
+    <string name="status_unchanged">ابھی کوئی تبدیلی نہیں۔ منظوری ملتے ہی ایپ کھل جائے گی۔</string>
+
+    <string name="support_whatsapp">واٹس ایپ</string>
+    <string name="support_call">کال</string>
+    <string name="support_email">ای میل</string>
+    <string name="support_message">السلام علیکم، مجھے اپنے DT Salon اکاؤنٹ (%1$s) کے بارے میں مدد چاہیے۔</string>
+    <string name="whatsapp_not_installed">اس فون پر واٹس ایپ انسٹال نہیں ہے۔</string>
+    <string name="action_sign_out">سائن آؤٹ</string>
+
+    <string name="account_title">اکاؤنٹ اور سبسکرپشن</string>
+    <string name="account_sub">Gmail، لائسنس، میعاد اور سائن آؤٹ</string>
+    <string name="account_email">Gmail</string>
+    <string name="account_salon">سیلون</string>
+    <string name="account_owner">مالک</string>
+    <string name="account_phone">فون</string>
+    <string name="account_customer_id">کسٹمر آئی ڈی</string>
+    <string name="account_business_id">بزنس آئی ڈی</string>
+    <string name="account_license_id">لائسنس آئی ڈی</string>
+    <string name="account_plan">پلان</string>
+    <string name="account_expires">میعاد</string>
+    <string name="account_no_expiry">کوئی میعاد نہیں</string>
+    <string name="account_not_assigned">ابھی جاری نہیں</string>
+    <string name="account_last_verified">آخری آن لائن تصدیق</string>
+    <string name="account_offline_days">ایپ انٹرنیٹ کے بغیر مزید %1$d دن چلے گی۔</string>
+    <string name="account_check_now">ابھی تصدیق کریں</string>
+    <string name="account_verified">اکاؤنٹ کی تصدیق ہو گئی۔</string>
+    <string name="account_signout_title">سائن آؤٹ کریں؟</string>
+    <string name="account_signout_message">آپ کے سیلون کا ڈیٹا اسی فون میں رہے گا۔ جاری رکھنے کے لیے اسی Gmail سے دوبارہ سائن ان کریں۔</string>
+    <string name="account_status_pending">منظوری باقی</string>
+    <string name="account_status_approved">فعال</string>
+    <string name="account_status_payment_pending">ادائیگی باقی</string>
+    <string name="account_status_suspended">معطل</string>
+    <string name="account_status_blocked">بلاک</string>
+    <string name="account_status_expired">ختم</string>
+    <string name="account_status_rejected">مسترد</string>
+
+    <string name="device_title">یہ فون کسی اور اکاؤنٹ سے جڑا ہے</string>
+    <string name="device_message">اس فون کا سیلون ڈیٹا %1$s کا ہے۔ اسی Gmail سے سائن ان کریں، یا اپنے اکاؤنٹ کے لیے اس فون کا سیلون ڈیٹا مٹا دیں۔</string>
+    <string name="device_erase">ڈیٹا مٹائیں اور میرا اکاؤنٹ استعمال کریں</string>
+    <string name="device_erase_title">سیلون کا ڈیٹا مٹائیں؟</string>
+    <string name="device_erase_message">اس فون کی تمام فروخت، گاہک، عملہ اور اخراجات مٹ جائیں گے۔ پہلے حفاظتی بیک اپ بنتا ہے (سیٹنگز &gt; بیک اپ)۔ یہ واپس نہیں ہو سکتا۔</string>
+    <string name="device_erase_failed">ڈیٹا نہیں مٹ سکا۔ دوبارہ کوشش کریں۔</string>
+
+    <string name="update_required_title">اپ ڈیٹ ضروری ہے</string>
+    <string name="update_required_message">یہ ورژن اب استعمال نہیں ہو سکتا۔ جاری رکھنے کے لیے نیا ورژن انسٹال کریں۔</string>
+    <string name="update_now">ابھی اپ ڈیٹ کریں</string>
+    <string name="update_available_title">نیا ورژن دستیاب ہے</string>
+    <string name="update_available_message">ورژن %1$s دستیاب ہے۔</string>
+    <string name="update_later">بعد میں</string>
+    <string name="setup_missing_title">ایپ کی ترتیب نامکمل</string>
+    <string name="setup_missing_message">ایپ کی یہ کاپی آن لائن اکاؤنٹ کی ترتیب کے بغیر بنی ہے۔ براہ کرم %1$s سے اصل ایپ انسٹال کریں۔</string>
+
+    <string name="about_support_title">مدد</string>
+    <string name="about_company">کمپنی</string>
+    <string name="about_website">ویب سائٹ</string>
+
+    <string name="prefs_title">ایپ کی ترجیحات</string>
+    <string name="prefs_sub">زبان، رنگ اور آوازیں</string>
+    <string name="prefs_language">زبان</string>
+    <string name="prefs_language_restart">نئی زبان کے لیے ایپ دوبارہ شروع ہو گی۔</string>
+    <string name="prefs_color_theme">رنگ کا تھیم</string>
+    <string name="theme_royal_purple">رائل پرپل</string>
+    <string name="theme_black_gold">بلیک اینڈ گولڈ</string>
+    <string name="theme_rose_gold">روز گولڈ</string>
+    <string name="prefs_appearance">لائٹ یا ڈارک</string>
+    <string name="prefs_theme_system">فون کی سیٹنگ</string>
+    <string name="prefs_theme_light">لائٹ</string>
+    <string name="prefs_theme_dark">ڈارک</string>
+    <string name="prefs_sound">آوازیں</string>
+    <string name="prefs_sound_sub">اہم کاموں پر ہلکی آواز، جیسے فروخت مکمل ہونے پر۔</string>
+    <string name="settings_group_app">ایپلیکیشن</string>
+    <string name="settings_group_account">اکاؤنٹ</string>
+</resources>

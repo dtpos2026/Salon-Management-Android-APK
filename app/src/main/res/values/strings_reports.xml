@@ -39,7 +39,7 @@
     <string name="report_empty_title">No activity in this period</string>
     <string name="report_empty_message">Choose another period or record sales and expenses.</string>
     <string name="report_insights_hint">Smart tips based on your sales, expenses and targets.</string>
-    <string name="report_generated_on">Generated on %1$s by Salon Manager (offline)</string>
+    <string name="report_generated_on">Generated on %1$s by DT Salon Management (offline)</string>
     <string name="report_col_service">Service</string>
     <string name="report_col_qty">Qty</string>
     <string name="report_col_revenue">Revenue</string>

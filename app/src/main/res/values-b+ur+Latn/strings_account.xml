@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="brand_tagline">Smart Salon aur Barber Management</string>
+    <string name="brand_by">By %1$s</string>
+
+    <string name="login_welcome">Khush aamdeed</string>
+    <string name="login_subtitle">Aage barhne ke liye apne Gmail account se sign in karein.</string>
+    <string name="login_google">Google ke saath jaari rakhein</string>
+    <string name="login_new_salon_hint">Naya salon? Google se sign in karein, aap ka account approval ke liye %1$s ko bhej diya jayega.</string>
+    <string name="login_error_no_account">Is phone par koi Google account nahi mila. Phone Settings &gt; Accounts mein shamil kar ke dobara koshish karein.</string>
+    <string name="login_error_not_configured">Google sign in abhi set nahi hua. Barah-e-karam %1$s se rabta karein.</string>
+    <string name="login_error_failed">Google sign in nakam ho gaya. Dobara koshish karein.</string>
+    <string name="login_error_network">Sign in nahi ho saka. Internet check kar ke dobara koshish karein.</string>
+
+    <string name="register_title">Apna salon register karein</string>
+    <string name="register_subtitle">Aap ki tafseelat approval ke liye %1$s ko jayengi. Approval ke baad aap app istemal kar sakenge.</string>
+    <string name="register_signed_in_as">%1$s se sign in</string>
+    <string name="register_salon_name">Salon / dukaan ka naam</string>
+    <string name="register_owner_name">Maalik ka naam</string>
+    <string name="register_phone">Mobile / WhatsApp number</string>
+    <string name="register_city">Shehar</string>
+    <string name="register_address">Pata</string>
+    <string name="register_submit">Approval ke liye bhejein</string>
+    <string name="register_use_other">Koi aur Google account istemal karein</string>
+    <string name="register_error_required">Salon ka naam, maalik ka naam aur phone number likhein.</string>
+    <string name="register_error_failed">Bheja nahi ja saka. Internet check kar ke dobara koshish karein.</string>
+
+    <string name="status_pending_title">Approval ka intezar</string>
+    <string name="status_pending_message">Aap ka account approval ka muntazir hai. Barah-e-karam %1$s se rabta karein.</string>
+    <string name="status_payment_title">Payment baqi hai</string>
+    <string name="status_payment_message">Aap ki subscription ki payment baqi hai. App jaari rakhne ke liye payment karein. Aap ka data is phone mein mehfooz hai.</string>
+    <string name="status_amount_due">Wajib-ul-ada raqam: Rs %1$s</string>
+    <string name="status_suspended_title">Account suspend</string>
+    <string name="status_suspended_message">Aap ka account suspend kar diya gaya hai. Barah-e-karam %1$s se rabta karein.</string>
+    <string name="status_blocked_title">Account block</string>
+    <string name="status_blocked_message">Yeh account block kar diya gaya hai. Barah-e-karam %1$s se rabta karein.</string>
+    <string name="status_expired_title">Subscription khatam</string>
+    <string name="status_expired_message">Aap ki subscription %1$s ko khatam ho gayi. Jaari rakhne ke liye renew karein. Aap ka data is phone mein mehfooz hai.</string>
+    <string name="status_expired_message_nodate">Aap ki subscription khatam ho gayi hai. Jaari rakhne ke liye renew karein. Aap ka data is phone mein mehfooz hai.</string>
+    <string name="status_rejected_title">Registration approve nahi hui</string>
+    <string name="status_rejected_message">Aap ki registration approve nahi hui. Barah-e-karam %1$s se rabta karein.</string>
+    <string name="status_verify_title">Internet chahiye</string>
+    <string name="status_verify_message">Account ki tasdeeq ke liye ek dafa internet se judein.</string>
+    <string name="status_verify_message_days">Aap ke account ki aakhri tasdeeq %1$d din pehle hui. Jaari rakhne ke liye ek dafa internet se judein.</string>
+    <string name="status_admin_message">%1$s ka paigham</string>
+    <string name="status_check_again">Dobara check karein</string>
+    <string name="status_check_failed">Server se rabta nahi ho saka. Internet check karein.</string>
+    <string name="status_unchanged">Abhi koi tabdeeli nahi. Approval milte hi app khul jayegi.</string>
+
+    <string name="support_whatsapp">WhatsApp</string>
+    <string name="support_call">Call</string>
+    <string name="support_email">Email</string>
+    <string name="support_message">Assalam-o-Alaikum, mujhe apne DT Salon account (%1$s) ke baare mein madad chahiye.</string>
+    <string name="whatsapp_not_installed">Is phone par WhatsApp install nahi hai.</string>
+    <string name="action_sign_out">Sign out</string>
+
+    <string name="account_title">Account aur subscription</string>
+    <string name="account_sub">Gmail, licence, muddat aur sign out</string>
+    <string name="account_email">Gmail</string>
+    <string name="account_salon">Salon</string>
+    <string name="account_owner">Maalik</string>
+    <string name="account_phone">Phone</string>
+    <string name="account_customer_id">Customer ID</string>
+    <string name="account_business_id">Business ID</string>
+    <string name="account_license_id">License ID</string>
+    <string name="account_plan">Plan</string>
+    <string name="account_expires">Kab tak</string>
+    <string name="account_no_expiry">Koi muddat nahi</string>
+    <string name="account_not_assigned">Abhi jaari nahi</string>
+    <string name="account_last_verified">Aakhri online tasdeeq</string>
+    <string name="account_offline_days">App internet ke baghair mazeed %1$d din chalegi.</string>
+    <string name="account_check_now">Abhi tasdeeq karein</string>
+    <string name="account_verified">Account ki tasdeeq ho gayi.</string>
+    <string name="account_signout_title">Sign out karein?</string>
+    <string name="account_signout_message">Aap ke salon ka data isi phone mein rahega. Jaari rakhne ke liye usi Gmail se dobara sign in karein.</string>
+    <string name="account_status_pending">Approval baqi</string>
+    <string name="account_status_approved">Active</string>
+    <string name="account_status_payment_pending">Payment baqi</string>
+    <string name="account_status_suspended">Suspend</string>
+    <string name="account_status_blocked">Block</string>
+    <string name="account_status_expired">Khatam</string>
+    <string name="account_status_rejected">Reject</string>
+
+    <string name="device_title">Yeh phone kisi aur account se juda hai</string>
+    <string name="device_message">Is phone ka salon data %1$s ka hai. Usi Gmail se sign in karein, ya apne account ke liye is phone ka salon data mita dein.</string>
+    <string name="device_erase">Data mitayein aur mera account istemal karein</string>
+    <string name="device_erase_title">Salon ka data mitayein?</string>
+    <string name="device_erase_message">Is phone ki tamam sales, customers, staff aur kharche mit jayenge. Pehle safety backup banta hai (Settings &gt; Backup). Yeh wapas nahi ho sakta.</string>
+    <string name="device_erase_failed">Data nahi mit saka. Dobara koshish karein.</string>
+
+    <string name="update_required_title">Update zaroori hai</string>
+    <string name="update_required_message">Yeh version ab istemal nahi ho sakta. Jaari rakhne ke liye naya version install karein.</string>
+    <string name="update_now">Abhi update karein</string>
+    <string name="update_available_title">Naya version aa gaya</string>
+    <string name="update_available_message">Version %1$s dastiyab hai.</string>
+    <string name="update_later">Baad mein</string>
+    <string name="setup_missing_title">App ki setting namukammal</string>
+    <string name="setup_missing_message">App ki yeh copy online account settings ke baghair bani hai. Barah-e-karam %1$s se asal app install karein.</string>
+
+    <string name="about_support_title">Madad</string>
+    <string name="about_company">Company</string>
+    <string name="about_website">Website</string>
+
+    <string name="prefs_title">App preferences</string>
+    <string name="prefs_sub">Zabaan, rang aur awaazein</string>
+    <string name="prefs_language">Zabaan</string>
+    <string name="prefs_language_restart">Nayi zabaan ke liye app dobara shuru hogi.</string>
+    <string name="prefs_color_theme">Rang ka theme</string>
+    <string name="theme_royal_purple">Royal Purple</string>
+    <string name="theme_black_gold">Black aur Gold</string>
+    <string name="theme_rose_gold">Rose Gold</string>
+    <string name="prefs_appearance">Light ya dark</string>
+    <string name="prefs_theme_system">Phone ki setting</string>
+    <string name="prefs_theme_light">Light</string>
+    <string name="prefs_theme_dark">Dark</string>
+    <string name="prefs_sound">Awaazein</string>
+    <string name="prefs_sound_sub">Aham kaamon par halki awaaz, jaise sale mukammal hone par.</string>
+    <string name="settings_group_app">Application</string>
+    <string name="settings_group_account">Account</string>
+</resources>
