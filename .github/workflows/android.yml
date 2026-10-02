@@ -23,6 +23,8 @@ jobs:
           java-version: 17
 
       - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-cleanup: always
 
       - name: Configure signing key and Firebase from secrets
         run: bash .github/scripts/configure-secrets.sh
@@ -48,6 +50,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
+          retention-days: 7
           name: app-screens
           path: app/build/screenshots/
 
@@ -83,18 +86,21 @@ jobs:
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
+          retention-days: 7
           name: SalonManager-debug-apk
           path: app/build/outputs/apk/debug/*.apk
 
       - name: Upload release APK (signed when the signing secrets are set)
         uses: actions/upload-artifact@v4
         with:
+          retention-days: 7
           name: SalonManager-release-apk
           path: app/build/outputs/apk/release/*.apk
 
       - name: Upload exported Room schema
         uses: actions/upload-artifact@v4
         with:
+          retention-days: 7
           name: room-schema
           path: app/schemas/
 
@@ -102,6 +108,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
+          retention-days: 7
           name: reports
           path: |
             app/build/reports/
@@ -125,6 +132,8 @@ jobs:
           java-version: 17
 
       - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-cleanup: always
 
       - name: Enable KVM
         run: |
@@ -156,5 +165,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
+          retention-days: 7
           name: device-reports-api-${{ matrix.api }}
           path: app/build/reports/androidTests/
