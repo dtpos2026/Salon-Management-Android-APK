@@ -34,6 +34,23 @@ jobs:
       - name: Unit tests (JVM + Robolectric database tests)
         run: ./gradlew testDebugUnitTest --stacktrace
 
+      - name: Print rendered screens (for design review)
+        if: always()
+        run: |
+          for f in app/build/screenshots/*; do
+            [ -f "$f" ] || continue
+            echo "=== SCREEN $(basename "$f")"
+            base64 -w0 "$f"; echo
+            echo "=== END"
+          done
+
+      - name: Upload rendered screens
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-screens
+          path: app/build/screenshots/
+
       - name: Build debug APK
         run: ./gradlew assembleDebug --stacktrace
 

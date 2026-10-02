@@ -21,6 +21,7 @@ import com.dtpos.salonmanager.services.backup.BackupManager
 import com.dtpos.salonmanager.services.branding.LogoStore
 import com.dtpos.salonmanager.services.export.DataExporter
 import com.dtpos.salonmanager.services.export.PdfExporter
+import com.dtpos.salonmanager.services.account.AccountBackend
 import com.dtpos.salonmanager.services.account.AccountCache
 import com.dtpos.salonmanager.services.account.AccountManager
 import com.dtpos.salonmanager.services.account.FirebaseAccountBackend
@@ -44,7 +45,11 @@ import kotlinx.coroutines.withContext
  * Manual dependency injection (no DI framework needed for an app of this size).
  * Everything is created lazily so app start stays fast.
  */
-class AppContainer(private val app: Application) {
+class AppContainer(
+    private val app: Application,
+    /** Online account backend; tests pass a fake, the app uses Firebase. */
+    accountBackend: AccountBackend? = null,
+) {
 
     /** Version 1 is single-salon; every repository is already scoped by this id. */
     val businessId: Long = DEFAULT_BUSINESS_ID
@@ -87,10 +92,12 @@ class AppContainer(private val app: Application) {
     val soundEffects by lazy { SoundEffects(app, uiPreferences) }
 
     /** Google sign-in + admin approval. Only the account lives online; salon data stays in Room. */
+    private val accountBackendOverride = accountBackend
+
     val accountManager by lazy {
         AccountManager(
             context = app,
-            backend = FirebaseAccountBackend(app),
+            backend = accountBackendOverride ?: FirebaseAccountBackend(app),
             cache = AccountCache(app),
             scope = appScope,
             versionCode = BuildConfig.VERSION_CODE,
