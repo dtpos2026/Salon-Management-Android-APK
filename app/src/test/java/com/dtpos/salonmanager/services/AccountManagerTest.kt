@@ -245,6 +245,7 @@ class AccountManagerTest {
     fun `wrong password and taken email are reported`() = runTest {
         backend.existingLogin("u5")
         val accounts = manager(backgroundScope)
+        accounts.recompute()
         assertEquals(SignInOutcome.Failed(AuthError.WRONG_CREDENTIALS), accounts.signIn("u5@gmail.com", "nope"))
         assertEquals(SignInOutcome.Failed(AuthError.EMAIL_IN_USE), accounts.createLogin("u5@gmail.com", "secret1"))
         assertEquals(null, accounts.sendPasswordReset("u5@gmail.com"))
