@@ -243,6 +243,7 @@ class BluetoothPrinterService(private val context: Context) {
         throw IOException("Unable to connect to printer", last)
     }
 
+    @SuppressLint("MissingPermission") // Only reached from send(), which checks the connect permission.
     private fun connectWithTimeout(socket: BluetoothSocket) {
         val watchdog = Executors.newSingleThreadScheduledExecutor()
         val task = watchdog.schedule({ if (!socket.isConnected) closeQuietly(socket) }, CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS)

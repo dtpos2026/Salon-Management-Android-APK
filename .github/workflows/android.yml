@@ -72,7 +72,21 @@ jobs:
           echo "Committed Room schema matches the entities."
 
       - name: Android lint (report only)
-        run: ./gradlew lintDebug
+        run: |
+          status=0
+          ./gradlew lintDebug || status=$?
+          python3 - <<'EOF'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          report = Path("app/build/reports/lint-results-debug.xml")
+          if report.exists():
+              for issue in ET.parse(report).getroot().iter("issue"):
+                  if issue.get("severity") in ("Error", "Fatal"):
+                      loc = issue.find("location")
+                      where = f'{loc.get("file")}:{loc.get("line")}' if loc is not None else "?"
+                      print(f'::warning::lint {issue.get("id")} at {where}: {issue.get("message")}')
+          EOF
+          exit $status
         continue-on-error: true
 
       - name: Upload debug APK

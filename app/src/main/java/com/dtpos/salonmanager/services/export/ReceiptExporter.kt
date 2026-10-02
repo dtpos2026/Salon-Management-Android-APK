@@ -8,6 +8,7 @@ import android.media.MediaScannerConnection
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import com.dtpos.salonmanager.core.util.DateTimeUtils
 import com.dtpos.salonmanager.domain.model.ReceiptData
@@ -94,6 +95,7 @@ class ReceiptExporter(
         }
     }
 
+    @RequiresApi(29)
     private fun saveWithMediaStore(bitmap: Bitmap, name: String, format: ReceiptImageFormat): SaveResult {
         val resolver = context.contentResolver
         val values = ContentValues().apply {
