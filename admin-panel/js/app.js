@@ -14,6 +14,7 @@ import * as invoiceEdit from './pages/invoice-edit.js';
 import * as invoiceView from './pages/invoice-view.js';
 import * as settings from './pages/settings.js';
 import * as admins from './pages/admins.js';
+import * as reminders from './pages/reminders.js';
 
 const root = document.getElementById('app');
 
@@ -151,6 +152,7 @@ const NAV = [
   { key: 'dashboard', href: '#/dashboard', label: 'Dashboard', icon: ICONS.dashboard },
   { key: 'salons', href: '#/salons', label: 'Salons', icon: ICONS.salons, badge: true },
   { key: 'invoices', href: '#/invoices', label: 'Invoices', icon: ICONS.invoices },
+  { key: 'reminders', href: '#/reminders', label: 'Reminders', icon: ICONS.reminders },
   { key: 'settings', href: '#/settings', label: 'Settings', icon: ICONS.settings },
   { key: 'admins', href: '#/admins', label: 'Admins', icon: ICONS.admins },
 ];
@@ -162,6 +164,7 @@ const ROUTES = [
   { re: /^#\/invoices/, nav: 'invoices', page: invoices },
   { re: /^#\/salon\/([^/?]+)/, nav: 'salons', page: salon },
   { re: /^#\/salons/, nav: 'salons', page: salons },
+  { re: /^#\/reminders/, nav: 'reminders', page: reminders },
   { re: /^#\/settings/, nav: 'settings', page: settings },
   { re: /^#\/admins/, nav: 'admins', page: admins },
   { re: /^(#\/?(dashboard)?)?$/, nav: 'dashboard', page: dashboard },

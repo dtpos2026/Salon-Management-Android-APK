@@ -154,6 +154,17 @@ try {
   await page.locator('tr', { hasText: 'Classic Barber' }).waitFor();
   step('filter shows salons whose licence ended');
 
+  await page.goto(`${base}/index.html#/reminders?group=LAPSED`);
+  await page.locator('#list li', { hasText: 'Classic Barber' }).waitFor();
+  assert.match(await page.inputValue('#msg'), /licence for \{salon\} ended/);
+  await page.evaluate(() => { window.__opened = []; window.open = (url) => { window.__opened.push(url); }; });
+  await page.click('#list [data-send]');
+  const opened = await page.evaluate(() => window.__opened);
+  assert.match(opened[0], /^https:\/\/wa\.me\/923211234567\?text=/);
+  assert.match(decodeURIComponent(opened[0]), /Classic Barber/);
+  await page.getByText('1 sent').waitFor();
+  step('WhatsApp reminders for salons whose licence ended');
+
   await page.goto(`${base}/index.html#/salon/late1`);
   await page.getByRole('button', { name: 'Suspend' }).click();
   await page.fill('.modal textarea[name=message]', 'Please clear your dues.');
