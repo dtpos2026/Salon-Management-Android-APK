@@ -120,18 +120,21 @@ Panel `admin-panel/` folder mein hai. Is ka koi build nahi; bas upload karna hai
    ek dafa dabayein.
 2. Code download: https://github.com/dtpos2026/Salon-Management-Android-APK/archive/refs/heads/claude/adoring-feynman-iae1sx.zip
    → unzip (maslan `C:\dt-salon`).
-3. CMD mein:
+3. ZIP ke **main folder** mein (jahan `firebase.json` aur `package.json` hain) CMD kholein aur
+   yeh 4 commands ek ek kar ke chalayein:
    ```
-   npm install -g firebase-tools
-   firebase login
-   cd C:\dt-salon\Salon-Management-Android-APK-claude-adoring-feynman-iae1sx
-   firebase deploy --only hosting,firestore
+   npm install
+   npm run build
+   npx firebase-tools login
+   npx firebase-tools deploy
    ```
-   Yeh ek hi command mein **panel + security rules + indexes** sab publish kar deti hai.
-   (AI assistant ke functions alag se deploy hote hain, dekhein section 6.1.)
+   - `npm install` deploy ka tool (firebase-tools) isi folder mein le aata hai.
+   - `npm run build` check karta hai ke saari files mojood hain (panel mein compile kuch nahi hota).
+   - `login` browser kholega: wahi Gmail chunein jis se Firebase project bana hai.
+   - `deploy` ek hi dafa mein **panel + security rules + indexes** publish kar deta hai.
 4. Panel ka address: **https://dt-salon-mangment.web.app**
 
-Baad mein panel update karna ho to wohi `firebase deploy --only hosting,firestore` dobara chala dein.
+Baad mein panel update karna ho to nayi ZIP ke folder mein wahi 4 commands dobara chala dein.
 
 ### 5.2 Tareeqa B – GitHub Pages (PC ke baghair)
 1. Repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
@@ -180,8 +183,8 @@ Is ke liye chahiye:
    cd functions
    npm install
    cd ..
-   firebase functions:secrets:set ANTHROPIC_API_KEY
-   firebase deploy --only functions
+   npx firebase-tools functions:secrets:set ANTHROPIC_API_KEY
+   npm run deploy:ai
    ```
    (`secrets:set` key poochega, wahan paste karein. Key kabhi app, panel ya GitHub mein nahi jati.)
 4. Panel → **Settings → AI assistant**: "AI assistant on" tick karein, roz ki limit aur model chunein,

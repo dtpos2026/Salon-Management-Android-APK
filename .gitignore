@@ -37,3 +37,6 @@ Thumbs.db
 
 # Local tooling output
 /tools/license/out/
+
+# npm (root deploy tools)
+node_modules/

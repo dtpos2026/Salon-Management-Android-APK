@@ -1,0 +1,17 @@
+{
+  "name": "dt-salon-management",
+  "private": true,
+  "description": "DT Salon Management: deploy the Super Admin panel and Firestore rules (npm install, npm run build, npx firebase-tools login, npx firebase-tools deploy).",
+  "scripts": {
+    "build": "node tools/build-panel.mjs",
+    "login": "firebase login",
+    "deploy": "firebase deploy --only hosting,firestore",
+    "deploy:ai": "firebase deploy --config firebase.ai.json --only functions"
+  },
+  "devDependencies": {
+    "firebase-tools": "13.29.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

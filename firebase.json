@@ -46,22 +46,6 @@
     "ui": {
       "enabled": false
     },
-    "singleProjectMode": true,
-    "functions": {
-      "port": 5001
-    }
-  },
-  "functions": [
-    {
-      "source": "functions",
-      "codebase": "ai",
-      "runtime": "nodejs22",
-      "ignore": [
-        "node_modules",
-        ".git",
-        "test",
-        "*.log"
-      ]
-    }
-  ]
+    "singleProjectMode": true
+  }
 }
