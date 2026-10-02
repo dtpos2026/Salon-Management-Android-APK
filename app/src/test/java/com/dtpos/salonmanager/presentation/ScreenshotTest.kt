@@ -25,6 +25,7 @@ import com.dtpos.salonmanager.services.account.CloudAccount
 import com.dtpos.salonmanager.services.account.SignedInUser
 import com.dtpos.salonmanager.services.prefs.ColorTheme
 import com.dtpos.salonmanager.services.printer.ReceiptImageRenderer
+import com.dtpos.salonmanager.services.printer.ReceiptStyle
 import com.dtpos.salonmanager.services.printer.ReceiptLabels
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -228,6 +229,16 @@ class ScreenshotTest {
         val bitmap = ReceiptImageRenderer(ReceiptImageRenderer.SHARE_WIDTH_PX).render(receipt, labels, logo = null)
         assertTrue(bitmap.height > 1000)
         FileOutputStream(File(outDir, "08-receipt.png")).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        // The other receipt designs, side by side for review.
+        val styles = listOf(ReceiptStyle.MODERN, ReceiptStyle.MINIMAL, ReceiptStyle.ELEGANT)
+            .map { ReceiptImageRenderer(480, style = it).render(receipt, labels, logo = null) }
+        val sheet = Bitmap.createBitmap(styles.sumOf { it.width } + 40 * (styles.size + 1), styles.maxOf { it.height } + 80, Bitmap.Config.ARGB_8888)
+        android.graphics.Canvas(sheet).apply {
+            drawColor(android.graphics.Color.rgb(0xEE, 0xEB, 0xF3))
+            var x = 40f
+            styles.forEach { drawBitmap(it, x, 40f, null); x += it.width + 40 }
+        }
+        FileOutputStream(File(outDir, "10-receipt-designs.jpg")).use { sheet.compress(Bitmap.CompressFormat.JPEG, 85, it) }
         compose.setContent { Text("ok") }
     }
 }

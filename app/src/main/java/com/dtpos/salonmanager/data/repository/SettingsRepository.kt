@@ -20,6 +20,7 @@ object SettingKeys {
     const val PRINTER_COPIES = "printer.copies"
     const val PRINTER_FEED = "printer.feedLines"
     const val PRINTER_CUT = "printer.cut"
+    const val PRINTER_STYLE = "printer.receiptStyle"
 
     const val SEC_LOCK_TYPE = "security.lockType"
     const val SEC_SECRET_HASH = "security.secretHash"

@@ -56,7 +56,7 @@ class ReceiptExporter(
 
     suspend fun render(receipt: ReceiptData, widthPx: Int = ReceiptImageRenderer.SHARE_WIDTH_PX): Bitmap = withContext(Dispatchers.Default) {
         val logo = if (receipt.showLogo) logoStore.loadBitmap(receipt.logoPath, 512) else null
-        ReceiptImageRenderer(widthPx, accentColor(), forPrinter = false, rtl = printer.isRtl())
+        ReceiptImageRenderer(widthPx, accentColor(), forPrinter = false, rtl = printer.isRtl(), style = printer.receiptStyle())
             .render(receipt, printer.labels(receipt.paymentMethod), logo)
     }
 

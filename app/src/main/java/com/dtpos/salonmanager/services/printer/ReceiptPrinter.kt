@@ -22,6 +22,8 @@ class ReceiptPrinter(
     private val logoStore: LogoStore,
 ) {
 
+    suspend fun receiptStyle(): ReceiptStyle = settingsStore.current().receiptStyle
+
     suspend fun printSale(saleId: Long): PrintResult {
         val receipt = saleRepository.buildReceipt(saleId) ?: return PrintResult.Failure(PrinterError.NOTHING_TO_PRINT)
         return printReceipt(receipt)
@@ -70,7 +72,7 @@ class ReceiptPrinter(
             val logo = receipt.logoPath.takeIf { receipt.showLogo && settings.printLogo }
                 ?.let { logoStore.loadBitmap(it) }
                 ?.let { ditheredLogo(it) }
-            val bitmap = ReceiptImageRenderer(settings.paper.dots, forPrinter = true, rtl = isRtl())
+            val bitmap = ReceiptImageRenderer(settings.paper.dots, forPrinter = true, rtl = isRtl(), style = settings.receiptStyle)
                 .render(receipt, labels(receipt.paymentMethod), logo)
             EscPos.encodeImage(ReceiptCanvasRenderer.toMonochrome(bitmap, dither = false), settings.feedLines, settings.cut)
         }

@@ -15,6 +15,18 @@ import com.dtpos.salonmanager.core.util.CurrencyFormatter
 import com.dtpos.salonmanager.core.util.DateTimeUtils
 import com.dtpos.salonmanager.domain.model.ReceiptData
 
+/** Receipt designs the salon can choose in printer settings. */
+enum class ReceiptStyle {
+    /** Coloured RECEIPT bar, boxed total, PAID stamp. */
+    CLASSIC,
+    /** Solid header band with the salon name, filled total bar. */
+    MODERN,
+    /** Plain and compact: thin lines only, saves paper. */
+    MINIMAL,
+    /** Serif headings, double rules and an outlined title. */
+    ELEGANT,
+}
+
 /**
  * The professional, branded receipt: logo, salon name, coloured "RECEIPT" bar, details, items,
  * a boxed total and a PAID stamp. Used for the on-screen preview, PNG / JPEG export, WhatsApp
@@ -29,6 +41,7 @@ class ReceiptImageRenderer(
     private val accentColor: Int = DEFAULT_ACCENT,
     private val forPrinter: Boolean = false,
     private val rtl: Boolean = false,
+    private val style: ReceiptStyle = ReceiptStyle.CLASSIC,
 ) {
     private val s = widthPx / 384f
     private val pad = 16f * s
@@ -39,14 +52,16 @@ class ReceiptImageRenderer(
     private val accent = if (forPrinter) Color.BLACK else accentColor
     private val alert = if (forPrinter) Color.BLACK else Color.rgb(0xC6, 0x28, 0x28)
 
-    private fun paint(size: Float, bold: Boolean = false, color: Int = ink, spacing: Float = 0f) = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+    private fun paint(size: Float, bold: Boolean = false, color: Int = ink, spacing: Float = 0f, serif: Boolean = false) = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
         textSize = size * s
         this.color = color
-        typeface = if (bold) Typeface.create("sans-serif", Typeface.BOLD) else Typeface.create("sans-serif", Typeface.NORMAL)
+        typeface = Typeface.create(if (serif) "serif" else "sans-serif", if (bold) Typeface.BOLD else Typeface.NORMAL)
         letterSpacing = spacing
     }
 
-    private val title = paint(21f, bold = true, spacing = 0.08f)
+    private val elegant = style == ReceiptStyle.ELEGANT
+    private val title = paint(if (elegant) 23f else 21f, bold = true, spacing = 0.08f, serif = elegant,
+        color = if (style == ReceiptStyle.MODERN) Color.WHITE else ink)
     private val sub = paint(12.5f, color = muted)
     private val barText = paint(15f, bold = true, color = Color.WHITE, spacing = 0.3f)
     private val label = paint(14f)
@@ -55,8 +70,10 @@ class ReceiptImageRenderer(
     private val header = paint(12f, bold = true, spacing = 0.12f)
     private val itemName = paint(14.5f, bold = true)
     private val itemSub = paint(13f, color = muted)
-    private val totalLabel = paint(19f, bold = true)
-    private val totalValue = paint(20f, bold = true)
+    private val totalLabel = paint(19f, bold = true, serif = elegant, color = if (style == ReceiptStyle.MODERN) Color.WHITE else ink)
+    private val totalValue = paint(20f, bold = true, serif = elegant, color = if (style == ReceiptStyle.MODERN) Color.WHITE else ink)
+    private val headerSub = paint(12.5f, color = if (style == ReceiptStyle.MODERN) Color.argb(0xDD, 0xFF, 0xFF, 0xFF) else muted)
+    private val outlineTitle = paint(15f, bold = true, color = accent, spacing = 0.3f, serif = elegant)
     private val stamp = paint(14f, bold = true, color = accent, spacing = 0.18f)
     private val thanks = paint(15.5f, bold = true)
     private val small = paint(11.5f, color = muted)
@@ -85,6 +102,14 @@ class ReceiptImageRenderer(
         val money = CurrencyFormatter(r.currency)
         var y = 20f * s
 
+        // Modern: solid band behind logo and salon name.
+        val bandTop = 0f
+        val bandEnd = if (style == ReceiptStyle.MODERN) measureHeader(r, logo) else 0f
+        if (style == ReceiptStyle.MODERN) canvas?.let {
+            fill.color = accent
+            it.drawRect(RectF(0f, bandTop, widthPx.toFloat(), bandEnd), fill)
+        }
+
         if (logo != null) {
             val maxW = widthPx * 0.42f
             val maxH = 92f * s
@@ -95,21 +120,37 @@ class ReceiptImageRenderer(
             y += h + 12f * s
         }
 
-        y += text(canvas, r.businessName.uppercase(), title, pad, contentWidth, Layout.Alignment.ALIGN_CENTER, y)
-        r.headerNote?.takeIf { it.isNotBlank() }?.let { y += 3f * s + text(canvas, it, sub, pad, contentWidth, Layout.Alignment.ALIGN_CENTER, y + 3f * s) }
-        r.businessAddress?.takeIf { it.isNotBlank() }?.let { y += 2f * s + text(canvas, it, sub, pad, contentWidth, Layout.Alignment.ALIGN_CENTER, y + 2f * s) }
-        r.businessPhone?.takeIf { it.isNotBlank() }?.let { y += 2f * s + text(canvas, it, sub, pad, contentWidth, Layout.Alignment.ALIGN_CENTER, y + 2f * s) }
+        y += headerText(canvas, r, y)
 
-        // Coloured title bar.
-        y += 12f * s
-        val barHeight = 32f * s
-        canvas?.let {
-            fill.color = accent
-            it.drawRoundRect(RectF(pad, y, widthPx - pad, y + barHeight), 7f * s, 7f * s, fill)
+        when (style) {
+            ReceiptStyle.CLASSIC -> {
+                // Coloured title bar.
+                y += 12f * s
+                val barHeight = 32f * s
+                canvas?.let {
+                    fill.color = accent
+                    it.drawRoundRect(RectF(pad, y, widthPx - pad, y + barHeight), 7f * s, 7f * s, fill)
+                }
+                val barTextHeight = measure(labels.receiptTitle.uppercase(), barText, contentWidth)
+                text(canvas, labels.receiptTitle.uppercase(), barText, pad, contentWidth, Layout.Alignment.ALIGN_CENTER, y + (barHeight - barTextHeight) / 2f)
+                y += barHeight + 10f * s
+            }
+            ReceiptStyle.MODERN -> {
+                y = bandEnd + 12f * s
+                y += text(canvas, labels.receiptTitle.uppercase(), outlineTitle, pad, contentWidth, Layout.Alignment.ALIGN_CENTER, y) + 8f * s
+            }
+            ReceiptStyle.MINIMAL -> {
+                y += 8f * s
+                y += text(canvas, labels.receiptTitle.uppercase(), header, pad, contentWidth, Layout.Alignment.ALIGN_CENTER, y) + 4f * s
+                y += dashed(canvas, y) + 8f * s
+            }
+            ReceiptStyle.ELEGANT -> {
+                y += 12f * s
+                y += doubleRule(canvas, y) + 8f * s
+                y += text(canvas, labels.receiptTitle.uppercase(), outlineTitle, pad, contentWidth, Layout.Alignment.ALIGN_CENTER, y) + 8f * s
+                y += doubleRule(canvas, y) + 10f * s
+            }
         }
-        val barTextHeight = measure(labels.receiptTitle.uppercase(), barText, contentWidth)
-        text(canvas, labels.receiptTitle.uppercase(), barText, pad, contentWidth, Layout.Alignment.ALIGN_CENTER, y + (barHeight - barTextHeight) / 2f)
-        y += barHeight + 10f * s
 
         if (r.isVoided) {
             y += text(canvas, "*** ${labels.voided} ***", voidPaint, pad, contentWidth, Layout.Alignment.ALIGN_CENTER, y) + 2f * s
@@ -147,12 +188,23 @@ class ReceiptImageRenderer(
         y += row(canvas, labels.subtotal, money.plain(r.subtotalMinor), y)
         if (r.totalDiscountMinor > 0) y += row(canvas, labels.discount, "-" + money.plain(r.totalDiscountMinor), y)
 
-        // Boxed grand total.
+        // Grand total: boxed (classic), filled (modern), ruled (minimal / elegant).
         y += 8f * s
-        val boxHeight = 50f * s
+        val boxHeight = if (style == ReceiptStyle.MINIMAL) 40f * s else 50f * s
         canvas?.let {
-            val box = Paint(linePaint).apply { strokeWidth = 2.6f * s }
-            it.drawRoundRect(RectF(pad + 1.3f * s, y, widthPx - pad - 1.3f * s, y + boxHeight), 8f * s, 8f * s, box)
+            val rect = RectF(pad + 1.3f * s, y, widthPx - pad - 1.3f * s, y + boxHeight)
+            when (style) {
+                ReceiptStyle.CLASSIC -> it.drawRoundRect(rect, 8f * s, 8f * s, Paint(linePaint).apply { strokeWidth = 2.6f * s })
+                ReceiptStyle.MODERN -> it.drawRoundRect(rect, 10f * s, 10f * s, Paint(fill).apply { color = accent })
+                ReceiptStyle.MINIMAL -> {
+                    it.drawLine(pad, y, widthPx - pad, y, linePaint)
+                    it.drawLine(pad, y + boxHeight, widthPx - pad, y + boxHeight, linePaint)
+                }
+                ReceiptStyle.ELEGANT -> {
+                    doubleRule(it, y)
+                    doubleRule(it, y + boxHeight - 6f * s)
+                }
+            }
         }
         val totalText = money.format(r.totalMinor)
         val inner = 12f * s
@@ -172,8 +224,13 @@ class ReceiptImageRenderer(
             y += row(canvas, labels.change, money.plain(r.changeMinor), y)
         }
 
-        // PAID / VOID stamp.
+        // PAID / VOID stamp (minimal: plain text).
         y += 10f * s
+        if (style == ReceiptStyle.MINIMAL) {
+            val plain = if (r.isVoided) labels.voided.uppercase() else labels.paidStamp.uppercase()
+            y += text(canvas, plain, header, pad, contentWidth, Layout.Alignment.ALIGN_CENTER, y) + 10f * s
+            return footer(canvas, r, labels, y)
+        }
         val stampText = if (r.isVoided) labels.voided.uppercase() else labels.paidStamp.uppercase()
         val stampPaint = if (r.isVoided) TextPaint(stamp).apply { color = alert } else stamp
         val stampWidth = stampPaint.measureText(stampText) + 34f * s
@@ -188,8 +245,12 @@ class ReceiptImageRenderer(
         }
         single(canvas, stampText, stampPaint, (widthPx - stampPaint.measureText(stampText)) / 2f, y + stampHeight / 2f)
         y += stampHeight + 14f * s
+        return footer(canvas, r, labels, y)
+    }
 
-        y += dashed(canvas, y)
+    private fun footer(canvas: Canvas?, r: ReceiptData, labels: ReceiptLabels, top: Float): Float {
+        var y = top
+        y += if (elegant) doubleRule(canvas, y) else dashed(canvas, y)
         y += 10f * s
         val footer = r.footer?.takeIf { it.isNotBlank() } ?: labels.defaultFooter
         y += text(canvas, footer.trim(), thanks, pad, contentWidth, Layout.Alignment.ALIGN_CENTER, y)
@@ -200,6 +261,36 @@ class ReceiptImageRenderer(
     }
 
     private fun start() = Layout.Alignment.ALIGN_NORMAL
+
+    /** Salon name, note, address and phone (centred). Returns the height used. */
+    private fun headerText(canvas: Canvas?, r: ReceiptData, top: Float): Float {
+        val subPaint = headerSub
+        var y = top
+        y += text(canvas, r.businessName.uppercase(), title, pad, contentWidth, Layout.Alignment.ALIGN_CENTER, y)
+        r.headerNote?.takeIf { it.isNotBlank() }?.let { y += 3f * s + text(canvas, it, subPaint, pad, contentWidth, Layout.Alignment.ALIGN_CENTER, y + 3f * s) }
+        r.businessAddress?.takeIf { it.isNotBlank() }?.let { y += 2f * s + text(canvas, it, subPaint, pad, contentWidth, Layout.Alignment.ALIGN_CENTER, y + 2f * s) }
+        r.businessPhone?.takeIf { it.isNotBlank() }?.let { y += 2f * s + text(canvas, it, subPaint, pad, contentWidth, Layout.Alignment.ALIGN_CENTER, y + 2f * s) }
+        return y - top
+    }
+
+    /** Bottom of the modern header band (logo + header text + padding). */
+    private fun measureHeader(r: ReceiptData, logo: Bitmap?): Float {
+        var y = 20f * s
+        if (logo != null) {
+            val scale = minOf(widthPx * 0.42f / logo.width, 92f * s / logo.height)
+            y += logo.height * scale + 12f * s
+        }
+        return y + headerText(null, r, y) + 16f * s
+    }
+
+    private fun doubleRule(canvas: Canvas?, y: Float): Float {
+        canvas?.let {
+            val thin = Paint(linePaint).apply { strokeWidth = 1.2f * s; color = accent }
+            it.drawLine(pad, y, widthPx - pad, y, thin)
+            it.drawLine(pad, y + 4f * s, widthPx - pad, y + 4f * s, thin)
+        }
+        return 6f * s
+    }
 
     /** Label on the start side, value on the end side (mirrored for Urdu). */
     private fun row(canvas: Canvas?, labelText: String, valueText: String, y: Float, valuePaint: TextPaint = value, labelPaint: TextPaint = label): Float {

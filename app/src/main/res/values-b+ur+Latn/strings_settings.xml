@@ -229,4 +229,10 @@
     <string name="about_open_source_title">Open-source hisse</string>
     <string name="about_open_source_text">Kotlin, Jetpack Compose, Material 3, Room, Firebase aur deegar AndroidX libraries se bani (Apache License 2.0).</string>
     <string name="about_copyright">© Digital Target. Tamam haqooq mehfooz hain.</string>
+    <string name="receipt_style">Receipt ka design</string>
+    <string name="receipt_style_classic">Classic</string>
+    <string name="receipt_style_modern">Modern</string>
+    <string name="receipt_style_minimal">Saada</string>
+    <string name="receipt_style_elegant">Elegant</string>
+    <string name="receipt_style_hint">Print, preview aur WhatsApp par bheji gayi receipt ke liye. Saada design kaghaz bachata hai.</string>
 </resources>

@@ -29,6 +29,7 @@ data class PrinterSettings(
     val copies: Int = 1,
     val feedLines: Int = 3,
     val cut: Boolean = true,
+    val receiptStyle: ReceiptStyle = ReceiptStyle.CLASSIC,
 ) {
     val isConfigured: Boolean get() = !address.isNullOrBlank()
 }
@@ -57,6 +58,7 @@ class PrinterSettingsStore(private val settings: SettingsRepository) {
         settings.putInt(SettingKeys.PRINTER_COPIES, value.copies.coerceIn(1, 3))
         settings.putInt(SettingKeys.PRINTER_FEED, value.feedLines.coerceIn(0, 8))
         settings.putBoolean(SettingKeys.PRINTER_CUT, value.cut)
+        settings.putString(SettingKeys.PRINTER_STYLE, value.receiptStyle.name)
     }
 
     private fun parse(map: Map<String, String>) = PrinterSettings(
@@ -69,5 +71,6 @@ class PrinterSettingsStore(private val settings: SettingsRepository) {
         copies = map[SettingKeys.PRINTER_COPIES]?.toIntOrNull()?.coerceIn(1, 3) ?: 1,
         feedLines = map[SettingKeys.PRINTER_FEED]?.toIntOrNull()?.coerceIn(0, 8) ?: 3,
         cut = map[SettingKeys.PRINTER_CUT]?.toBooleanStrictOrNull() ?: true,
+        receiptStyle = map[SettingKeys.PRINTER_STYLE]?.let { v -> ReceiptStyle.entries.firstOrNull { it.name == v } } ?: ReceiptStyle.CLASSIC,
     )
 }

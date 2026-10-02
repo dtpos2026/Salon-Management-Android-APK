@@ -239,4 +239,10 @@
     <string name="about_open_source_title">Open-source components</string>
     <string name="about_open_source_text">Built with Kotlin, Jetpack Compose, Material 3, Room, Firebase and other AndroidX libraries (Apache License 2.0).</string>
     <string name="about_copyright">© Digital Target. All rights reserved.</string>
+    <string name="receipt_style">Receipt design</string>
+    <string name="receipt_style_classic">Classic</string>
+    <string name="receipt_style_modern">Modern</string>
+    <string name="receipt_style_minimal">Minimal</string>
+    <string name="receipt_style_elegant">Elegant</string>
+    <string name="receipt_style_hint">Used for printing, the preview and receipts shared on WhatsApp. Minimal saves paper.</string>
 </resources>

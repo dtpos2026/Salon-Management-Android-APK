@@ -36,6 +36,9 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material3.FilterChip
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -63,6 +66,7 @@ import com.dtpos.salonmanager.presentation.components.MessageEffect
 import com.dtpos.salonmanager.presentation.theme.SalonTheme
 import com.dtpos.salonmanager.services.printer.PaperWidth
 import com.dtpos.salonmanager.services.printer.PrintMode
+import com.dtpos.salonmanager.services.printer.ReceiptStyle
 import com.dtpos.salonmanager.services.printer.PrintResult
 import com.dtpos.salonmanager.services.printer.PrinterDevice
 import com.dtpos.salonmanager.services.printer.PrinterSettings
@@ -160,6 +164,7 @@ class PrinterSettingsViewModel(private val container: AppContainer) : BaseViewMo
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PrinterSettingsScreen(onBack: () -> Unit) {
     val vm = appViewModel { PrinterSettingsViewModel(it) }
@@ -302,6 +307,19 @@ fun PrinterSettingsScreen(onBack: () -> Unit) {
                         onSelect = { p -> vm.updateOptions { it.copy(paper = p) } },
                     )
                     Spacer(Modifier.height(12.dp))
+                    Text(stringResource(R.string.receipt_style), style = MaterialTheme.typography.titleSmall)
+                    Spacer(Modifier.height(6.dp))
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        ReceiptStyle.entries.forEach { style ->
+                            FilterChip(
+                                selected = settings.receiptStyle == style,
+                                onClick = { vm.updateOptions { it.copy(receiptStyle = style) } },
+                                label = { Text(stringResource(receiptStyleName(style))) },
+                            )
+                        }
+                    }
+                    Text(stringResource(R.string.receipt_style_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(12.dp))
                     Text(stringResource(R.string.printer_mode), style = MaterialTheme.typography.titleSmall)
                     Spacer(Modifier.height(6.dp))
                     SegmentedChoice(
@@ -354,4 +372,11 @@ private fun DeviceRow(device: PrinterDevice, selected: Boolean, onSelect: () -> 
             ),
         )
     }
+}
+
+fun receiptStyleName(style: ReceiptStyle): Int = when (style) {
+    ReceiptStyle.CLASSIC -> R.string.receipt_style_classic
+    ReceiptStyle.MODERN -> R.string.receipt_style_modern
+    ReceiptStyle.MINIMAL -> R.string.receipt_style_minimal
+    ReceiptStyle.ELEGANT -> R.string.receipt_style_elegant
 }

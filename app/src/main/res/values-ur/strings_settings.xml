@@ -229,4 +229,10 @@
     <string name="about_open_source_title">اوپن سورس اجزاء</string>
     <string name="about_open_source_text">Kotlin، Jetpack Compose، Material 3، Room، Firebase اور دیگر AndroidX لائبریریوں سے بنی (Apache License 2.0)۔</string>
     <string name="about_copyright">© Digital Target۔ جملہ حقوق محفوظ ہیں۔</string>
+    <string name="receipt_style">رسید کا ڈیزائن</string>
+    <string name="receipt_style_classic">کلاسک</string>
+    <string name="receipt_style_modern">ماڈرن</string>
+    <string name="receipt_style_minimal">سادہ</string>
+    <string name="receipt_style_elegant">شاندار</string>
+    <string name="receipt_style_hint">پرنٹ، پیش منظر اور واٹس ایپ پر بھیجی گئی رسید کے لیے۔ سادہ ڈیزائن کاغذ بچاتا ہے۔</string>
 </resources>
