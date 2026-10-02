@@ -8,7 +8,8 @@ aur rozana salon owners aur un ke phones ko approve karna.
 > **GitHub Secrets** mein daalte hain (step 3).
 
 **Sab se chhota raasta (zaroori kaam):** 2.1 Firestore on → 2.2 Email/Password on →
-3 secret `GOOGLE_SERVICES_JSON` → 4 APK lein → 5 panel deploy → 6 apna admin login.
+3 secret `GOOGLE_SERVICES_JSON` → 4 APK lein → 5 panel deploy → 6 panel par login aur
+**Become Super Admin**.
 
 ---
 
@@ -27,9 +28,10 @@ Salon owner ka phone (DT Salon app)            Aap (Super Admin panel, browser)
 - Salon ki sales, customers, staff, kharche **kabhi online nahi jate**. Woh sirf phone mein rehte hain.
 - Online sirf yeh hai: login, account ka status (pending/approved/...), kaunsa phone approved hai,
   licence ki expiry aur aap ke invoices.
-- Approved phone **internet ke baghair** chalta rehta hai. Har 30 din mein (admin panel se badal
-  sakte hain) ek dafa internet se account check hona zaroori hai.
-- **Ek account = ek phone.** Wahi email kisi doosre phone par login ho to woh phone "New phone needs
+- Approved phone **internet ke baghair** chalta rehta hai. Har **7 din** (haftawar; admin panel se badal
+  sakte hain) mein ek dafa internet se account check hona zaroori hai. Internet ho to suspend/approve
+  foran (real time) lagta hai.
+- **Ek account = utne phone jitne aap allow karein (default 1).** Wahi email kisi doosre phone par login ho to woh phone "New phone needs
   approval" dikhata hai aur aap ke panel mein request aa jati hai. Aap approve karein to account
   naye phone par chala jata hai aur purana phone band ho jata hai.
 
@@ -145,21 +147,18 @@ Baad mein panel update karna ho to wohi `firebase deploy` dobara chala dein.
 
 ---
 
-## 6. Pehla Super Admin banana (ek dafa)
+## 6. Pehla Super Admin banana (ek dafa, 1 minute)
 
 1. Firebase console → **Authentication → Users → Add user** → apni email aur ek mazboot password →
    **Add user**.
 2. Panel kholein → wohi email aur password → **Sign in**.
-3. Screen kahegi "No admin access" aur aap ka **UID** dikhayegi → **Copy UID**.
-4. Firebase console → **Firestore Database → Data → Start collection**:
-   - Collection ID: `admins`
-   - Document ID: copy kiya hua UID paste karein
-   - Field: `email` (string) = aap ki email → **Save**
-5. Panel par **Retry** dabayein. Dashboard khul jayega.
+3. Panel kahega "This panel has no Super Admin yet" → **Become Super Admin** dabayein. Bas,
+   dashboard khul jayega. (UID copy karne ya Firestore mein kuch likhne ki zaroorat nahi.)
 
-Doosre admin: unka login bhi step 1 se banayein, woh ek dafa panel par sign in kar ke apna UID
-bhejein, phir panel ke **Admins** page se add karein. Password bhool jayein to panel par
-"Forgot password?" dabayein.
+> Yeh sirf **pehli** login kar sakti hai, aur sirf ek dafa. Is liye panel deploy karte hi foran
+> yeh step kar lein. Doosre admin: unka login step 1 se banayein, woh panel par sign in kar ke
+> apna UID bhejein, phir panel ke **Admins** page se add karein.
+> Password bhool jayein to panel par "Forgot password?".
 
 ---
 
@@ -179,8 +178,12 @@ bhejein, phir panel ke **Admins** page se add karein. Password bhool jayein to p
 1. Salon owner naya phone le, ya koi aur us ka email/password doosre phone par istemal kare, to
    us phone par "New phone needs approval" aata hai aur request khud aap ko aa jati hai.
 2. Dashboard par **New phone requests** (ya Salons → **New phone requests** filter).
-3. Salon ke page par phone ka model dikhega → **Approve this phone** (ya **Ignore**).
-4. Approve karte hi account naye phone par khul jata hai aur **purana phone band** ho jata hai.
+3. Salon ke page par phone ka model dikhega:
+   - **Approve this phone**: naya phone bhi chalega (jab tak phone limit poori na ho);
+   - **Move account to this phone**: sirf naya phone chalega, purane band;
+   - **Ignore**: kuch nahi badalta.
+4. **Phones** hisse mein har salon ke approved phones ki list hai: **Allowed** mein likhein ek
+   login kitne phones par chal sakta hai (default 1), aur kisi phone ko **Remove** bhi kar sakte hain.
    (Purane phone ka data naye phone mein khud nahi jata: purane phone se Settings → Backup bana
    kar naye phone mein Restore karein.)
 
@@ -208,7 +211,8 @@ Salon ke page par: **Payment pending**, **Suspend**, **Block**, **Mark expired**
   filters; private notes (sirf admin dekhta hai).
 
 ### App control (Settings → App control)
-- **Offline days allowed**: approved phone kitne din internet ke baghair chale (default 30).
+- **Offline days allowed**: har phone kitne din mein ek dafa online account check kare (default 7 =
+  haftawar). Internet hone par status (suspend/block/approve) foran (real time) phone tak pohanchta hai.
 - **Notice to all salons**: sab apps mein ek dafa dikhne wala paigham.
 - **Latest / Minimum version**: naya APK dene par yahan version code aur download link likhein;
   minimum se purani apps ko update karna zaroori ho jata hai.

@@ -1,6 +1,7 @@
 import {
   getAccount, getNotes, saveNotes, updateAccount, effectiveStatus, PLANS, STATUS_LABELS, planExpiry,
   listInvoices, deleteAccount, ensureIds, approveDevice, dismissDeviceRequest,
+  approvedDevices, deviceLimit, deviceName, removeDevice, setDeviceLimit,
 } from '../data.js';
 import {
   esc, fmtDate, fmtDateTime, inputDate, fromInputDate, money, relativeDays, toast, errorMessage,
@@ -33,6 +34,8 @@ export async function render(el, ctx) {
   if (account.status === 'PENDING') statusButtons.push('<button class="btn btn-ghost" data-st="REJECTED">Reject</button>');
   if (account.status !== 'BLOCKED') statusButtons.push('<button class="btn btn-danger" data-st="BLOCKED">Block</button>');
   const wa = whatsappNumber(account.phone);
+  const devices = approvedDevices(account).filter((d) => d !== 'none');
+  const limit = deviceLimit(account);
 
   el.innerHTML = `
     <div class="card">
@@ -47,12 +50,13 @@ export async function render(el, ctx) {
       ${account.messageToUser ? `<div class="notice info">Message shown in the app: ${esc(account.messageToUser)}</div>` : ''}
       ${account.pendingDeviceId ? `<div class="notice warn" id="device-request">
         <b>New phone wants to use this account:</b> ${esc(account.pendingDeviceModel || 'Unknown phone')}
-        <span class="cell-sub">(asked ${fmtDateTime(account.pendingDeviceAt)}; current phone: ${esc(account.deviceModel || '—')})</span>
+        <span class="cell-sub">(asked ${fmtDateTime(account.pendingDeviceAt)}; ${devices.length} of ${limit} phone(s) in use)</span>
         <div class="actions" style="margin-top:10px">
-          <button class="btn btn-success btn-sm" data-act="approve-device">Approve this phone</button>
+          ${devices.length < limit ? '<button class="btn btn-success btn-sm" data-act="approve-device">Approve this phone</button>' : ''}
+          <button class="btn ${devices.length < limit ? 'btn-ghost' : 'btn-success'} btn-sm" data-act="replace-device">Move account to this phone</button>
           <button class="btn btn-ghost btn-sm" data-act="dismiss-device">Ignore</button>
         </div>
-        <div class="help">Approving moves the account to the new phone; the old phone stops opening.</div>
+        <div class="help">${devices.length < limit ? 'Approve adds it next to the current phone(s). ' : 'The phone limit is reached. '}Move = only this phone works, the others stop.</div>
       </div>` : ''}
       <div class="actions">
         ${statusButtons.join('')}
@@ -91,8 +95,14 @@ export async function render(el, ctx) {
           <dt>Approved</dt><dd>${fmtDateTime(account.approvedAt)}</dd>
           <dt>Last seen</dt><dd>${fmtDateTime(account.lastSeenAt)}</dd>
           <dt>App version</dt><dd>${esc(account.appVersion || '—')}</dd>
-          <dt>Approved phone</dt><dd>${esc(account.deviceModel || '—')}${account.deviceId ? ` <span class="cell-sub mono">${esc(String(account.deviceId).slice(-8))}</span>` : ''}</dd>
         </dl>
+        <div class="card-head" style="margin-top:14px"><h2>Phones</h2><div class="spacer"></div>
+          <label class="cell-sub" style="display:flex;gap:6px;align-items:center">Allowed
+            <input id="max-devices" type="number" min="1" max="20" value="${limit}" style="width:64px">
+            <button class="btn btn-ghost btn-sm" id="save-max">Save</button></label></div>
+        ${devices.length ? `<ul class="device-list">${devices.map((d) => `<li><span>📱 ${esc(deviceName(account, d))} <span class="cell-sub mono">${esc(String(d).slice(-8))}</span></span>
+          <button class="btn btn-ghost btn-sm" data-remove-device="${esc(d)}">Remove</button></li>`).join('')}</ul>`
+    : '<div class="empty">No phone approved. The next phone that signs in asks for approval.</div>'}
       </div>
     </div>
 
@@ -144,14 +154,28 @@ export async function render(el, ctx) {
     if (await statusDialog(account, b.dataset.st)) { ctx.refreshBadge(); reload(); }
   }));
   el.querySelector('#copy-uid').addEventListener('click', (e) => { e.preventDefault(); copyText(account.id); });
-  el.querySelector('[data-act="approve-device"]')?.addEventListener('click', async () => {
-    if (!(await confirmDialog('Approve this phone?', `${account.salonName || 'This salon'} will open on ${account.pendingDeviceModel || 'the new phone'}. The old phone (${account.deviceModel || '—'}) will stop opening.`, 'Approve'))) return;
+  const deviceAction = (sel, title, text, label, fn, done) => el.querySelector(sel)?.addEventListener('click', async () => {
+    if (title && !(await confirmDialog(title, text, label))) return;
     try {
-      await approveDevice(account);
-      toast('Phone approved', 'success');
+      await fn();
+      toast(done, 'success');
       ctx.refreshBadge();
       reload();
     } catch (e) { toast(errorMessage(e), 'error'); }
+  });
+  deviceAction('[data-act="approve-device"]', 'Approve this phone?',
+    `${account.salonName || 'This salon'} will also open on ${account.pendingDeviceModel || 'the new phone'}.`, 'Approve',
+    () => approveDevice(account), 'Phone approved');
+  deviceAction('[data-act="replace-device"]', 'Move the account to this phone?',
+    `Only ${account.pendingDeviceModel || 'the new phone'} will open ${account.salonName || 'this salon'}. The other phone(s) stop at their next check.`, 'Move',
+    () => approveDevice(account, { replace: true }), 'Account moved to the new phone');
+  el.querySelectorAll('[data-remove-device]').forEach((b) => b.addEventListener('click', async () => {
+    const id = b.dataset.removeDevice;
+    if (!(await confirmDialog('Remove this phone?', `${deviceName(account, id)} will stop opening the app at its next check.`, 'Remove', true))) return;
+    try { await removeDevice(account, id); toast('Phone removed', 'success'); reload(); } catch (e) { toast(errorMessage(e), 'error'); }
+  }));
+  el.querySelector('#save-max')?.addEventListener('click', async () => {
+    try { await setDeviceLimit(account, Number(el.querySelector('#max-devices').value)); toast('Phone limit saved', 'success'); reload(); } catch (e) { toast(errorMessage(e), 'error'); }
   });
   el.querySelector('[data-act="dismiss-device"]')?.addEventListener('click', async () => {
     try {

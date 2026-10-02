@@ -35,7 +35,12 @@ service cloud.firestore {
 
     match /admins/{uid} {
       allow read: if isSelf(uid) || isAdmin();
-      allow write: if isAdmin();
+      // Bootstrap: the very first admin claims the panel in one batch with config/owner.
+      // Once config/owner exists, only admins can add admins.
+      allow create: if isAdmin() || (isSelf(uid)
+        && !exists(/databases/$(database)/documents/config/owner)
+        && getAfter(/databases/$(database)/documents/config/owner).data.uid == uid);
+      allow update, delete: if isAdmin();
     }
 
     // Salon accounts (email + password sign-in). A salon owner can only create their own account
@@ -61,7 +66,7 @@ service cloud.firestore {
         && request.resource.data.createdAt == request.time;
 
       // The owner may refresh harmless fields and ask for a new phone to be approved
-      // (pendingDevice*). Only an admin can move deviceId, i.e. approve the phone.
+      // (pendingDevice*). Only an admin approves phones (deviceIds, maxDevices).
       allow update: if isAdmin() || (isSelf(uid)
         && request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(['lastSeenAt', 'appVersion', 'deviceModel', 'displayName', 'photoUrl',
@@ -103,9 +108,15 @@ service cloud.firestore {
     // branding and app are public (the login screen shows support contacts); billing holds
     // bank details for invoices and is admin-only.
     match /config/{name} {
-      allow get: if name in ['branding', 'app'] || isAdmin();
+      allow get: if name in ['branding', 'app'] || (name == 'owner' && signedIn()) || isAdmin();
       allow list: if isAdmin();
       allow write: if isAdmin();
+      // First admin claim (see /admins).
+      allow create: if name == 'owner' && signedIn()
+        && request.resource.data.keys().hasOnly(['uid', 'email', 'claimedAt'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.claimedAt == request.time
+        && existsAfter(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
   }
 }

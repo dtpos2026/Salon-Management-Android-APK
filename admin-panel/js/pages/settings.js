@@ -65,7 +65,7 @@ const FORMS = {
       ${field('latestVersionName', 'Latest version name', c.latestVersionName, { placeholder: '2.1.0' })}
       ${field('latestVersionCode', 'Latest version code', c.latestVersionCode, { type: 'number', help: 'Apps below this see an "update available" message' })}
       ${field('minVersionCode', 'Minimum version code', c.minVersionCode, { type: 'number', help: 'Apps below this must update before they can be used (0 = off)' })}
-      ${field('offlineGraceDays', 'Offline days allowed', c.offlineGraceDays, { type: 'number', help: 'How long an approved phone works without internet before it must verify again (1-365)' })}
+      ${field('offlineGraceDays', 'Offline days allowed', c.offlineGraceDays, { type: 'number', help: 'How often each phone must check its account online (default 7 = weekly). Changes in the panel reach phones instantly when online.' })}
       ${field('updateUrl', 'Update download link', c.updateUrl, { full: true, placeholder: 'https://… (APK download page)' })}
       ${field('updateMessage', 'Update message', c.updateMessage, { full: true, textarea: true })}
       ${field('notice', 'Notice to all salons', c.notice, { full: true, textarea: true, help: 'Shown once in every salon app (change the text to show a new notice; empty = none)' })}
@@ -115,7 +115,7 @@ export async function render(el, ctx) {
       data[key] = NUMBER_FIELDS.includes(key) ? Number(value) || 0 : String(value).trim();
     });
     delete data[''];
-    if (tab === 'app') data.offlineGraceDays = Math.min(365, Math.max(1, data.offlineGraceDays || 30));
+    if (tab === 'app') data.offlineGraceDays = Math.min(365, Math.max(1, data.offlineGraceDays || 7));
     const size = JSON.stringify(data).length;
     if (size > 900000) { toast('Images are too large; choose smaller pictures', 'error'); return; }
     try {

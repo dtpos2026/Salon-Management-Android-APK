@@ -111,6 +111,10 @@ class AccessPolicyTest {
         assertEquals(false, waiting.requested)
         val requested = AccessPolicy.decide(bound.copy(pendingDeviceId = PHONE), now, now, 30, PHONE) as AccessState.DeviceNotApproved
         assertEquals(true, requested.requested)
+        // Several phones approved by the admin.
+        val two = bound.copy(deviceIds = listOf("a-phone-one", PHONE))
+        assertTrue(AccessPolicy.decide(two, now, now, 30, PHONE) is AccessState.Allowed)
+        assertTrue(AccessPolicy.decide(two.copy(deviceIds = listOf("none")), now, now, 30, PHONE) is AccessState.DeviceNotApproved)
         // Older accounts without a bound phone keep working.
         assertTrue(AccessPolicy.decide(approved.copy(deviceId = null), now, now, 30, PHONE) is AccessState.Allowed)
     }

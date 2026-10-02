@@ -56,7 +56,7 @@ await admin(async (db) => {
     ownerNameLower: 'ali raza', phone: '03001234567', phoneDigits: '923001234567', city: 'Burewala', status: 'APPROVED',
     plan: 'MONTHLY', monthlyFee: 1500, customerId: 'DTC-0001', businessId: 'DTB-AAAA2222', licenseId: 'DTL-ABCD-EFGH',
     expiresAt: Timestamp.fromMillis(now + 20 * DAY), createdAt: Timestamp.fromMillis(now - 40 * DAY),
-    deviceId: 'a-old-phone-1111', deviceModel: 'Samsung A15',
+    deviceId: 'a-old-phone-1111', deviceModel: 'Samsung A15', maxDevices: 2,
     pendingDeviceId: 'a-new-phone-2222', pendingDeviceModel: 'Infinix Hot 40', pendingDeviceAt: Timestamp.fromMillis(now - 3600000),
   });
   await setDoc(doc(db, 'accounts/late1'), {
@@ -98,12 +98,10 @@ try {
   await page.fill('#email', 'owner@digitaltarget.test');
   await page.fill('#password', 'Secret#2026');
   await page.click('#signin');
-  await page.getByText('No admin access').waitFor();
-  const uid = (await page.textContent('#uid')).trim();
-  step('email login: wrong password refused; a login without admin rights is refused');
+  await page.getByText('Become Super Admin').waitFor();
+  await page.click('#claim');
+  step('email login: wrong password refused; the first login claims Super Admin with one click');
 
-  await admin((db) => setDoc(doc(db, 'admins', uid), { email: 'owner@digitaltarget.test' }));
-  await page.click('#retry');
   await page.getByText('Waiting for approval').first().waitFor();
   await page.waitForSelector('.stat .value');
   const statValue = async (label) => page.locator('.stat', { hasText: label }).locator('.value').textContent();
@@ -137,10 +135,11 @@ try {
   await page.click('.modal button[type=submit]');
   await page.getByText('Phone approved').waitFor();
   const moved = await admin(async (db) => (await getDoc(doc(db, 'accounts/royal1'))).data());
-  assert.equal(moved.deviceId, 'a-new-phone-2222');
-  assert.equal(moved.deviceModel, 'Infinix Hot 40');
+  assert.deepEqual(moved.deviceIds, ['a-old-phone-1111', 'a-new-phone-2222']);
+  assert.equal(moved.deviceNames['a-new-phone-2222'], 'Infinix Hot 40');
   assert.equal(moved.pendingDeviceId, undefined);
-  step('a new phone request is listed and approved from the salon page');
+  await page.locator('.device-list li').nth(1).waitFor();
+  step('a new phone request is approved within the phone limit (2 phones listed)');
 
   await page.goto(`${base}/index.html#/salons`);
   await page.fill('#q', 'roy');

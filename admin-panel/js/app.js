@@ -3,7 +3,7 @@ import {
   onAuthStateChanged, signOut, signInWithEmailAndPassword, sendPasswordResetEmail,
 } from '../vendor/firebase.js';
 import { firebase, initFirebase, parseConfigText, saveConfigInBrowser, forgetBrowserConfig, usingEmulators } from './fb.js';
-import { isAdmin, dashboardCounts } from './data.js';
+import { isAdmin, dashboardCounts, ownerClaimed, claimFirstAdmin, ensureOwnerRecorded } from './data.js';
 import { esc, $, $$, toast, copyText, errorMessage } from './util.js';
 import { ICONS } from './icons.js';
 import * as dashboard from './pages/dashboard.js';
@@ -104,6 +104,25 @@ function renderLogin(error, info) {
       renderLogin(authErrorText(e));
     }
   };
+}
+
+function renderClaim(user, error) {
+  glass(`${brand}
+    <h2>Welcome</h2>
+    <p>This panel has no Super Admin yet. Make <b>${esc(user.email || '')}</b> the Super Admin?</p>
+    <button class="btn btn-primary" id="claim" style="width:100%">Become Super Admin</button>
+    <button class="btn btn-ghost btn-sm" id="out" style="margin-top:8px">Sign out</button>
+    ${error ? `<p style="color:#ffb4ab;margin-top:16px">${esc(error)}</p>` : ''}
+    <div class="glass-note">Only the first login can do this, once. Later admins are added from the Admins page.</div>`);
+  $('#claim').onclick = async () => {
+    try {
+      await claimFirstAdmin(user);
+      start(user);
+    } catch (e) {
+      renderClaim(user, errorMessage(e));
+    }
+  };
+  $('#out').onclick = () => signOut(firebase().auth);
 }
 
 function renderNotAdmin(user) {
@@ -242,7 +261,10 @@ async function start(user) {
   try {
     if (await isAdmin(user.uid)) {
       currentUser = user;
+      ensureOwnerRecorded(user);
       renderShell(user);
+    } else if (!(await ownerClaimed())) {
+      renderClaim(user);
     } else {
       renderNotAdmin(user);
     }

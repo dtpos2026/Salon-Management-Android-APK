@@ -2,7 +2,7 @@
 // (services/account) and firebase/firestore.rules.
 import {
   doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, where, orderBy, limit, startAfter,
-  getDocs, getCountFromServer, runTransaction, serverTimestamp, Timestamp, deleteField,
+  getDocs, getCountFromServer, runTransaction, serverTimestamp, Timestamp, deleteField, writeBatch,
 } from '../vendor/firebase.js';
 import { firebase } from './fb.js';
 import { randomCode, addMonths, addDays, endOfDay, toDate, whatsappNumber } from './util.js';
@@ -53,6 +53,28 @@ function fromSnap(snap) {
 }
 
 // ------------------------------------------------------------------ admins
+
+/** Whether the panel already has its first Super Admin (config/owner). */
+export async function ownerClaimed() {
+  return (await getDoc(doc(db(), 'config', 'owner'))).exists();
+}
+
+/** The first person to sign in after deployment becomes Super Admin (allowed once by the rules). */
+export async function claimFirstAdmin(user) {
+  const batch = writeBatch(db());
+  batch.set(doc(db(), 'admins', user.uid), { email: user.email || '', addedAt: serverTimestamp(), addedBy: 'first-login' });
+  batch.set(doc(db(), 'config', 'owner'), { uid: user.uid, email: user.email || '', claimedAt: serverTimestamp() });
+  await batch.commit();
+}
+
+/** Admins created by hand before this feature: record the owner so nobody else can claim. */
+export async function ensureOwnerRecorded(user) {
+  try {
+    if (!(await ownerClaimed())) {
+      await setDoc(doc(db(), 'config', 'owner'), { uid: user.uid, email: user.email || '', claimedAt: serverTimestamp() });
+    }
+  } catch { /* best effort */ }
+}
 
 export async function isAdmin(uid) {
   try {
@@ -227,17 +249,58 @@ export async function setStatus(account, status, message) {
   await updateAccount(account.id, patch);
 }
 
-/** Moves the account to the phone that asked for approval (the old phone stops opening). */
-export async function approveDevice(account) {
+/** Phones approved for an account (older accounts only have the registering phone). */
+export function approvedDevices(account) {
+  if (Array.isArray(account.deviceIds) && account.deviceIds.length) return account.deviceIds;
+  return account.deviceId ? [account.deviceId] : [];
+}
+
+export function deviceLimit(account) {
+  return Math.max(1, Number(account.maxDevices) || 1);
+}
+
+export function deviceName(account, id) {
+  return account.deviceNames?.[id] || (id === account.deviceId ? account.deviceModel : null) || 'Phone';
+}
+
+/**
+ * Approves the phone that asked. With replace=true the other phones are removed (the account
+ * moves to the new phone); otherwise it is added while under the limit.
+ */
+export async function approveDevice(account, { replace = false } = {}) {
+  const id = account.pendingDeviceId;
+  if (!id) return;
+  const current = replace ? [] : approvedDevices(account).filter((d) => d !== id);
+  if (current.length >= deviceLimit(account)) throw new Error(`This account may use ${deviceLimit(account)} phone(s). Increase the limit or remove a phone first.`);
+  const names = replace ? {} : { ...(account.deviceNames || {}) };
+  if (!replace && account.deviceId && !names[account.deviceId]) names[account.deviceId] = account.deviceModel || 'Phone';
+  names[id] = account.pendingDeviceModel || 'Phone';
   await updateDoc(doc(db(), 'accounts', account.id), {
-    deviceId: account.pendingDeviceId,
-    deviceModel: account.pendingDeviceModel || 'Unknown phone',
+    deviceIds: [...current, id],
+    deviceNames: names,
     deviceApprovedAt: serverTimestamp(),
     pendingDeviceId: deleteField(),
     pendingDeviceModel: deleteField(),
     pendingDeviceAt: deleteField(),
     updatedAt: serverTimestamp(),
   });
+}
+
+/** Removes an approved phone; it stops opening the app at its next check. */
+export async function removeDevice(account, id) {
+  const remaining = approvedDevices(account).filter((d) => d !== id);
+  const names = { ...(account.deviceNames || {}) };
+  delete names[id];
+  await updateDoc(doc(db(), 'accounts', account.id), {
+    // An empty list would mean "not bound"; keep a placeholder so no phone matches.
+    deviceIds: remaining.length ? remaining : ['none'],
+    deviceNames: names,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function setDeviceLimit(account, max) {
+  await updateDoc(doc(db(), 'accounts', account.id), { maxDevices: Math.min(20, Math.max(1, Math.round(max) || 1)), updatedAt: serverTimestamp() });
 }
 
 /** Ignores a new-phone request; the account stays on its current phone. */
@@ -412,7 +475,7 @@ export const CONFIG_DEFAULTS = {
   },
   app: {
     latestVersionCode: 0, latestVersionName: '', minVersionCode: 0, updateUrl: '', updateMessage: '',
-    notice: '', offlineGraceDays: 30,
+    notice: '', offlineGraceDays: 7,
   },
 };
 

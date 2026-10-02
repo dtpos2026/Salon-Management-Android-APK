@@ -5,7 +5,7 @@ import {
   initializeTestEnvironment, assertFails, assertSucceeds,
 } from '@firebase/rules-unit-testing';
 import {
-  doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, serverTimestamp, deleteDoc,
+  doc, getDoc, setDoc, updateDoc, writeBatch, collection, getDocs, query, where, serverTimestamp, deleteDoc,
 } from 'firebase/firestore';
 
 let env;
@@ -89,8 +89,9 @@ test('a new phone can only be requested; the admin approves it', async () => {
   await assertFails(updateDoc(doc(salon(), 'accounts/salon1'), {
     pendingDeviceId: 'dev-cccc-3333', pendingDeviceAt: new Date(2099, 1, 1), lastSeenAt: serverTimestamp(),
   }));
+  await assertFails(updateDoc(doc(salon(), 'accounts/salon1'), { deviceIds: ['dev-bbbb-2222'], maxDevices: 5, lastSeenAt: serverTimestamp() }));
   await assertSucceeds(updateDoc(doc(admin(), 'accounts/salon1'), {
-    deviceId: 'dev-bbbb-2222', deviceModel: 'Samsung A15', pendingDeviceId: null, pendingDeviceModel: null, pendingDeviceAt: null,
+    deviceIds: ['dev-aaaa-1111', 'dev-bbbb-2222'], maxDevices: 2, pendingDeviceId: null, pendingDeviceModel: null, pendingDeviceAt: null,
   }));
 });
 
@@ -101,6 +102,22 @@ test('salons never see other salons', async () => {
   await assertSucceeds(getDocs(query(collection(salon(), 'invoices'), where('accountUid', '==', 'salon1'))));
   await assertFails(getDocs(collection(salon(), 'invoices')));
   await assertFails(getDoc(doc(salon(), 'adminNotes/other')));
+});
+
+test('the first admin claims the panel once; later nobody can', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => deleteDoc(doc(ctx.firestore(), 'admins/boss')));
+  const first = env.authenticatedContext('owner1', { email: 'owner@dt.test' }).firestore();
+  const claim = (db, uid) => {
+    const batch = writeBatch(db);
+    batch.set(doc(db, `admins/${uid}`), { email: `${uid}@dt.test` });
+    batch.set(doc(db, 'config/owner'), { uid, email: `${uid}@dt.test`, claimedAt: serverTimestamp() });
+    return batch.commit();
+  };
+  await assertFails(setDoc(doc(first, 'admins/owner1'), { email: 'owner@dt.test' }));
+  await assertSucceeds(claim(first, 'owner1'));
+  await assertSucceeds(getDocs(collection(first, 'accounts')));
+  const late = env.authenticatedContext('late1', { email: 'late@dt.test' }).firestore();
+  await assertFails(claim(late, 'late1'));
 });
 
 test('nobody can make themselves an admin', async () => {

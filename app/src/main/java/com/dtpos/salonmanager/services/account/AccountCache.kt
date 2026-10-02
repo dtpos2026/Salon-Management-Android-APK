@@ -75,7 +75,13 @@ class AccountCache(context: Context) {
         get() = prefs.getLong(KEY_HEARTBEAT, 0L)
         set(value) = prefs.edit().putLong(KEY_HEARTBEAT, value).apply()
 
-    private fun JSONObject.toMap(): Map<String, Any?> = keys().asSequence().associateWith { key -> opt(key).takeUnless { it == JSONObject.NULL } }
+    private fun JSONObject.toMap(): Map<String, Any?> = keys().asSequence().associateWith { key ->
+        when (val value = opt(key)) {
+            JSONObject.NULL -> null
+            is org.json.JSONArray -> (0 until value.length()).map { value.opt(it) }
+            else -> value
+        }
+    }
 
     private fun CloudAccount.toJson() = JSONObject().apply {
         put("email", email); put("displayName", displayName); put("salonName", salonName)
@@ -84,7 +90,7 @@ class AccountCache(context: Context) {
         put("licenseId", licenseId); put("plan", plan); put("expiresAt", expiresAtMillis)
         put("monthlyFee", monthlyFee); put("paymentStatus", paymentStatus)
         put("pendingAmount", pendingAmount); put("messageToUser", messageToUser)
-        put("deviceId", deviceId); put("deviceModel", deviceModel)
+        put("deviceId", deviceId); put("deviceModel", deviceModel); put("deviceIds", org.json.JSONArray(deviceIds))
         put("pendingDeviceId", pendingDeviceId); put("pendingDeviceModel", pendingDeviceModel)
     }
 

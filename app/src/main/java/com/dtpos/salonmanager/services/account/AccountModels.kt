@@ -35,14 +35,19 @@ data class CloudAccount(
     val pendingAmount: Long? = null,
     /** Message from the admin, shown on the status screen. */
     val messageToUser: String? = null,
-    /** The phone this account is approved for (see [DeviceIds]). Null = not bound (older accounts). */
+    /** The phone the account registered from (see [DeviceIds]). Null = not bound (older accounts). */
     val deviceId: String? = null,
     val deviceModel: String? = null,
+    /** Phones the admin approved; when set it replaces [deviceId]. Limited by maxDevices in the panel. */
+    val deviceIds: List<String> = emptyList(),
     /** Another phone asking the admin for approval. */
     val pendingDeviceId: String? = null,
     val pendingDeviceModel: String? = null,
 ) {
-    fun approvedFor(device: String): Boolean = deviceId == null || deviceId == device
+    fun approvedFor(device: String): Boolean = when {
+        deviceIds.isNotEmpty() -> device in deviceIds
+        else -> deviceId == null || deviceId == device
+    }
 }
 
 data class SignedInUser(
@@ -89,7 +94,8 @@ data class RemoteAppConfig(
     val offlineGraceDays: Int = DEFAULT_OFFLINE_GRACE_DAYS,
 ) {
     companion object {
-        const val DEFAULT_OFFLINE_GRACE_DAYS = 30
+        /** The app re-checks the account with the server at least weekly. */
+        const val DEFAULT_OFFLINE_GRACE_DAYS = 7
     }
 }
 
@@ -117,6 +123,7 @@ object AccountParser {
         messageToUser = data.str("messageToUser"),
         deviceId = data.str("deviceId"),
         deviceModel = data.str("deviceModel"),
+        deviceIds = (data["deviceIds"] as? Iterable<*>)?.mapNotNull { (it as? String)?.takeIf(String::isNotBlank) }.orEmpty(),
         pendingDeviceId = data.str("pendingDeviceId"),
         pendingDeviceModel = data.str("pendingDeviceModel"),
     )

@@ -300,3 +300,6 @@ table.list tr.row-link:hover td { background: #faf8fd; }
   table.list td[data-label]::before { content: attr(data-label); display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
   .preview-wrap { padding: 10px; justify-content: flex-start; }
 }
+
+.device-list { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 8px; }
+.device-list li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line, rgba(0,0,0,.08)); border-radius: 12px; }
