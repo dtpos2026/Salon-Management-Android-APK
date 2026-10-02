@@ -239,6 +239,12 @@ class ScreenshotTest {
             styles.forEach { drawBitmap(it, x, 40f, null); x += it.width + 40 }
         }
         FileOutputStream(File(outDir, "10-receipt-designs.jpg")).use { sheet.compress(Bitmap.CompressFormat.JPEG, 85, it) }
+        val token = com.dtpos.salonmanager.services.export.TokenImage.render(
+            salon = "Royal Cuts Salon", title = "Your token", token = 12, name = "Ali Raza",
+            whenText = "05 Oct 2026  ·  4:30 PM", service = "Hair cut + beard", footer = "Please come 5 minutes early. Thank you!",
+            accent = ReceiptImageRenderer.DEFAULT_ACCENT,
+        )
+        FileOutputStream(File(outDir, "11-token.png")).use { token.compress(Bitmap.CompressFormat.PNG, 100, it) }
         compose.setContent { Text("ok") }
     }
 }

@@ -48,6 +48,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -77,6 +78,8 @@ import com.dtpos.salonmanager.presentation.components.MessageEffect
 import com.dtpos.salonmanager.presentation.components.SalonTopBar
 import com.dtpos.salonmanager.presentation.messages.WhatsAppGreen
 import com.dtpos.salonmanager.services.export.ExternalApps
+import com.dtpos.salonmanager.services.export.ShareHelper
+import com.dtpos.salonmanager.services.export.TokenImage
 import com.dtpos.salonmanager.services.printer.PrintResult
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -157,6 +160,8 @@ fun TokensScreen(onBack: () -> Unit) {
     val notInstalled = stringResource(R.string.whatsapp_not_installed)
     MessageEffect(vm.messages, snackbar)
 
+    val accent = MaterialTheme.colorScheme.primary.toArgb()
+
     fun whatsapp(b: BookingEntity, turn: Boolean) {
         val salon = profile?.name.orEmpty()
         val text = if (turn) {
@@ -168,7 +173,22 @@ fun TokensScreen(onBack: () -> Unit) {
                 salon,
             )
         }
-        if (!ExternalApps.openWhatsAppChat(context, b.customerPhone, text)) Toast.makeText(context, notInstalled, Toast.LENGTH_LONG).show()
+        // The token slip goes as a picture with the message; plain text if the image cannot be made.
+        val whenText = DateTimeUtils.formatDate(LocalDate.ofEpochDay(b.dateEpochDay)) + (b.timeMinutes?.let { "  ·  " + formatSlot(it) } ?: "")
+        val image = TokenImage.render(
+            salon = salon,
+            title = context.getString(R.string.tokens_slip_title),
+            token = b.tokenNumber,
+            name = b.customerName,
+            whenText = whenText,
+            service = b.service,
+            footer = context.getString(R.string.tokens_slip_wait),
+            accent = accent,
+        )
+        val uri = TokenImage.cacheFile(context, image, b.tokenNumber)?.let { ShareHelper.uriFor(context, it) }
+        val sent = if (uri != null) ExternalApps.shareImageToWhatsApp(context, uri, "image/png", b.customerPhone, text)
+        else ExternalApps.openWhatsAppChat(context, b.customerPhone, text)
+        if (!sent) Toast.makeText(context, notInstalled, Toast.LENGTH_LONG).show()
     }
 
     Scaffold(topBar = { SalonTopBar(stringResource(R.string.tokens_title), onBack = onBack) }, snackbarHost = { SnackbarHost(snackbar) }) { padding ->
