@@ -46,7 +46,7 @@
     <string name="settings_receipt">Receipt settings</string>
     <string name="settings_receipt_sub">Receipt number prefix, header and thank-you message</string>
     <string name="settings_printer">Printer</string>
-    <string name="settings_printer_sub">58 mm Bluetooth thermal printer</string>
+    <string name="settings_printer_sub">58 / 80 mm Bluetooth printer and receipt design</string>
     <string name="settings_services_sub">Service list and fixed prices</string>
     <string name="settings_staff_sub">Barbers, roles, salary and commission</string>
     <string name="settings_categories_sub">Business and household categories</string>

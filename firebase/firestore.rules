@@ -107,8 +107,13 @@ service cloud.firestore {
       }
     }
 
-    // AI settings: the switch is public to signed-in salons, the rest is admin-only.
-    // (The Claude API key never lives here: it is a Cloud Functions secret.)
+    // AI settings (config/ai) are readable by signed-in salons so the app can show the switch.
+    // The Claude API key never lives here: it is a Cloud Functions secret.
+    // AI usage counters are written only by Cloud Functions (admin SDK).
+    match /aiUsage/{id} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
 
     // Private admin notes about a salon (never visible to the salon).
     match /adminNotes/{uid} {

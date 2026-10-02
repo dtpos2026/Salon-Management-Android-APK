@@ -5,6 +5,7 @@ const TABS = [
   ['branding', 'App branding'],
   ['billing', 'Billing & invoices'],
   ['app', 'App control'],
+  ['ai', 'AI assistant'],
 ];
 
 function field(name, label, value, { type = 'text', help = '', full = false, textarea = false, placeholder = '' } = {}) {
@@ -72,7 +73,28 @@ const FORMS = {
     </div>`,
 };
 
-const NUMBER_FIELDS = ['latestVersionCode', 'minVersionCode', 'offlineGraceDays'];
+const NUMBER_FIELDS = ['latestVersionCode', 'minVersionCode', 'offlineGraceDays', 'dailyLimitPerSalon'];
+const CHECKBOX_FIELDS = ['enabled', 'supportAutoReply', 'businessAssistant'];
+const MODELS = [
+  ['claude-opus-5-5', 'Claude Opus 5.5 (best answers)'],
+  ['claude-sonnet-5-5', 'Claude Sonnet 5.5 (lower cost)'],
+  ['claude-haiku-4-5', 'Claude Haiku 4.5 (lowest cost)'],
+];
+
+function check(name, label, value, help) {
+  return `<div class="field full"><label style="display:flex;gap:10px;align-items:center;font-weight:600"><input type="checkbox" name="${name}" ${value ? 'checked' : ''}> ${esc(label)}</label>${help ? `<div class="help">${esc(help)}</div>` : ''}</div>`;
+}
+
+FORMS.ai = (c) => `
+    <p class="muted">The AI assistant runs in Firebase Cloud Functions with your Claude API key (stored as a Functions secret, never in the app). It needs the Firebase Blaze plan and the functions deployed; see the setup guide.</p>
+    <div class="form-grid">
+      ${check('enabled', 'AI assistant on', c.enabled, 'Master switch for all salons.')}
+      ${check('supportAutoReply', 'AI answers support chats first', c.supportAutoReply, 'Replies instantly in the salon\'s language (English, Urdu or Roman Urdu); you can still reply yourself.')}
+      ${check('businessAssistant', 'Business growth assistant in the app', c.businessAssistant, 'Salons ask growth and promotion questions; only their summary numbers are sent, never customer lists.')}
+      ${field('dailyLimitPerSalon', 'Daily AI questions per salon', c.dailyLimitPerSalon, { type: 'number', help: 'Controls your Claude API cost.' })}
+      <div class="field"><label>Model</label><select name="model">${MODELS.map(([v, l]) => `<option value="${v}" ${v === (c.model || MODELS[0][0]) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></div>
+      ${field('extraInstructions', 'Extra notes for the AI (offers, timings, prices)', c.extraInstructions, { full: true, textarea: true, placeholder: 'Support timings 10am - 10pm. Monthly fee Rs 1,500.' })}
+    </div>`;
 
 export async function render(el, ctx) {
   ctx.setTitle('Settings');
@@ -115,6 +137,10 @@ export async function render(el, ctx) {
       data[key] = NUMBER_FIELDS.includes(key) ? Number(value) || 0 : String(value).trim();
     });
     delete data[''];
+    if (tab === 'ai') {
+      CHECKBOX_FIELDS.forEach((k) => { data[k] = !!form.querySelector(`[name="${k}"]`)?.checked; });
+      data.dailyLimitPerSalon = Math.min(500, Math.max(1, data.dailyLimitPerSalon || 30));
+    }
     if (tab === 'app') data.offlineGraceDays = Math.min(365, Math.max(1, data.offlineGraceDays || 7));
     const size = JSON.stringify(data).length;
     if (size > 900000) { toast('Images are too large; choose smaller pictures', 'error'); return; }

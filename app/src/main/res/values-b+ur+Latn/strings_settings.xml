@@ -43,7 +43,7 @@
     <string name="settings_receipt">Receipt settings</string>
     <string name="settings_receipt_sub">Receipt number ka aaghaz, header aur shukriya ka paigham</string>
     <string name="settings_printer">Printer</string>
-    <string name="settings_printer_sub">58 mm Bluetooth thermal printer</string>
+    <string name="settings_printer_sub">58 / 80 mm Bluetooth printer aur receipt design</string>
     <string name="settings_services_sub">Services ki list aur fixed qeematein</string>
     <string name="settings_staff_sub">Barbers, kaam, tankhwah aur commission</string>
     <string name="settings_categories_sub">Karobari aur ghar ki categories</string>

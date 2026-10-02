@@ -125,12 +125,13 @@ Panel `admin-panel/` folder mein hai. Is ka koi build nahi; bas upload karna hai
    npm install -g firebase-tools
    firebase login
    cd C:\dt-salon\Salon-Management-Android-APK-claude-adoring-feynman-iae1sx
-   firebase deploy
+   firebase deploy --only hosting,firestore
    ```
    Yeh ek hi command mein **panel + security rules + indexes** sab publish kar deti hai.
+   (AI assistant ke functions alag se deploy hote hain, dekhein section 6.1.)
 4. Panel ka address: **https://dt-salon-mangment.web.app**
 
-Baad mein panel update karna ho to wohi `firebase deploy` dobara chala dein.
+Baad mein panel update karna ho to wohi `firebase deploy --only hosting,firestore` dobara chala dein.
 
 ### 5.2 Tareeqa B – GitHub Pages (PC ke baghair)
 1. Repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
@@ -159,6 +160,37 @@ Baad mein panel update karna ho to wohi `firebase deploy` dobara chala dein.
 > yeh step kar lein. Doosre admin: unka login step 1 se banayein, woh panel par sign in kar ke
 > apna UID bhejein, phir panel ke **Admins** page se add karein.
 > Password bhool jayein to panel par "Forgot password?".
+
+---
+
+### 6.1 AI assistant (ikhtiyari / optional)
+
+AI do kaam karta hai: (1) Support chat mein salon owner ke sawal ka foran jawab, usi zabaan mein
+jis mein sawal pucha gaya (English, Urdu ya Roman Urdu); (2) app mein "AI Assistant" jo salon ke
+apne numbers dekh kar business barhane ke mashwaray deta hai. Salon ka data phone par hi rehta hai;
+AI ko sirf khulasa numbers jate hain (sales, kharche, top services), gahakon ke naam/number kabhi nahi.
+
+Is ke liye chahiye:
+1. Firebase project **Blaze (pay as you go)** plan par ho (Cloud Functions ke liye zaroori). Firebase
+   console → ⚙ → Usage and billing → Modify plan.
+2. Claude API key: https://console.anthropic.com → API keys → Create key. (Is ka kharcha aap ke
+   Anthropic account par aata hai; panel mein roz ki limit rakh sakte hain.)
+3. PC par, repo ke folder mein:
+   ```
+   cd functions
+   npm install
+   cd ..
+   firebase functions:secrets:set ANTHROPIC_API_KEY
+   firebase deploy --only functions
+   ```
+   (`secrets:set` key poochega, wahan paste karein. Key kabhi app, panel ya GitHub mein nahi jati.)
+4. Panel → **Settings → AI assistant**: "AI assistant on" tick karein, roz ki limit aur model chunein,
+   aur "Extra notes" mein apni timings/fees likh dein. **Save**.
+5. Salon app mein: Home → **AI Assistant** → switch ON. Support chat mein AI khud jawab dega
+   (panel ke Support page par "AI replies first" se band/chalu kar sakte hain).
+
+> Functions ka region `asia-south1` (Mumbai) hai. Aap ne Firestore kisi aur location par banaya ho
+> to `functions/index.js` aur app ki `AiAssistant.REGION` mein wahi region likhein.
 
 ---
 
@@ -196,6 +228,16 @@ Baad mein panel update karna ho to wohi `firebase deploy` dobara chala dein.
 4. Payment aane par **Record payment** → "Extend licence" tick rahe to licence plan ke hisaab se
    aage barh jata hai aur salon dobara active ho jata hai.
 5. Settings → **Billing & invoices** mein bank account, payment QR, signature, terms ek dafa daal dein.
+
+### Support chat
+- Panel → **Support**: har salon ki chat, naye paigham par "New". Chat kholein, jawab likhein,
+  **Send**. Jawab salon ki app mein foran nazar aata hai.
+- "AI replies first" tick ho to AI pehle jawab de deta hai; aap baad mein khud bhi likh sakte hain.
+
+### Reminders (WhatsApp)
+- Panel → **Reminders**: Payment pending / 7 din mein expiry / licence khatam / sab active salons.
+- Message template badal sakte hain ({owner} {salon} {amount} {expiry} {customerId}); har salon ke
+  aage **WhatsApp** dabayein, chat tayyar paigham ke saath khulegi.
 
 ### Status badalna
 Salon ke page par: **Payment pending**, **Suspend**, **Block**, **Mark expired**, **Reject**,

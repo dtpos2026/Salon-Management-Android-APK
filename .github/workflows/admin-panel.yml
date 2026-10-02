@@ -6,6 +6,7 @@ on:
       - 'admin-panel/**'
       - 'firebase/**'
       - 'firebase.json'
+      - 'functions/**'
       - '.github/workflows/admin-panel.yml'
   pull_request:
     paths:
@@ -53,6 +54,12 @@ jobs:
 
       - name: Admin panel end-to-end test
         run: npm run test:panel
+
+      - name: AI assistant functions tests
+        working-directory: functions
+        run: |
+          npm ci
+          npm test
 
       - name: Upload panel screenshots
         if: always()

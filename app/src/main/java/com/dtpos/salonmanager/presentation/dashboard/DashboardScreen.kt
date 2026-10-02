@@ -407,6 +407,7 @@ private data class QuickAction(val route: String, val labelRes: Int, val icon: I
 private val quickActions = listOf(
     QuickAction(Routes.DUES, R.string.nav_dues, Icons.AutoMirrored.Filled.ReceiptLong),
     QuickAction(Routes.PROMOTIONS, R.string.nav_promotions, Icons.Filled.Campaign),
+    QuickAction(Routes.AI, R.string.nav_ai, Icons.Filled.AutoAwesome),
     QuickAction(Routes.SUPPORT, R.string.nav_support, Icons.Filled.SupportAgent),
     QuickAction(Routes.SERVICES, R.string.nav_services, Icons.Filled.ContentCut),
     QuickAction(Routes.STAFF, R.string.nav_staff, Icons.Filled.Groups),

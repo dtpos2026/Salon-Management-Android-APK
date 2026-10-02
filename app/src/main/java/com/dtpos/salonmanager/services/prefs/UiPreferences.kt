@@ -44,6 +44,15 @@ class UiPreferences(context: Context) {
 
     val language: AppLanguage get() = storedLanguage(prefs)
 
+    /** AI assistant switch (off by default; the owner turns it on). */
+    private val _ai = MutableStateFlow(prefs.getBoolean(KEY_AI, false))
+    val aiAssistant: StateFlow<Boolean> = _ai.asStateFlow()
+
+    fun setAiAssistant(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_AI, enabled).apply()
+        _ai.value = enabled
+    }
+
     fun setThemeMode(mode: ThemeMode) {
         prefs.edit().putString(KEY_THEME, mode.name).apply()
         _themeMode.value = mode
@@ -78,6 +87,7 @@ class UiPreferences(context: Context) {
         private const val KEY_SOUND = "sound"
         private const val KEY_LANGUAGE = "language"
         private const val KEY_NOTICE = "noticeSeen"
+        private const val KEY_AI = "aiAssistant"
 
         private fun prefsOf(context: Context): SharedPreferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
