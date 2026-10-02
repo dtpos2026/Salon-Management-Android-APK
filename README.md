@@ -1,16 +1,27 @@
-# Salon Manager – Offline Salon & Barber Shop Management (Android)
+# DT Salon Management – Salon & Barber Shop POS (Android) + Super Admin panel
 
-Salon Manager is a native Android app for running a salon or barber shop from one phone or tablet:
-sales counter with receipts and Bluetooth printing, customers and visit history, services and
-prices, staff commission and payments, business **and** household expenses (kept separate),
-cash counter reconciliation, targets, budgets, reports and offline business insights.
+**DT Salon Management** (by Digital Target) is a native Android app for running a salon or barber
+shop from one phone or tablet: sales counter with branded receipts, Bluetooth printing and
+WhatsApp sharing, customers and visit history, services and prices, staff commission and payments,
+business **and** household expenses (kept separate), cash counter reconciliation, targets,
+budgets, reports and offline business insights. English, Urdu and Roman Urdu; three luxury colour
+themes with light and dark modes.
 
-It is **offline-first**: every feature works without internet and the app does not even request
-the `INTERNET` permission. All data lives in a local Room (SQLite) database on the device and can
-be backed up to a file (optionally password-encrypted).
+It is **offline-first**: all salon data lives in a local Room (SQLite) database on the phone and
+never goes online. Internet is used only for **Google (Gmail) sign-in and admin approval**: each
+salon account is approved, suspended or renewed by you from the **Super Admin web panel**
+(`admin-panel/`), backed by Firebase Authentication and Firestore. An approved phone keeps working
+offline (30 days by default, configurable).
 
-The architecture is prepared for commercial distribution to many salons (offline signed licence
-keys, trial mode, a `businessId` on every major table, pluggable AI insights).
+**➡ Setup and operating guide (Roman Urdu): [docs/SETUP_GUIDE.md](docs/SETUP_GUIDE.md)**
+
+```
+Salon phone (DT Salon app)                    You (Super Admin panel in a browser)
+  Gmail login, salon data stays on the phone    approve salons, plans, fees, expiry,
+  account / licence checked online              suspend/block, invoices, app settings
+                 \                              /
+                  \-------  Firebase (Auth + Firestore)  -------/
+```
 
 ---
 
@@ -20,7 +31,7 @@ keys, trial mode, a `businessId` on every major table, pluggable AI insights).
 |------|--------------|
 | **Dashboard** | Today's sales, expenses, profit, cash received, customers, services, outstanding staff pay, daily/monthly target progress, 7-day chart, insights preview, recent sales, backup and licence reminders. Updates live. |
 | **POS / New Sale** | Pick customer (or walk-in, or quick-add), staff, services from a grid (price loads automatically), change quantity/price, per-line and whole-sale discount (amount or %), payment method (Cash, Card, Bank, Other), cash received & change, note. Two-pane layout on tablets. |
-| **Receipts** | Numbered `SAL-000001` (configurable prefix, never duplicated). On-screen preview identical to the 58 mm printout, print / reprint, share as PDF, void with reason (kept in history, excluded from totals, refunded in the cash counter). |
+| **Receipts** | Numbered `SAL-000001` (configurable prefix, never duplicated). Branded 58 mm receipt (logo, coloured title bar, details, items, boxed total, PAID stamp, "Powered by"), preview identical to the image-mode printout, print / reprint, **Save PNG / JPEG to the gallery**, share image or PDF, **WhatsApp to the customer's number** with a ready message, void with reason (kept in history, excluded from totals, refunded in the cash counter). |
 | **Bluetooth printer** | Generic ESC/POS 58 mm / 80 mm printers: permission handling (Android 12+ and older), enable Bluetooth, paired list, scan & pair, save printer, test print, auto-print, copies, paper cut, logo. *Text mode* (fast) and *Image mode* (renders with Android fonts, so Urdu names print on any printer). Never crashes on printer errors – every failure becomes a clear message with Retry. |
 | **Customers** | Name, phone (duplicate-protected), gender, date of birth, address, notes. Profile shows total visits, total spent, last visit, favourite services and full visit history; open any old receipt. Instant search by name or phone. |
 | **Services** | Name, category, price, duration, active/inactive; add/edit/delete; one-tap "add common salon services" with suggested (editable) prices. |
@@ -35,15 +46,17 @@ keys, trial mode, a `businessId` on every major table, pluggable AI insights).
 | **Insights** | Offline rule engine: target pace, sales and expense trends vs. last month, best service, top staff, busiest/slowest weekday, returning customers, high household spending, loss warnings. Designed so an AI engine can be plugged in later (see below). |
 | **Backup & restore** | Save / share backup files (`SalonBackup_YYYY-MM-DD.salonbak`), optional AES-256 password, automatic daily backup on the phone (last 10 kept), restore with warning, integrity check and automatic safety backup + rollback. CSV export of all data. |
 | **Security** | Optional PIN or password (salted PBKDF2 hash, never plain text), fingerprint/face unlock, escalating lockout after wrong attempts, one-time recovery code, per-area protection (app start, reports, expenses, settings/backup/licence), auto re-lock after 2 minutes in background. |
-| **Licence** | Offline ECDSA-signed licence keys bound to an installation ID, plans (1/3/6 months, 1 year, custom, lifetime), trial mode, expiry warnings, read-only mode after expiry (data, reports and backups stay available), clock-rollback detection. Off by default for the owner's own build. |
-| **Settings** | Business profile (name, logo, phone, address, currency – default PKR/Rs.), receipt settings, printer, services, staff, expense categories, targets, backup & restore, security, licence, about, erase all data (with safety backup). |
+| **Account & licence** | Google sign-in (Credential Manager + Firebase Auth); new salons register and wait for admin approval. Statuses: pending, approved, payment pending, suspended, blocked, expired, rejected, each with its own screen, admin message and support buttons (WhatsApp / call / email). Licence expiry applies offline; the phone must verify online at least every N days (admin setting); clock-rollback detection; minimum app version and notices from the admin; one Google account per phone's data. (The older offline signed-key licence remains in the code, off by default.) |
+| **Settings** | Account & subscription, app preferences (colour theme, light/dark, language, sound effects), business profile (name, logo, phone, address, currency – default PKR/Rs.), receipt settings, printer, services, staff, expense categories, targets, backup & restore, security, about, erase all data (with safety backup). |
+| **Super Admin panel** | Web panel for Digital Target: dashboard (waiting, active, payment pending, expired, expiring, revenue), salons list with search and filters, approve with plan / fee / expiry (auto Customer, Business and License IDs), suspend / block / re-activate with a message, renew, private notes; subscription invoices in A4 and receipt designs with QR verification, PNG / print / WhatsApp, payments that extend the licence; branding, billing and app-control settings; admins. |
 
-UI: Jetpack Compose + Material 3 with a navy & gold salon theme, light/dark mode, adaptive
-layouts for phones and tablets, empty/loading/error states, confirmation dialogs, adaptive
-launcher icon (with Android 13 themed icon) and branded splash screen.
+UI: Jetpack Compose + Material 3 with three colour themes (Royal Purple, Black & Gold, Rose Gold)
+in light and dark, an animated brand intro and glassy sign-in / approval screens, adaptive layouts
+for phones and tablets, empty/loading/error states, confirmation dialogs, the DT Salon adaptive
+launcher icon (with Android 13 themed icon), soft sound effects (optional).
 
-Every user-facing text is an Android string resource with positional arguments, so an Urdu
-translation only needs `res/values-ur/strings*.xml` (layouts already support RTL).
+Languages: English, Urdu (اردو, right-to-left) and Roman Urdu – all 816 strings translated
+(`res/values-ur`, `res/values-b+ur+Latn`), chosen in the app or on the login screen.
 
 ---
 
@@ -54,7 +67,9 @@ translation only needs `res/values-ur/strings*.xml` (layouts already support RTL
 * MVVM: ViewModels + `StateFlow`, Kotlin Coroutines/Flow, manual dependency injection (`AppContainer`)
 * AndroidX Biometric, Core SplashScreen, Activity Result APIs (Storage Access Framework, Photo Picker)
 * Android Bluetooth Classic (RFCOMM/SPP) + own ESC/POS encoder, `PdfDocument` for PDFs
-* No analytics, ads, network libraries or DI frameworks
+* Firebase Auth + Firestore (accounts only), AndroidX Credential Manager for Google sign-in
+* Super Admin panel: plain HTML/CSS/JavaScript modules + Firebase JS SDK (bundled), no build step
+* No analytics, ads or DI frameworks
 
 `minSdk 26` (Android 8.0), `targetSdk/compileSdk 35`. Pure Kotlin/Java code, so it runs on
 ARM64, ARMv7 and x86_64 devices.
@@ -72,15 +87,21 @@ app/src/main/java/com/dtpos/salonmanager/
 │   ├── database/    SalonDatabase, entities, DAOs, converters, migrations, default data
 │   ├── repository/  one repository per module (sale transaction lives in SaleRepository)
 │   └── DemoDataSeeder.kt
-├── services/        printer (ESC/POS, Bluetooth, layouts), backup, export (PDF/CSV/share),
-│                    security (lock, biometrics), license, branding (logo)
+├── services/        account (Google sign-in, approval, offline cache), printer (ESC/POS, Bluetooth,
+│                    layouts, branded receipt image), backup, export (PDF/CSV/images/WhatsApp),
+│                    prefs (theme, language, sounds), security (lock, biometrics), license, branding
 └── presentation/    theme, components, navigation, and one package per screen
                      (dashboard, sales, customers, services, staff, expenses, cash,
-                     reports, targets, insights, settings, setup, lock)
+                     reports, targets, insights, settings, setup, lock, account)
 app/src/test/        JVM unit tests + Robolectric database/backup/licence/security tests
 app/src/androidTest/ on-device tests (app launch, device SQLite)
-tools/license/       vendor licence tool (key generation and licence issuing)
-.github/workflows/   CI: tests, APK build, emulator install/launch on Android 8 and 14
+admin-panel/         Super Admin web panel (static site: index.html, verify.html, js/, css/, vendor/)
+firebase/            Firestore security rules, indexes, rules tests and panel end-to-end test
+firebase.json        Firebase Hosting + rules + indexes (`firebase deploy`)
+tools/signing/       scripts to create your own release signing key
+tools/license/       vendor licence tool for the older offline licence keys
+.github/workflows/   CI: app tests + APKs + emulators (Android 8 and 14); rules + panel tests,
+                     optional GitHub Pages deploy of the panel
 ```
 
 ---
@@ -91,7 +112,9 @@ tools/license/       vendor licence tool (key generation and licence issuing)
   Android SDK Platform 35 installed
 * **JDK 17** (the one bundled with Android Studio is fine)
 * Internet access for the first Gradle sync (downloads Gradle 8.14.3 and dependencies from
-  Google Maven and Maven Central). The finished app itself never needs internet.
+  Google Maven and Maven Central). The app needs internet only for sign-in and account checks.
+* `app/google-services.json` from your Firebase project (not committed; CI writes it from the
+  `GOOGLE_SERVICES_JSON` secret – see the guide)
 
 ## Build
 
@@ -244,18 +267,25 @@ engine testable and language-independent.
 
 ## Known limitations / TODO
 
-* **Urdu translation** – architecture ready (all strings externalised, RTL enabled), translated
-  `values-ur` files not yet written.
-* **Online licence verification / revocation** – not implemented (offline keys only), by design
-  for v1.
+* **Cloud sync of salon data** – not implemented on purpose (offline-only by request); every record
+  already carries a `businessId` for a future sync.
+* **Activation keys** – replaced by Google sign-in + admin approval + licence expiry.
+* **Google sign-in needs your signing key's SHA-1 in Firebase** and the `GOOGLE_SERVICES_JSON`,
+  `DT_KEYSTORE_BASE64` and `DT_SIGNING_PASSWORD` GitHub secrets (see the guide). Without them the
+  app builds but shows "App setup incomplete" / cannot sign in.
+* **Text printer mode** prints English labels when the app is in Urdu (printer fonts are Latin);
+  image mode (default) prints every language.
+* **Online payment gateway** – payments are recorded by the admin.
 * **AI engine** – only the offline rule engine ships; the AI provider interface is ready.
-* **Multi-salon UI** – data model ready, UI supports one business.
-* **Appointments / booking, SMS/WhatsApp reminders, inventory** – not in scope for v1.
+* **Multi-salon UI** – data model ready, UI supports one business per phone.
+* **Appointments / booking, SMS reminders, inventory** – not in scope.
 * Printers that only support Bluetooth Low Energy (not Classic SPP) are not supported.
+* Not yet tried on a physical Bluetooth printer or with real Google accounts in this project's
+  Firebase (needs the secrets above); everything else is covered by CI tests and emulators.
 
 ## Roadmap
 
-1. Urdu translation and Urdu receipts (image print mode already supports it)
+1. Optional cloud backup / sync of salon data per business
 2. Appointment booking and customer reminders
 3. Product / inventory sales alongside services
 4. Optional cloud backup and online licence server
