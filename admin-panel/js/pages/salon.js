@@ -2,6 +2,7 @@ import {
   getAccount, getNotes, saveNotes, updateAccount, effectiveStatus, PLANS, STATUS_LABELS, planExpiry,
   listInvoices, deleteAccount, ensureIds, approveDevice, dismissDeviceRequest,
   approvedDevices, deviceLimit, deviceName, removeDevice, setDeviceLimit,
+  salesStats, salesDays, salesSummary,
 } from '../data.js';
 import {
   esc, fmtDate, fmtDateTime, inputDate, fromInputDate, money, relativeDays, toast, errorMessage,
@@ -20,7 +21,13 @@ export async function render(el, ctx) {
     el.innerHTML = '<div class="card empty">This salon account does not exist (it may have been deleted).</div>';
     return;
   }
-  const [notes, invoices] = await Promise.all([getNotes(account.id), listInvoices({ accountUid: account.id, pageSize: 10 }).catch(() => ({ items: [] }))]);
+  const [notes, invoices, stats, days] = await Promise.all([
+    getNotes(account.id),
+    listInvoices({ accountUid: account.id, pageSize: 10 }).catch(() => ({ items: [] })),
+    salesStats(account.id).catch(() => null),
+    salesDays(account.id, 31).catch(() => []),
+  ]);
+  const sales = salesSummary(stats);
   const status = effectiveStatus(account);
   ctx.setTitle(account.salonName || 'Salon');
   ctx.setActions(`<a class="btn btn-primary" href="#/invoice/new?uid=${encodeURIComponent(account.id)}">+ Invoice</a>`);
@@ -104,6 +111,25 @@ export async function render(el, ctx) {
           <button class="btn btn-ghost btn-sm" data-remove-device="${esc(d)}">Remove</button></li>`).join('')}</ul>`
     : '<div class="empty">No phone approved. The next phone that signs in asks for approval.</div>'}
       </div>
+    </div>
+
+    <div class="card" style="margin-top:16px" id="sales">
+      <div class="card-head"><h2>Sales</h2><div class="spacer"></div><span class="cell-sub">${stats ? `Shared by the app · updated ${fmtDateTime(sales.updatedAt)}` : 'Not shared yet (app 2.1.0+, when online)'}</span></div>
+      <div class="stats" style="margin-bottom:12px">
+        <div class="stat"><div class="label">Today</div><div class="value">${money(sales.today)}</div><div class="hint">${sales.todayCustomers} customers</div></div>
+        <div class="stat"><div class="label">Yesterday</div><div class="value">${money(sales.yesterday)}</div><div class="hint">${sales.yesterdayCustomers} customers</div></div>
+        <div class="stat"><div class="label">This month</div><div class="value">${money(sales.month)}</div><div class="hint">${sales.monthCustomers} customers</div></div>
+      </div>
+      ${days.length ? `<table class="list"><thead><tr><th>Date</th><th>Sales</th><th>Customers</th><th>Cash</th><th>Online</th><th>Udhaar</th></tr></thead><tbody>${days.map((d) => `
+        <tr>
+          <td data-label="Date" class="cell-title">${esc(d.date)}</td>
+          <td data-label="Sales">${money((d.salesMinor || 0) / 100)}</td>
+          <td data-label="Customers">${esc(d.customers ?? 0)}</td>
+          <td data-label="Cash">${money((d.cashMinor || 0) / 100)}</td>
+          <td data-label="Online">${money((d.onlineMinor || 0) / 100)}</td>
+          <td data-label="Udhaar">${money((d.creditMinor || 0) / 100)}</td>
+        </tr>`).join('')}</tbody></table>` : '<div class="empty">No daily totals yet.</div>'}
+      <div class="help">Only totals are shared (amount, number of customers and services, cash / online / udhaar). Customer names, phone numbers and receipts stay on the salon's phone.</div>
     </div>
 
     <div class="grid grid-2" style="margin-top:16px">

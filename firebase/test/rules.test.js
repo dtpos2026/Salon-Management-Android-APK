@@ -156,3 +156,29 @@ test('invoice verification is public by id but cannot be listed', async () => {
   await assertFails(getDocs(collection(anon(), 'invoiceVerify')));
   await assertFails(setDoc(doc(anon(), 'invoiceVerify/tok999'), { status: 'PAID' }));
 });
+
+test('daily sales totals: a salon writes only its own numbers, the admin reads them', async () => {
+  const day = {
+    date: '2026-10-05', salesMinor: 1250000, customers: 18, services: 25,
+    cashMinor: 900000, onlineMinor: 250000, creditMinor: 100000, updatedAt: serverTimestamp(),
+  };
+  const summary = {
+    uid: 'salon1', salonName: 'Royal Cuts', currency: 'PKR', day: '2026-10-05',
+    todaySalesMinor: 1250000, todayCustomers: 18, yesterdaySalesMinor: 990000, yesterdayCustomers: 14,
+    monthKey: '2026-10', monthSalesMinor: 5000000, monthCustomers: 70, appVersion: '2.1.0', updatedAt: serverTimestamp(),
+  };
+  await assertSucceeds(setDoc(doc(salon(), 'stats/salon1/days/2026-10-05'), day));
+  await assertSucceeds(setDoc(doc(salon(), 'stats/salon1'), summary, { merge: true }));
+  // Only numbers, only its own document, only a proper day id.
+  await assertFails(setDoc(doc(salon(), 'stats/salon1/days/2026-10-05'), { ...day, customerName: 'Ali' }));
+  await assertFails(setDoc(doc(salon(), 'stats/salon1/days/2026-10-05'), { ...day, salesMinor: -5 }));
+  await assertFails(setDoc(doc(salon(), 'stats/salon1/days/latest'), { ...day, date: 'latest' }));
+  await assertFails(setDoc(doc(salon(), 'stats/other'), { ...summary, uid: 'other' }));
+  await assertFails(setDoc(doc(salon(), 'stats/salon1'), { ...summary, uid: 'other' }));
+  await assertFails(getDocs(collection(salon(), 'stats')));
+  await assertFails(getDoc(doc(salon(), 'stats/other')));
+  // The Super Admin sees every salon's totals.
+  await assertSucceeds(getDocs(collection(admin(), 'stats')));
+  await assertSucceeds(getDocs(collection(admin(), 'stats/salon1/days')));
+  await assertFails(setDoc(doc(admin(), 'stats/salon1/days/2026-10-06'), { ...day, date: '2026-10-06' }));
+});

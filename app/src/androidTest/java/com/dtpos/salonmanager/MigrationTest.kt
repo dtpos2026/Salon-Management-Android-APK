@@ -53,4 +53,48 @@ class MigrationTest {
             }
         }
     }
+
+    /** Version 3 only adds a table and columns: old services and pending bills keep their values. */
+    @Test
+    fun migration2To3KeepsData() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        context.deleteDatabase(testDb)
+        helper.createDatabase(testDb, 2).use { db ->
+            db.execSQL(
+                "INSERT INTO businesses (id, name, phone, address, logoPath, currencyCode, currencySymbol, receiptPrefix, " +
+                    "receiptHeaderNote, receiptFooter, showLogoOnReceipt, showStaffOnReceipt, isSetupComplete, createdAt, updatedAt) " +
+                    "VALUES (1, 'Royal Cuts', NULL, NULL, NULL, 'PKR', 'Rs.', 'SAL', NULL, NULL, 1, 1, 1, 1, 1)",
+            )
+            db.execSQL(
+                "INSERT INTO services (id, businessId, name, category, priceMinor, durationMinutes, isActive, sortOrder, createdAt, updatedAt) " +
+                    "VALUES (7, 1, 'Hair Cut', 'Hair', 50000, 30, 1, 0, 1, 1)",
+            )
+            db.execSQL(
+                "INSERT INTO customer_dues (id, businessId, customerId, customerName, customerPhone, amountMinor, paidMinor, note, createdAt, settledAt, lastReminderAt) " +
+                    "VALUES (3, 1, NULL, 'Ali', NULL, 80000, 30000, 'old bill', 1, NULL, NULL)",
+            )
+        }
+        helper.runMigrationsAndValidate(testDb, 3, true, Migrations.MIGRATION_2_3).use { db ->
+            db.query("SELECT name, priceMinor, imagePath, boldName, boldPrice FROM services WHERE id = 7").use {
+                it.moveToFirst()
+                assertEquals("Hair Cut", it.getString(0))
+                assertEquals(50000L, it.getLong(1))
+                assertEquals(true, it.isNull(2))
+                assertEquals(0, it.getInt(3))
+                assertEquals(0, it.getInt(4))
+            }
+            db.query("SELECT amountMinor, paidMinor, saleId FROM customer_dues WHERE id = 3").use {
+                it.moveToFirst()
+                assertEquals(80000L, it.getLong(0))
+                assertEquals(30000L, it.getLong(1))
+                assertEquals(true, it.isNull(2))
+            }
+            db.query("SELECT COUNT(*) FROM payment_accounts").use {
+                it.moveToFirst()
+                assertEquals(0, it.getInt(0))
+            }
+        }
+        context.deleteDatabase(testDb)
+    }
 }
+

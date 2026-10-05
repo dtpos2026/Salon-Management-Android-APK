@@ -1,4 +1,4 @@
-import { dashboardCounts, recentPending, expiringSoon, revenueSummary, listInvoices, effectiveStatus } from '../data.js';
+import { dashboardCounts, recentPending, expiringSoon, revenueSummary, listInvoices, effectiveStatus, salesStatsMap, salesSummary } from '../data.js';
 import { esc, fmtDate, money, relativeDays, errorMessage } from '../util.js';
 import { approveDialog, statusPill } from '../actions.js';
 
@@ -10,13 +10,19 @@ function stat(label, value, hint, href, tint, hero = false) {
 export async function render(el, ctx) {
   ctx.setTitle('Dashboard');
   ctx.setActions('<a class="btn btn-primary" href="#/invoice/new">+ New invoice</a>');
-  const [counts, pending, renewals, revenue, latest] = await Promise.all([
+  const [counts, pending, renewals, revenue, latest, stats] = await Promise.all([
     dashboardCounts(),
     recentPending(6),
     expiringSoon(6),
     revenueSummary().catch(() => null),
     listInvoices({ pageSize: 5 }).catch(() => ({ items: [] })),
+    salesStatsMap().catch(() => ({})),
   ]);
+  const totals = Object.values(stats).map((s) => salesSummary(s)).reduce((acc, s) => ({
+    today: acc.today + s.today, customers: acc.customers + s.todayCustomers, month: acc.month + s.month,
+  }), { today: 0, customers: 0, month: 0 });
+  const topToday = Object.entries(stats).map(([uid, s]) => ({ uid, name: s.salonName, ...salesSummary(s) }))
+    .filter((s) => s.today > 0 || s.month > 0).sort((a, b) => b.today - a.today || b.month - a.month).slice(0, 8);
   el.innerHTML = `
     <div class="stats">
       ${stat('Total salons', counts.total, 'All registered accounts', '#/salons', 'rgba(255,255,255,.12)', true)}
@@ -29,6 +35,7 @@ export async function render(el, ctx) {
       ${stat('Suspended', counts.SUSPENDED, '', '#/salons?filter=SUSPENDED', 'rgba(90,63,138,.14)')}
       ${stat('Blocked', counts.BLOCKED, `${counts.REJECTED} rejected`, '#/salons?filter=BLOCKED', 'rgba(198,40,40,.12)')}
       ${revenue ? stat('Collected this month', money(revenue.collectedThisMonth), `Invoiced ${money(revenue.invoicedThisMonth)}`, '#/invoices', 'rgba(30,138,74,.12)') : ''}
+      ${stat("All salons' sales today", money(totals.today), `${totals.customers} customers · month ${money(totals.month)}`, '#/salons', 'rgba(30,138,74,.12)')}
       ${revenue ? stat('Outstanding', money(revenue.outstanding), `${revenue.unpaidCount} unpaid invoices`, '#/invoices?filter=UNPAID', 'rgba(198,40,40,.12)') : ''}
     </div>
     <div class="grid grid-2">
@@ -50,6 +57,16 @@ export async function render(el, ctx) {
             <td data-label="Status">${statusPill(effectiveStatus(a))}</td>
           </tr>`).join('')}</tbody></table>` : '<div class="empty">No licences ending in the next 7 days.</div>'}
       </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <div class="card-head"><h2>Sales by salon</h2><div class="spacer"></div><span class="cell-sub">Shared by the app: totals only</span></div>
+      ${topToday.length ? `<table class="list"><thead><tr><th>Salon</th><th>Today</th><th>Yesterday</th><th>This month</th></tr></thead><tbody>${topToday.map((s) => `
+        <tr class="row-link" data-href="#/salon/${encodeURIComponent(s.uid)}">
+          <td data-label="Salon" class="cell-title">${esc(s.name || s.uid)}</td>
+          <td data-label="Today">${money(s.today)}<div class="cell-sub">${s.todayCustomers} customers</div></td>
+          <td data-label="Yesterday">${money(s.yesterday)}<div class="cell-sub">${s.yesterdayCustomers} customers</div></td>
+          <td data-label="This month">${money(s.month)}<div class="cell-sub">${s.monthCustomers} customers</div></td>
+        </tr>`).join('')}</tbody></table>` : '<div class="empty">No sales shared yet. Salons on app 2.1.0 or newer share their daily totals when online.</div>'}
     </div>
     <div class="card" style="margin-top:16px">
       <div class="card-head"><h2>Latest invoices</h2><div class="spacer"></div><a href="#/invoices">All invoices</a></div>

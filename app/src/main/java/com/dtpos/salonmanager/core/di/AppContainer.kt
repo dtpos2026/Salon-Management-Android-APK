@@ -153,11 +153,21 @@ class AppContainer(
         )
     }
 
+    /** Daily sales totals for the Super Admin (numbers only; see SalesSync). */
+    val salesSync by lazy {
+        com.dtpos.salonmanager.services.account.SalesSync(app, { database }, businessId, accountManager, appScope, BuildConfig.VERSION_NAME)
+    }
+
     suspend fun initialize() {
         try {
             accountManager.start()
         } catch (e: Exception) {
             // The gate falls back to "not configured"; the salon data is unaffected.
+        }
+        try {
+            salesSync.start()
+        } catch (e: Exception) {
+            // Sharing totals is best effort; it never blocks the salon.
         }
         try {
             businessRepository.ensureInitialized()

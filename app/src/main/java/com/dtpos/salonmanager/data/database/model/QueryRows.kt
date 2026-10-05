@@ -62,6 +62,16 @@ data class SalesSummaryRow(
     }
 }
 
+/** One day's totals for the Super Admin's sales view. */
+data class DailyStatRow(
+    val day: Long,
+    val totalMinor: Long,
+    val count: Int,
+    val serviceCount: Int,
+    val cashMinor: Long,
+    val creditMinor: Long,
+)
+
 /** Money received for sales per place: cash, a payment account, or a plain method. */
 data class ReceivedTotalRow(
     val paymentMethod: PaymentMethod,

@@ -1,8 +1,9 @@
 rules_version = '2';
 
 // DT Salon Management - Firestore security rules.
-// Only accounts, licences, invoices and app settings live online. Salon data (sales,
-// customers, staff, expenses) never leaves the phone.
+// Only accounts, licences, invoices, app settings, support chat and daily sales totals
+// (numbers only) live online. Salon records (receipts, customers, staff, expenses) never
+// leave the phone.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -104,6 +105,53 @@ service cloud.firestore {
           && text(request.resource.data.text, 2000) && request.resource.data.text.size() > 0
           && request.resource.data.at == request.time);
         allow update, delete: if isAdmin();
+      }
+    }
+
+    // Daily sales totals a salon shares with the Super Admin, who bills by sales. Numbers only:
+    // no customer names, phones or receipts. The salon writes its own; admins read.
+    function amount(data, key) {
+      return !(key in data) || (data[key] is int && data[key] >= 0 && data[key] <= 100000000000000);
+    }
+
+    match /stats/{uid} {
+      allow get: if isSelf(uid) || isAdmin();
+      allow list: if isAdmin();
+      allow create, update: if isSelf(uid)
+        && request.resource.data.keys().hasOnly([
+          'uid', 'salonName', 'currency', 'day', 'todaySalesMinor', 'todayCustomers',
+          'yesterdaySalesMinor', 'yesterdayCustomers', 'monthKey', 'monthSalesMinor',
+          'monthCustomers', 'appVersion', 'updatedAt'])
+        && request.resource.data.uid == uid
+        && request.resource.data.updatedAt == request.time
+        && optionalText(request.resource.data, 'salonName', 120)
+        && optionalText(request.resource.data, 'currency', 10)
+        && optionalText(request.resource.data, 'day', 10)
+        && optionalText(request.resource.data, 'monthKey', 7)
+        && optionalText(request.resource.data, 'appVersion', 40)
+        && amount(request.resource.data, 'todaySalesMinor')
+        && amount(request.resource.data, 'todayCustomers')
+        && amount(request.resource.data, 'yesterdaySalesMinor')
+        && amount(request.resource.data, 'yesterdayCustomers')
+        && amount(request.resource.data, 'monthSalesMinor')
+        && amount(request.resource.data, 'monthCustomers');
+      allow delete: if isAdmin();
+
+      match /days/{day} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow create, update: if isSelf(uid)
+          && day.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+          && request.resource.data.keys().hasOnly([
+            'date', 'salesMinor', 'customers', 'services', 'cashMinor', 'onlineMinor', 'creditMinor', 'updatedAt'])
+          && request.resource.data.date == day
+          && request.resource.data.updatedAt == request.time
+          && amount(request.resource.data, 'salesMinor')
+          && amount(request.resource.data, 'customers')
+          && amount(request.resource.data, 'services')
+          && amount(request.resource.data, 'cashMinor')
+          && amount(request.resource.data, 'onlineMinor')
+          && amount(request.resource.data, 'creditMinor');
+        allow delete: if isAdmin();
       }
     }
 

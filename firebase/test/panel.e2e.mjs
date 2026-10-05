@@ -65,6 +65,15 @@ await admin(async (db) => {
     expiresAt: Timestamp.fromMillis(now - 3 * DAY), createdAt: Timestamp.fromMillis(now - 90 * DAY),
   });
   await setDoc(doc(db, 'counters/customers'), { next: 2 });
+  // Daily totals the app shares (numbers only).
+  const key = (ms) => { const d = new Date(ms); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  await setDoc(doc(db, 'stats/royal1'), {
+    uid: 'royal1', salonName: 'Royal Cuts', currency: 'PKR', day: key(now), todaySalesMinor: 1250000, todayCustomers: 18,
+    yesterdaySalesMinor: 990000, yesterdayCustomers: 14, monthKey: key(now).slice(0, 7), monthSalesMinor: 4500000, monthCustomers: 61,
+    appVersion: '2.1.0', updatedAt: Timestamp.fromMillis(now - 120000),
+  });
+  await setDoc(doc(db, `stats/royal1/days/${key(now)}`), { date: key(now), salesMinor: 1250000, customers: 18, services: 25, cashMinor: 900000, onlineMinor: 250000, creditMinor: 100000, updatedAt: Timestamp.fromMillis(now) });
+  await setDoc(doc(db, `stats/royal1/days/${key(now - DAY)}`), { date: key(now - DAY), salesMinor: 990000, customers: 14, services: 20, cashMinor: 990000, onlineMinor: 0, creditMinor: 0, updatedAt: Timestamp.fromMillis(now - DAY) });
   await setDoc(doc(db, 'support/royal1'), { uid: 'royal1', salonName: 'Royal Cuts', lastMessage: 'Printer not printing', lastFrom: 'user', lastAt: Timestamp.fromMillis(now - 60000), unreadForAdmin: true, unreadForUser: false });
   await setDoc(doc(db, 'support/royal1/messages/m1'), { from: 'user', text: 'Printer not printing', at: Timestamp.fromMillis(now - 60000) });
   await setDoc(doc(db, 'config/billing'), {
@@ -111,8 +120,9 @@ try {
   assert.equal(await statValue('Waiting for approval'), '1');
   assert.equal((await statValue('Expired')).trim(), '1');
   assert.equal(await statValue('New phone requests'), '1');
+  assert.equal(await statValue("All salons' sales today"), 'Rs 12,500');
   await page.screenshot({ path: join(SHOTS, '1-dashboard.png'), fullPage: true });
-  step('admin dashboard shows the right counts');
+  step('admin dashboard shows the right counts and today\'s sales of all salons');
 
   await page.click('[data-approve="pending1"]');
   await page.selectOption('select[name=plan]', 'MONTHLY');
@@ -142,6 +152,14 @@ try {
   assert.equal(moved.pendingDeviceId, undefined);
   await page.locator('.device-list li').nth(1).waitFor();
   step('a new phone request is approved within the phone limit (2 phones listed)');
+
+  const salesCard = page.locator('#sales');
+  await salesCard.getByText('Rs 12,500').first().waitFor();
+  await salesCard.getByText('Rs 9,900').first().waitFor();
+  await salesCard.getByText('Rs 45,000').waitFor();
+  assert.equal(await salesCard.locator('tbody tr').count(), 2);
+  await salesCard.screenshot({ path: join(SHOTS, '1b-salon-sales.png') });
+  step('salon page shows today / yesterday / month sales and the daily table');
 
   await page.goto(`${base}/index.html#/salons`);
   await page.fill('#q', 'roy');

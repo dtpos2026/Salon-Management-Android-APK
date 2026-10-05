@@ -250,7 +250,7 @@ class ScreenshotTest {
     }
 
     @Test
-    fun monoReceiptsTokenSlipAndCloseDay() {
+    fun monoReceiptsAndTokenSlip() {
         val receipt = ReceiptData(
             saleId = 2, businessName = "Classic Cuts Barbershop", businessPhone = "0300-2223344", businessAddress = "45 Main Street, Burewala",
             logoPath = null, headerNote = null, footer = "Walk-ins welcome!\nOpen Tue-Sun 10AM-10PM", currency = CurrencyConfig(),
@@ -285,13 +285,20 @@ class ScreenshotTest {
         )
         assertEquals(384, slip.width)
         FileOutputStream(File(outDir, "13-token-printer-58mm.png")).use { slip.compress(Bitmap.CompressFormat.PNG, 100, it) }
+    }
 
+    private fun seedSalon() {
         runBlocking {
             container.initialize()
             container.demoDataSeeder.seed()
             container.businessRepository.completeSetup("Royal Cuts", "0300-1234567", "Main Bazar, Burewala", CurrencyConfig(), addDefaultServices = true)
             container.paymentAccountRepository.save(null, "JazzCash", com.dtpos.salonmanager.domain.model.AccountKind.WALLET, null, "0300-1111111")
         }
+    }
+
+    @Test
+    fun closeDayScreen() {
+        seedSalon()
         compose.setContent {
             SalonTheme(darkTheme = false, colorTheme = ColorTheme.ROYAL_PURPLE) {
                 CompositionLocalProvider(LocalAppContainer provides container) {
@@ -304,6 +311,11 @@ class ScreenshotTest {
             compose.waitForIdle()
         }
         capture("14-close-day")
+    }
+
+    @Test
+    fun paymentAccountsScreen() {
+        seedSalon()
         compose.setContent {
             SalonTheme(darkTheme = false, colorTheme = ColorTheme.ROYAL_PURPLE) {
                 CompositionLocalProvider(LocalAppContainer provides container) {

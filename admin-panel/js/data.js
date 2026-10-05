@@ -492,3 +492,48 @@ export async function saveConfig(name, data) {
 export async function getVerification(token) {
   return fromSnap(await getDoc(doc(db(), 'invoiceVerify', token)));
 }
+
+// ---- Sales totals shared by the salons (numbers only; see SalesSync in the app) ------------
+
+function dayKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** Today / yesterday / this month for one salon's stats document (stale days count as 0). */
+export function salesSummary(stats, now = new Date()) {
+  const today = dayKey(now);
+  const yesterday = dayKey(addDays(now, -1));
+  const month = today.slice(0, 7);
+  if (!stats) return { today: 0, todayCustomers: 0, yesterday: 0, yesterdayCustomers: 0, month: 0, monthCustomers: 0, updatedAt: null };
+  const rupees = (minor) => (Number(minor) || 0) / 100;
+  let t = 0; let tc = 0; let y = 0; let yc = 0;
+  if (stats.day === today) {
+    t = rupees(stats.todaySalesMinor); tc = stats.todayCustomers || 0;
+    y = rupees(stats.yesterdaySalesMinor); yc = stats.yesterdayCustomers || 0;
+  } else if (stats.day === yesterday) {
+    y = rupees(stats.todaySalesMinor); yc = stats.todayCustomers || 0;
+  }
+  const m = stats.monthKey === month ? rupees(stats.monthSalesMinor) : 0;
+  const mc = stats.monthKey === month ? (stats.monthCustomers || 0) : 0;
+  return { today: t, todayCustomers: tc, yesterday: y, yesterdayCustomers: yc, month: m, monthCustomers: mc, updatedAt: stats.updatedAt || null };
+}
+
+/** Every salon's latest shared totals, by account uid. */
+export async function salesStatsMap() {
+  const snap = await getDocs(collection(db(), 'stats'));
+  const map = {};
+  snap.forEach((d) => { map[d.id] = d.data(); });
+  return map;
+}
+
+export async function salesStats(uid) {
+  const snap = await getDoc(doc(db(), 'stats', uid));
+  return snap.exists() ? snap.data() : null;
+}
+
+/** The last [n] days a salon shared, newest first. */
+export async function salesDays(uid, n = 31) {
+  const snap = await getDocs(query(collection(db(), 'stats', uid, 'days'), orderBy('date', 'desc'), limit(n)));
+  return snap.docs.map((d) => d.data());
+}
+

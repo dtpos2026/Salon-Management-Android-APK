@@ -10,6 +10,7 @@ import com.dtpos.salonmanager.data.database.entities.VisitEntity
 import com.dtpos.salonmanager.data.database.model.DayTotalRow
 import com.dtpos.salonmanager.data.database.model.NamedTotalRow
 import com.dtpos.salonmanager.data.database.model.PaymentMethodTotalRow
+import com.dtpos.salonmanager.data.database.model.DailyStatRow
 import com.dtpos.salonmanager.data.database.model.ReceivedTotalRow
 import com.dtpos.salonmanager.data.database.model.SalesSummaryRow
 import kotlinx.coroutines.flow.Flow
@@ -213,4 +214,18 @@ interface SaleDao {
 
     @Query("DELETE FROM visits WHERE saleId = :saleId")
     suspend fun deleteVisit(saleId: Long)
+
+    /** Per-day numbers shared with the Super Admin (no names or receipts). */
+    @Query(
+        """
+        SELECT businessDate AS day, COALESCE(SUM(totalMinor), 0) AS totalMinor, COUNT(*) AS count,
+            COALESCE(SUM(serviceCount), 0) AS serviceCount,
+            COALESCE(SUM(CASE WHEN paymentMethod = 'CASH' THEN totalMinor - creditMinor ELSE 0 END), 0) AS cashMinor,
+            COALESCE(SUM(creditMinor), 0) AS creditMinor
+        FROM sales
+        WHERE businessId = :businessId AND status = 'COMPLETED' AND businessDate BETWEEN :fromDay AND :toDay
+        GROUP BY businessDate
+        """,
+    )
+    fun observeDailyStats(businessId: Long, fromDay: Long, toDay: Long): Flow<List<DailyStatRow>>
 }
