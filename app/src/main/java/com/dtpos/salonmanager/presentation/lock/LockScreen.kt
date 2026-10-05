@@ -79,7 +79,7 @@ data class LockUiState(
     val recoveryError: Boolean = false,
 )
 
-class LockViewModel(private val security: SecurityManager) : BaseViewModel() {
+class LockViewModel(private val security: SecurityManager, private val ownerOnly: Boolean = false) : BaseViewModel() {
     private val _state = MutableStateFlow(LockUiState())
     val state: StateFlow<LockUiState> = _state.asStateFlow()
 
@@ -98,7 +98,7 @@ class LockViewModel(private val security: SecurityManager) : BaseViewModel() {
         if (secret.isEmpty() || _state.value.busy) return
         _state.update { it.copy(busy = true) }
         launchSafe {
-            when (val result = security.verify(secret)) {
+            when (val result = security.verify(secret, ownerOnly)) {
                 VerifyResult.Success -> _state.value = LockUiState()
                 is VerifyResult.Wrong -> _state.update {
                     it.copy(input = "", busy = false, error = R.string.lock_wrong, attemptsLeft = result.attemptsLeft, lockedUntil = null)
@@ -128,22 +128,28 @@ fun SecuredArea(area: ProtectedArea, content: @Composable () -> Unit) {
     val security = LocalAppContainer.current.securityManager
     val config by security.config.collectAsStateWithLifecycle()
     val unlocked by security.unlocked.collectAsStateWithLifecycle()
-    if (config?.protects(area) == true && !unlocked) {
-        LockScreen(area = area, modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
-    } else {
-        content()
+    val access by security.access.collectAsStateWithLifecycle()
+    when {
+        config?.protects(area) == true && !unlocked ->
+            LockScreen(area = area, modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
+        // A manager or assistant opened something only the owner may: ask for the owner's PIN.
+        config?.isEnabled == true && !access.allows(area) ->
+            LockScreen(area = area, modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), ownerOnly = true)
+        else -> content()
     }
 }
 
 @Composable
-fun LockScreen(area: ProtectedArea, modifier: Modifier = Modifier) {
+fun LockScreen(area: ProtectedArea, modifier: Modifier = Modifier, ownerOnly: Boolean = false) {
     val container = LocalAppContainer.current
-    val vm = appViewModel(key = "lock_${area.name}") { LockViewModel(it.securityManager) }
+    val vm = appViewModel(key = "lock_${area.name}_$ownerOnly") { LockViewModel(it.securityManager, ownerOnly) }
     val state by vm.state.collectAsStateWithLifecycle()
     val config by container.securityManager.config.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lockType = config?.lockType ?: LockType.PIN
-    val biometricAllowed = config?.biometricEnabled == true && remember { BiometricAuthenticator.isAvailable(context) }
+    // Fingerprint means the owner, so it is not offered once staff have their own PINs.
+    val biometricAllowed = config?.biometricEnabled == true && config?.hasStaffPins != true &&
+        remember { BiometricAuthenticator.isAvailable(context) }
     var showRecovery by remember { mutableStateOf(false) }
 
     val biometricTitle = stringResource(R.string.lock_biometric_title)
@@ -178,11 +184,17 @@ fun LockScreen(area: ProtectedArea, modifier: Modifier = Modifier) {
             )
             Text(
                 stringResource(
-                    when (area) {
-                        ProtectedArea.APP -> R.string.lock_area_app
-                        ProtectedArea.REPORTS -> R.string.lock_area_reports
-                        ProtectedArea.EXPENSES -> R.string.lock_area_expenses
-                        ProtectedArea.SETTINGS -> R.string.lock_area_settings
+                    when {
+                        ownerOnly -> R.string.lock_owner_needed
+                        else -> when (area) {
+                            ProtectedArea.APP -> if (config?.hasStaffPins == true) R.string.lock_area_app_staff else R.string.lock_area_app
+                            ProtectedArea.REPORTS -> R.string.lock_area_reports
+                            ProtectedArea.EXPENSES -> R.string.lock_area_expenses
+                            ProtectedArea.SETTINGS -> R.string.lock_area_settings
+                            ProtectedArea.CLOSE_DAY -> R.string.lock_area_close_day
+                            ProtectedArea.RECEIPT_EDIT -> R.string.lock_area_receipt_edit
+                            ProtectedArea.STAFF -> R.string.lock_area_staff
+                        }
                     },
                 ),
                 style = MaterialTheme.typography.bodyMedium,

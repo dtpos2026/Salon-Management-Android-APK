@@ -15,7 +15,22 @@ import kotlinx.coroutines.withContext
 
 enum class LockType { NONE, PIN, PASSWORD }
 
-enum class ProtectedArea { APP, REPORTS, EXPENSES, SETTINGS }
+enum class ProtectedArea { APP, REPORTS, EXPENSES, SETTINGS, CLOSE_DAY, RECEIPT_EDIT, STAFF }
+
+/**
+ * Who is using the app right now, from the PIN that unlocked it. The owner may open everything.
+ * A manager runs the shop (sales, reports, expenses, close day, staff) but not settings, the
+ * account / plan or phones. An assistant only makes sales, tokens and customers.
+ */
+enum class StaffAccess {
+    OWNER, MANAGER, ASSISTANT;
+
+    fun allows(area: ProtectedArea): Boolean = when (this) {
+        OWNER -> true
+        MANAGER -> area != ProtectedArea.SETTINGS
+        ASSISTANT -> area == ProtectedArea.APP
+    }
+}
 
 data class SecurityConfig(
     val lockType: LockType = LockType.NONE,
@@ -24,14 +39,20 @@ data class SecurityConfig(
     val protectReports: Boolean = true,
     val protectExpenses: Boolean = true,
     val protectSettings: Boolean = true,
+    val hasManagerPin: Boolean = false,
+    val hasAssistantPin: Boolean = false,
 ) {
     val isEnabled: Boolean get() = lockType != LockType.NONE
 
+    /** With staff PINs the app always starts locked, so it knows who is using it. */
+    val hasStaffPins: Boolean get() = isEnabled && (hasManagerPin || hasAssistantPin)
+
     fun protects(area: ProtectedArea): Boolean = isEnabled && when (area) {
-        ProtectedArea.APP -> lockOnStart
+        ProtectedArea.APP -> lockOnStart || hasStaffPins
         ProtectedArea.REPORTS -> protectReports
         ProtectedArea.EXPENSES -> protectExpenses
         ProtectedArea.SETTINGS -> protectSettings
+        ProtectedArea.CLOSE_DAY, ProtectedArea.RECEIPT_EDIT, ProtectedArea.STAFF -> hasStaffPins
     }
 }
 
@@ -58,6 +79,13 @@ class SecurityManager(
     private val _unlocked = MutableStateFlow(false)
     val unlocked: StateFlow<Boolean> = _unlocked.asStateFlow()
 
+    private val _access = MutableStateFlow(StaffAccess.OWNER)
+    /** The role of whoever unlocked the app (owner when there is no lock). */
+    val access: StateFlow<StaffAccess> = _access.asStateFlow()
+
+    /** True when the current user may open [area] (independent of whether it is locked). */
+    fun allows(area: ProtectedArea): Boolean = config.value?.isEnabled != true || _access.value.allows(area)
+
     @Volatile private var backgroundedAt = 0L
 
     fun needsUnlock(area: ProtectedArea): Boolean {
@@ -76,26 +104,42 @@ class SecurityManager(
 
     fun lockNow() {
         _unlocked.value = false
+        _access.value = StaffAccess.OWNER
     }
 
-    /** Called after a successful biometric prompt. */
+    /** Called after a successful biometric prompt (offered only when no staff PINs exist). */
     fun unlockWithBiometric() {
+        _access.value = StaffAccess.OWNER
         _unlocked.value = true
     }
 
-    suspend fun verify(secret: String): VerifyResult = withContext(Dispatchers.Default) {
+    /**
+     * Checks a PIN / password. The owner's secret gives full access; a staff PIN gives that
+     * role's access. With [ownerOnly] (an area the current role may not open) only the owner's
+     * secret is accepted.
+     */
+    suspend fun verify(secret: String, ownerOnly: Boolean = false): VerifyResult = withContext(Dispatchers.Default) {
         val now = System.currentTimeMillis()
         val lockoutUntil = settings.getLong(SettingKeys.SEC_LOCKOUT_UNTIL)
         if (lockoutUntil > now) return@withContext VerifyResult.LockedOut(lockoutUntil)
 
         val hash = settings.getString(SettingKeys.SEC_SECRET_HASH)
         if (hash == null) {
+            _access.value = StaffAccess.OWNER
             _unlocked.value = true
             return@withContext VerifyResult.Success
         }
-        if (PasswordHasher.verify(secret.toCharArray(), hash)) {
+        val role = when {
+            PasswordHasher.verify(secret.toCharArray(), hash) -> StaffAccess.OWNER
+            ownerOnly -> null
+            settings.getString(SettingKeys.SEC_MANAGER_HASH)?.let { PasswordHasher.verify(secret.toCharArray(), it) } == true -> StaffAccess.MANAGER
+            settings.getString(SettingKeys.SEC_ASSISTANT_HASH)?.let { PasswordHasher.verify(secret.toCharArray(), it) } == true -> StaffAccess.ASSISTANT
+            else -> null
+        }
+        if (role != null) {
             settings.putInt(SettingKeys.SEC_FAILED_ATTEMPTS, 0)
             settings.putLong(SettingKeys.SEC_LOCKOUT_UNTIL, 0)
+            _access.value = role
             _unlocked.value = true
             return@withContext VerifyResult.Success
         }
@@ -124,14 +168,37 @@ class SecurityManager(
         settings.putString(SettingKeys.SEC_LOCK_TYPE, type.name)
         settings.putInt(SettingKeys.SEC_FAILED_ATTEMPTS, 0)
         settings.putLong(SettingKeys.SEC_LOCKOUT_UNTIL, 0)
+        _access.value = StaffAccess.OWNER
         _unlocked.value = true
         recovery
+    }
+
+    /**
+     * Sets (or with a blank [pin], removes) the PIN of a staff role. Refused when it equals the
+     * owner's or the other role's PIN, so a PIN always means exactly one role.
+     */
+    suspend fun setStaffPin(role: StaffAccess, pin: String): Boolean = withContext(Dispatchers.Default) {
+        require(role != StaffAccess.OWNER)
+        val key = if (role == StaffAccess.MANAGER) SettingKeys.SEC_MANAGER_HASH else SettingKeys.SEC_ASSISTANT_HASH
+        if (pin.isBlank()) {
+            settings.putString(key, null)
+            return@withContext true
+        }
+        val other = if (role == StaffAccess.MANAGER) SettingKeys.SEC_ASSISTANT_HASH else SettingKeys.SEC_MANAGER_HASH
+        val taken = listOfNotNull(settings.getString(SettingKeys.SEC_SECRET_HASH), settings.getString(other))
+            .any { PasswordHasher.verify(pin.toCharArray(), it) }
+        if (taken || settings.getString(SettingKeys.SEC_SECRET_HASH) == null) return@withContext false
+        settings.putString(key, PasswordHasher.hash(pin.toCharArray()))
+        true
     }
 
     suspend fun disable() {
         settings.putString(SettingKeys.SEC_LOCK_TYPE, LockType.NONE.name)
         settings.putString(SettingKeys.SEC_SECRET_HASH, null)
         settings.putString(SettingKeys.SEC_RECOVERY_HASH, null)
+        settings.putString(SettingKeys.SEC_MANAGER_HASH, null)
+        settings.putString(SettingKeys.SEC_ASSISTANT_HASH, null)
+        _access.value = StaffAccess.OWNER
         settings.putBoolean(SettingKeys.SEC_BIOMETRIC, false)
         settings.putInt(SettingKeys.SEC_FAILED_ATTEMPTS, 0)
         settings.putLong(SettingKeys.SEC_LOCKOUT_UNTIL, 0)
@@ -154,6 +221,8 @@ class SecurityManager(
             ProtectedArea.REPORTS -> SettingKeys.SEC_PROTECT_REPORTS
             ProtectedArea.EXPENSES -> SettingKeys.SEC_PROTECT_EXPENSES
             ProtectedArea.SETTINGS -> SettingKeys.SEC_PROTECT_SETTINGS
+            // Always protected while staff PINs exist.
+            ProtectedArea.CLOSE_DAY, ProtectedArea.RECEIPT_EDIT, ProtectedArea.STAFF -> return
         }
         settings.putBoolean(key, enabled)
     }
@@ -168,6 +237,8 @@ class SecurityManager(
             protectReports = map[SettingKeys.SEC_PROTECT_REPORTS]?.toBooleanStrictOrNull() ?: true,
             protectExpenses = map[SettingKeys.SEC_PROTECT_EXPENSES]?.toBooleanStrictOrNull() ?: true,
             protectSettings = map[SettingKeys.SEC_PROTECT_SETTINGS]?.toBooleanStrictOrNull() ?: true,
+            hasManagerPin = !map[SettingKeys.SEC_MANAGER_HASH].isNullOrBlank(),
+            hasAssistantPin = !map[SettingKeys.SEC_ASSISTANT_HASH].isNullOrBlank(),
         )
     }
 

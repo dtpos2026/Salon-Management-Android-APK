@@ -182,3 +182,15 @@ test('daily sales totals: a salon writes only its own numbers, the admin reads t
   await assertSucceeds(getDocs(collection(admin(), 'stats/salon1/days')));
   await assertFails(setDoc(doc(admin(), 'stats/salon1/days/2026-10-06'), { ...day, date: '2026-10-06' }));
 });
+
+test('clear old chat: a salon deletes only its own messages', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const db = ctx.firestore();
+    await setDoc(doc(db, 'support/salon1/messages/a'), { from: 'user', text: 'hi', at: serverTimestamp() });
+    await setDoc(doc(db, 'support/other/messages/b'), { from: 'user', text: 'hello', at: serverTimestamp() });
+  });
+  await assertSucceeds(deleteDoc(doc(salon(), 'support/salon1/messages/a')));
+  await assertFails(deleteDoc(doc(salon(), 'support/other/messages/b')));
+  await assertFails(updateDoc(doc(salon(), 'support/other/messages/b'), { text: 'changed' }));
+  await assertSucceeds(deleteDoc(doc(admin(), 'support/other/messages/b')));
+});

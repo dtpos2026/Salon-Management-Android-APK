@@ -89,6 +89,7 @@ fun SettingsScreen(onBack: () -> Unit, onNavigate: (String) -> Unit) {
         SettingsEntry(Routes.AI, R.string.ai_title, R.string.ai_switch_hint, Icons.Filled.AutoAwesome),
     )
     val account = listOf(
+        SettingsEntry(Routes.GUIDE, R.string.nav_guide, R.string.guide_subtitle, Icons.Filled.Info),
         SettingsEntry(Routes.ACCOUNT, R.string.account_title, R.string.account_sub, Icons.Filled.AccountCircle),
     )
     val safety = listOf(

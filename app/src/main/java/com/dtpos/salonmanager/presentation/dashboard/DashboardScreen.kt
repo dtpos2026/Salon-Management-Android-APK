@@ -114,6 +114,11 @@ fun DashboardScreen(onNewSale: () -> Unit, onOpenSale: (Long) -> Unit, onNavigat
     val state by vm.state.collectAsStateWithLifecycle()
     val insights by vm.insights.collectAsStateWithLifecycle()
     val period by vm.period.collectAsStateWithLifecycle()
+    val security = LocalAppContainer.current.securityManager
+    val securityConfig by security.config.collectAsStateWithLifecycle()
+    val access by security.access.collectAsStateWithLifecycle()
+    // An assistant sees sales tools only, not the money summary.
+    val showMoney = securityConfig?.isEnabled != true || access != com.dtpos.salonmanager.services.security.StaffAccess.ASSISTANT
 
     Scaffold(
         topBar = {
@@ -121,6 +126,11 @@ fun DashboardScreen(onNewSale: () -> Unit, onOpenSale: (Long) -> Unit, onNavigat
                 title = state.profile?.name?.ifBlank { null } ?: stringResource(R.string.app_name),
                 subtitle = DateTimeUtils.formatDate(period.businessDay),
                 actions = {
+                    if (securityConfig?.hasStaffPins == true) {
+                        IconButton(onClick = security::lockNow) {
+                            Icon(Icons.Filled.Lock, contentDescription = stringResource(R.string.dashboard_switch_user))
+                        }
+                    }
                     IconButton(onClick = { onNavigate(Routes.SETTINGS) }) {
                         Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.nav_settings))
                     }
@@ -168,16 +178,18 @@ fun DashboardScreen(onNewSale: () -> Unit, onOpenSale: (Long) -> Unit, onNavigat
             if (period.tokensEnabled && period.tokens.isNotEmpty()) {
                 item { TokensCard(period.tokens, onClick = { onNavigate(Routes.TOKENS) }) }
             }
-            item { SectionHeader(stringResource(R.string.dashboard_period_title)) }
-            item { PeriodPicker(period.choice, vm::choose) }
-            period.summary?.let { summary ->
+            if (showMoney) item { SectionHeader(stringResource(R.string.dashboard_period_title)) }
+            if (showMoney) item { PeriodPicker(period.choice, vm::choose) }
+            period.summary?.takeIf { showMoney }?.let { summary ->
                 item { PeriodGrid(summary) }
                 item { MoneyByAccountCard(summary, onManage = { onNavigate(Routes.PAYMENT_ACCOUNTS) }) }
                 if (summary.staff.isNotEmpty()) item { StaffPeriodCard(summary, onClick = { onNavigate(Routes.STAFF) }) }
             }
-            item { TargetsCard(data, onClick = { onNavigate(Routes.TARGETS) }) }
-            item { WeekChartCard(data) }
-            item { InsightsPreview(insights, onViewAll = { onNavigate(Routes.INSIGHTS) }) }
+            if (showMoney) {
+                item { TargetsCard(data, onClick = { onNavigate(Routes.TARGETS) }) }
+                item { WeekChartCard(data) }
+                item { InsightsPreview(insights, onViewAll = { onNavigate(Routes.INSIGHTS) }) }
+            }
             item { SectionHeader(stringResource(R.string.dashboard_manage)) }
             item { QuickActions(onNavigate) }
             item {
@@ -551,6 +563,7 @@ private val quickActions = listOf(
     QuickAction(Routes.PROMOTIONS, R.string.nav_promotions, Icons.Filled.Campaign),
     QuickAction(Routes.AI, R.string.nav_ai, Icons.Filled.AutoAwesome),
     QuickAction(Routes.SUPPORT, R.string.nav_support, Icons.Filled.SupportAgent),
+    QuickAction(Routes.GUIDE, R.string.nav_guide, Icons.Filled.Info),
     QuickAction(Routes.SERVICES, R.string.nav_services, Icons.Filled.ContentCut),
     QuickAction(Routes.STAFF, R.string.nav_staff, Icons.Filled.Groups),
     QuickAction(Routes.CASH, R.string.nav_cash, Icons.Filled.AccountBalanceWallet),

@@ -45,6 +45,15 @@ class UiPreferences(context: Context) {
     val language: AppLanguage get() = storedLanguage(prefs)
 
     /** AI assistant switch (off by default; the owner turns it on). */
+    /** Fast mode for older / slower phones: no intro animation and no moving backgrounds or fades. */
+    private val _fast = MutableStateFlow(prefs.getBoolean(KEY_FAST, false))
+    val fastMode: StateFlow<Boolean> = _fast.asStateFlow()
+
+    fun setFastMode(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_FAST, enabled).apply()
+        _fast.value = enabled
+    }
+
     private val _ai = MutableStateFlow(prefs.getBoolean(KEY_AI, false))
     val aiAssistant: StateFlow<Boolean> = _ai.asStateFlow()
 
@@ -88,6 +97,7 @@ class UiPreferences(context: Context) {
         private const val KEY_LANGUAGE = "language"
         private const val KEY_NOTICE = "noticeSeen"
         private const val KEY_AI = "aiAssistant"
+        private const val KEY_FAST = "fastMode"
 
         private fun prefsOf(context: Context): SharedPreferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 

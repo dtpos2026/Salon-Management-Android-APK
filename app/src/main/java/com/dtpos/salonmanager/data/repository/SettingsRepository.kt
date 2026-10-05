@@ -35,6 +35,9 @@ object SettingKeys {
     const val SEC_PROTECT_SETTINGS = "security.protectSettings"
     const val SEC_FAILED_ATTEMPTS = "security.failedAttempts"
     const val SEC_LOCKOUT_UNTIL = "security.lockoutUntil"
+    /** PIN hashes for staff who use the app with less access (see StaffAccess). */
+    const val SEC_MANAGER_HASH = "security.managerHash"
+    const val SEC_ASSISTANT_HASH = "security.assistantHash"
 
     const val LICENSE_LAST_SEEN = "license.lastSeenDate"
 

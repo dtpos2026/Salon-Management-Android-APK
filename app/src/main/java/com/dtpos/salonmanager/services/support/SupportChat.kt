@@ -74,6 +74,17 @@ class SupportChat(private val app: android.content.Context) {
         batch.commit().await()
     }
 
+    /** Deletes this salon's chat messages (the thread itself stays so DT can still reply). */
+    suspend fun clear(uid: String): Int {
+        val messages = db.collection("support").document(uid).collection("messages").get().await().documents
+        messages.chunked(400).forEach { chunk ->
+            val batch = db.batch()
+            chunk.forEach { batch.delete(db.collection("support").document(uid).collection("messages").document(it.id)) }
+            batch.commit().await()
+        }
+        return messages.size
+    }
+
     companion object {
         const val MAX_LENGTH = 2000
     }

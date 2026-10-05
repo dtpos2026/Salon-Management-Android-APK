@@ -3,6 +3,7 @@ package com.dtpos.salonmanager.presentation.settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -78,7 +79,7 @@ class SecuritySettingsViewModel(container: AppContainer) : BaseViewModel() {
     }
 
     fun verifyThen(secret: String, onVerified: () -> Unit) = launchSafe {
-        when (val result = security.verify(secret)) {
+        when (val result = security.verify(secret, ownerOnly = true)) {
             VerifyResult.Success -> onVerified()
             is VerifyResult.Wrong -> showMessage(R.string.lock_wrong_attempts, result.attemptsLeft)
             is VerifyResult.LockedOut -> showMessage(R.string.lock_locked_out)
@@ -96,6 +97,23 @@ class SecuritySettingsViewModel(container: AppContainer) : BaseViewModel() {
 
     fun lockNow() = security.lockNow()
 
+    /** Sets or (blank) removes a manager / assistant PIN. */
+    fun setStaffPin(role: com.dtpos.salonmanager.services.security.StaffAccess, pin: String, confirm: String, onDone: () -> Unit) {
+        if (pin.isNotBlank()) {
+            val valid = Validators.pin(pin)
+            if (valid !is FieldResult.Valid) return showMessage(valid.errorOrNull!!.messageRes)
+            if (pin != confirm) return showMessage(ValidationError.CONFIRMATION_MISMATCH.messageRes)
+        }
+        launchSafe {
+            if (security.setStaffPin(role, pin)) {
+                showMessage(if (pin.isBlank()) R.string.security_staff_pin_removed else R.string.security_staff_pin_saved)
+                onDone()
+            } else {
+                showMessage(R.string.security_staff_pin_taken)
+            }
+        }
+    }
+
     fun dismissRecovery() {
         _recoveryCode.value = null
     }
@@ -103,6 +121,7 @@ class SecuritySettingsViewModel(container: AppContainer) : BaseViewModel() {
 
 private sealed interface SecurityDialog {
     data class SetSecret(val type: LockType) : SecurityDialog
+    data class StaffPin(val role: com.dtpos.salonmanager.services.security.StaffAccess) : SecurityDialog
     data class VerifyCurrent(val then: () -> Unit) : SecurityDialog
 }
 
@@ -183,6 +202,34 @@ fun SecuritySettingsScreen(onBack: () -> Unit) {
                         ) { vm.setProtection(ProtectedArea.SETTINGS, it) }
                     }
                 }
+                item { SectionHeader(stringResource(R.string.security_staff_title)) }
+                item {
+                    ContentCard {
+                        Text(stringResource(R.string.security_staff_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        listOf(
+                            Triple(com.dtpos.salonmanager.services.security.StaffAccess.MANAGER, c.hasManagerPin, R.string.security_staff_manager),
+                            Triple(com.dtpos.salonmanager.services.security.StaffAccess.ASSISTANT, c.hasAssistantPin, R.string.security_staff_assistant),
+                        ).forEach { (role, set, label) ->
+                            Spacer(Modifier.height(10.dp))
+                            Text(stringResource(label), style = MaterialTheme.typography.titleSmall)
+                            Text(
+                                stringResource(if (role == com.dtpos.salonmanager.services.security.StaffAccess.MANAGER) R.string.security_staff_manager_can else R.string.security_staff_assistant_can),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Row {
+                                TextButton(onClick = { dialog = SecurityDialog.StaffPin(role) }) {
+                                    Text(stringResource(if (set) R.string.security_staff_change else R.string.security_staff_set))
+                                }
+                                if (set) {
+                                    TextButton(onClick = { vm.setStaffPin(role, "", "") {} }) {
+                                        Text(stringResource(R.string.security_staff_remove), color = MaterialTheme.colorScheme.error)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 item {
                     ContentCard {
                         ToggleRow(
@@ -207,6 +254,11 @@ fun SecuritySettingsScreen(onBack: () -> Unit) {
         is SecurityDialog.SetSecret -> SetSecretDialog(
             type = d.type,
             onSave = { secret, confirm -> vm.setSecret(d.type, secret, confirm) { dialog = null } },
+            onDismiss = { dialog = null },
+        )
+        is SecurityDialog.StaffPin -> SetSecretDialog(
+            type = LockType.PIN,
+            onSave = { secret, confirm -> vm.setStaffPin(d.role, secret, confirm) { dialog = null } },
             onDismiss = { dialog = null },
         )
         is SecurityDialog.VerifyCurrent -> VerifyDialog(

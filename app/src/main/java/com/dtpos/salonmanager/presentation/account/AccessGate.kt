@@ -149,7 +149,9 @@ fun SystemBarIcons(lightBackground: Boolean) {
 fun AccessGate(content: @Composable () -> Unit) {
     val vm = appViewModel { AccessViewModel(it) }
     val state by vm.state.collectAsStateWithLifecycle()
-    var introDone by rememberSaveable { mutableStateOf(IntroState.shown) }
+    val fast by com.dtpos.salonmanager.presentation.common.LocalAppContainer.current.uiPreferences.fastMode.collectAsStateWithLifecycle()
+    // Fast mode skips the brand intro animation.
+    var introDone by rememberSaveable { mutableStateOf(IntroState.shown || fast) }
     if (!introDone) {
         SystemBarIcons(lightBackground = false)
         IntroSplash(onFinished = {
@@ -161,7 +163,10 @@ fun AccessGate(content: @Composable () -> Unit) {
     AnimatedContent(
         targetState = state,
         contentKey = { it::class },
-        transitionSpec = { fadeIn(tween(380)) togetherWith fadeOut(tween(220)) },
+        transitionSpec = {
+            if (fast) androidx.compose.animation.EnterTransition.None togetherWith androidx.compose.animation.ExitTransition.None
+            else fadeIn(tween(380)) togetherWith fadeOut(tween(220))
+        },
         label = "access",
     ) { s ->
         if (s !is AccessState.Allowed) SystemBarIcons(lightBackground = false)

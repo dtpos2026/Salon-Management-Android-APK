@@ -31,6 +31,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
@@ -117,7 +118,16 @@ fun SalonMainScaffold(navController: NavHostController = rememberNavController()
 @Composable
 private fun SalonNavHost(nav: NavHostController) {
     val back: () -> Unit = { nav.popBackStack() }
-    NavHost(navController = nav, startDestination = Routes.DASHBOARD) {
+    val fast by com.dtpos.salonmanager.presentation.common.LocalAppContainer.current.uiPreferences.fastMode.collectAsStateWithLifecycle()
+    // Short fades between screens; none at all in Fast mode (older phones, rush hour).
+    NavHost(
+        navController = nav,
+        startDestination = Routes.DASHBOARD,
+        enterTransition = { if (fast) androidx.compose.animation.EnterTransition.None else androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(200)) },
+        exitTransition = { if (fast) androidx.compose.animation.ExitTransition.None else androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(150)) },
+        popEnterTransition = { if (fast) androidx.compose.animation.EnterTransition.None else androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(200)) },
+        popExitTransition = { if (fast) androidx.compose.animation.ExitTransition.None else androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(150)) },
+    ) {
         composable(Routes.DASHBOARD) {
             DashboardScreen(
                 onNewSale = { nav.navigate(Routes.pos()) },
@@ -178,7 +188,7 @@ private fun SalonNavHost(nav: NavHostController) {
                 )
             }
             // Correcting a receipt is for the owner: it asks for the owner PIN when one is set.
-            if (editSaleId != null) SecuredArea(ProtectedArea.SETTINGS) { pos() } else pos()
+            if (editSaleId != null) SecuredArea(ProtectedArea.RECEIPT_EDIT) { pos() } else pos()
         }
         composable(
             Routes.SALE_DETAIL,
@@ -226,25 +236,29 @@ private fun SalonNavHost(nav: NavHostController) {
         composable(Routes.SERVICES) { ServicesScreen(onBack = back) }
 
         composable(Routes.STAFF) {
-            StaffListScreen(
-                onBack = back,
-                onOpenStaff = { nav.navigate(Routes.staffDetail(it)) },
-                onAddStaff = { nav.navigate(Routes.staffEdit()) },
-            )
+            SecuredArea(ProtectedArea.STAFF) {
+                StaffListScreen(
+                    onBack = back,
+                    onOpenStaff = { nav.navigate(Routes.staffDetail(it)) },
+                    onAddStaff = { nav.navigate(Routes.staffEdit()) },
+                )
+            }
         }
         composable(Routes.STAFF_DETAIL, arguments = listOf(navArgument("staffId") { type = NavType.LongType })) { entry ->
             val id = entry.arguments?.getLong("staffId") ?: 0L
-            StaffDetailScreen(staffId = id, onBack = back, onEdit = { nav.navigate(Routes.staffEdit(id)) })
+            SecuredArea(ProtectedArea.STAFF) { StaffDetailScreen(staffId = id, onBack = back, onEdit = { nav.navigate(Routes.staffEdit(id)) }) }
         }
         composable(
             Routes.STAFF_EDIT,
             arguments = listOf(navArgument("staffId") { type = NavType.LongType; defaultValue = -1L }),
         ) { entry ->
-            StaffEditScreen(
-                staffId = entry.arguments?.getLong("staffId")?.takeIf { it > 0 },
-                onBack = back,
-                onDeleted = { if (!nav.popBackStack(Routes.STAFF, inclusive = false)) nav.popBackStack() },
-            )
+            SecuredArea(ProtectedArea.STAFF) {
+                StaffEditScreen(
+                    staffId = entry.arguments?.getLong("staffId")?.takeIf { it > 0 },
+                    onBack = back,
+                    onDeleted = { if (!nav.popBackStack(Routes.STAFF, inclusive = false)) nav.popBackStack() },
+                )
+            }
         }
 
         composable(
@@ -272,14 +286,17 @@ private fun SalonNavHost(nav: NavHostController) {
             }
         }
 
-        composable(Routes.CASH) { CashCounterScreen(onBack = back) }
+        composable(Routes.CASH) { SecuredArea(ProtectedArea.CLOSE_DAY) { CashCounterScreen(onBack = back) } }
         composable(Routes.TARGETS) { TargetsScreen(onBack = back, onOpenBudget = { nav.navigate(Routes.BUDGET) }) }
         composable(Routes.BUDGET) { SecuredArea(ProtectedArea.REPORTS) { BudgetScreen(onBack = back) } }
         composable(Routes.DUES) { DuesScreen(onBack = back) }
         composable(Routes.PROMOTIONS) { PromotionsScreen(onBack = back) }
         composable(Routes.SUPPORT) { SupportScreen(onBack = back) }
         composable(Routes.TOKENS) { TokensScreen(onBack = back) }
-        composable(Routes.CLOSE_DAY) { com.dtpos.salonmanager.presentation.cash.CloseDayScreen(onBack = back) }
+        composable(Routes.GUIDE) {
+            com.dtpos.salonmanager.presentation.settings.GuideScreen(onBack = back, onSupport = { nav.navigate(Routes.SUPPORT) })
+        }
+        composable(Routes.CLOSE_DAY) { SecuredArea(ProtectedArea.CLOSE_DAY) { com.dtpos.salonmanager.presentation.cash.CloseDayScreen(onBack = back) } }
         composable(Routes.MENU) {
             com.dtpos.salonmanager.presentation.services.MenuScreen(
                 onBack = back,
@@ -303,7 +320,7 @@ private fun SalonNavHost(nav: NavHostController) {
         composable(Routes.SECURITY) { SecuredArea(ProtectedArea.SETTINGS) { SecuritySettingsScreen(onBack = back) } }
         composable(Routes.LICENSE) { SecuredArea(ProtectedArea.SETTINGS) { LicenseScreen(onBack = back) } }
         composable(Routes.ABOUT) { AboutScreen(onBack = back) }
-        composable(Routes.ACCOUNT) { AccountScreen(onBack = back) }
+        composable(Routes.ACCOUNT) { SecuredArea(ProtectedArea.SETTINGS) { AccountScreen(onBack = back) } }
         composable(Routes.PREFERENCES) { AppPreferencesScreen(onBack = back) }
     }
 }

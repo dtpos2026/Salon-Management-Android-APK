@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.SupportAgent
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledIconButton
@@ -72,6 +73,18 @@ class SupportViewModel(private val container: AppContainer) : BaseViewModel() {
     private val _sending = MutableStateFlow(false)
     val sending: StateFlow<Boolean> = _sending.asStateFlow()
 
+    fun clear() {
+        val id = uid ?: return
+        launchSafe {
+            try {
+                chat.clear(id)
+                showMessage(R.string.support_cleared)
+            } catch (e: Exception) {
+                showMessage(R.string.support_clear_failed)
+            }
+        }
+    }
+
     fun send(text: String, onSent: () -> Unit) {
         val id = uid ?: return
         if (text.isBlank() || _sending.value) return
@@ -101,9 +114,36 @@ fun SupportScreen(onBack: () -> Unit) {
     val listState = rememberLazyListState()
     MessageEffect(vm.messages, snackbar)
     LaunchedEffect(messages?.size) { messages?.size?.takeIf { it > 0 }?.let { listState.animateScrollToItem(it - 1) } }
+    var confirmClear by remember { mutableStateOf(false) }
+    if (confirmClear) {
+        com.dtpos.salonmanager.presentation.components.ConfirmDialog(
+            title = stringResource(R.string.support_clear),
+            message = stringResource(R.string.support_clear_message),
+            confirmLabel = stringResource(R.string.support_clear),
+            destructive = true,
+            onConfirm = {
+                confirmClear = false
+                vm.clear()
+            },
+            onDismiss = { confirmClear = false },
+        )
+    }
 
     Scaffold(
-        topBar = { SalonTopBar(stringResource(R.string.support_title), onBack = onBack, subtitle = stringResource(R.string.support_subtitle)) },
+        topBar = {
+            SalonTopBar(
+                stringResource(R.string.support_title),
+                onBack = onBack,
+                subtitle = stringResource(R.string.support_subtitle),
+                actions = {
+                    if (vm.available && !messages.isNullOrEmpty()) {
+                        androidx.compose.material3.IconButton(onClick = { confirmClear = true }) {
+                            Icon(Icons.Filled.DeleteSweep, contentDescription = stringResource(R.string.support_clear))
+                        }
+                    }
+                },
+            )
+        },
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
             if (vm.available) {

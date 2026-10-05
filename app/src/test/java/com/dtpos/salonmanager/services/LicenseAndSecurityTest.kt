@@ -17,6 +17,7 @@ import com.dtpos.salonmanager.services.license.LicenseManager
 import com.dtpos.salonmanager.services.security.LockType
 import com.dtpos.salonmanager.services.security.ProtectedArea
 import com.dtpos.salonmanager.services.security.SecurityManager
+import com.dtpos.salonmanager.services.security.StaffAccess
 import com.dtpos.salonmanager.services.security.VerifyResult
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.filterNotNull
@@ -104,4 +105,45 @@ class LicenseAndSecurityTest {
         assertTrue(security.resetWithRecoveryCode(recovery.lowercase()))
         assertFalse(security.config.filterNotNull().first { !it.isEnabled }.isEnabled)
     }
+
+    @Test
+    fun `staff pins give manager and assistant only their role`() = runTest {
+        val security = SecurityManager(SettingsRepository(db.settingsDao()), backgroundScope)
+        // Staff PINs need the owner lock first.
+        assertFalse(security.setStaffPin(StaffAccess.MANAGER, "5555"))
+        security.setCredential(LockType.PIN, "2468")
+        assertTrue(security.setStaffPin(StaffAccess.MANAGER, "5555"))
+        assertTrue(security.setStaffPin(StaffAccess.ASSISTANT, "7777"))
+        // A PIN always means one role.
+        assertFalse(security.setStaffPin(StaffAccess.ASSISTANT, "2468"))
+        assertFalse(security.setStaffPin(StaffAccess.ASSISTANT, "5555"))
+        val config = security.config.filterNotNull().first { it.hasManagerPin && it.hasAssistantPin }
+        assertTrue(config.protects(ProtectedArea.APP))
+        assertTrue(config.protects(ProtectedArea.CLOSE_DAY))
+
+        security.lockNow()
+        assertEquals(VerifyResult.Success, security.verify("7777"))
+        assertEquals(StaffAccess.ASSISTANT, security.access.value)
+        assertFalse(security.allows(ProtectedArea.REPORTS))
+        assertFalse(security.allows(ProtectedArea.CLOSE_DAY))
+        assertTrue(security.allows(ProtectedArea.APP))
+        // Where the owner is needed, a staff PIN is refused.
+        assertTrue(security.verify("5555", ownerOnly = true) is VerifyResult.Wrong)
+        assertEquals(VerifyResult.Success, security.verify("2468", ownerOnly = true))
+        assertEquals(StaffAccess.OWNER, security.access.value)
+
+        security.lockNow()
+        assertEquals(VerifyResult.Success, security.verify("5555"))
+        assertEquals(StaffAccess.MANAGER, security.access.value)
+        assertTrue(security.allows(ProtectedArea.CLOSE_DAY))
+        assertTrue(security.allows(ProtectedArea.REPORTS))
+        assertFalse(security.allows(ProtectedArea.SETTINGS))
+
+        // Turning the lock off removes the staff PINs too.
+        security.disable()
+        val off = security.config.filterNotNull().first { !it.isEnabled }
+        assertFalse(off.hasManagerPin || off.hasAssistantPin)
+        assertTrue(security.allows(ProtectedArea.SETTINGS))
+    }
 }
+

@@ -104,7 +104,9 @@ service cloud.firestore {
           && request.resource.data.from == 'user'
           && text(request.resource.data.text, 2000) && request.resource.data.text.size() > 0
           && request.resource.data.at == request.time);
-        allow update, delete: if isAdmin();
+        // "Clear old chat": a salon may delete its own thread's messages; editing stays admin-only.
+        allow delete: if isSelf(uid) || isAdmin();
+        allow update: if isAdmin();
       }
     }
 

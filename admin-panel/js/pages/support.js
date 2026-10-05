@@ -1,9 +1,9 @@
 // Support inbox: one live thread per salon. Replies appear in the salon's app at once.
 import {
-  collection, doc, query, orderBy, limit, onSnapshot, addDoc, updateDoc, serverTimestamp,
+  collection, doc, query, orderBy, limit, onSnapshot, addDoc, updateDoc, serverTimestamp, getDocs, writeBatch,
 } from '../../vendor/firebase.js';
 import { firebase } from '../fb.js';
-import { esc, fmtDateTime, toast, errorMessage } from '../util.js';
+import { esc, fmtDateTime, toast, errorMessage, confirmDialog } from '../util.js';
 import { getConfig, saveConfig } from '../data.js';
 
 const db = () => firebase().db;
@@ -56,6 +56,7 @@ export async function render(el, ctx) {
     threadsEl.querySelectorAll('[data-uid]').forEach((li) => li.classList.toggle('active', li.dataset.uid === uid));
     chatEl.innerHTML = `
       <div class="card-head"><h2>${esc(thread?.salonName || uid)}</h2><div class="spacer"></div>
+        <button class="btn btn-ghost btn-sm" id="clear-chat">Clear chat</button>
         <a class="btn btn-ghost btn-sm" href="#/salon/${encodeURIComponent(uid)}">Open salon</a></div>
       <div class="bubbles" id="bubbles"></div>
       <form id="reply" class="reply-box"><textarea name="text" maxlength="2000" placeholder="Write a reply…" required></textarea>
@@ -73,6 +74,19 @@ export async function render(el, ctx) {
       box.scrollTop = box.scrollHeight;
     });
     stop.push(() => stopChat?.());
+    chatEl.querySelector('#clear-chat').addEventListener('click', async () => {
+      if (!await confirmDialog('Clear chat?', 'All messages of this conversation are deleted for you and the salon. This cannot be undone.', 'Clear chat')) return;
+      try {
+        const snap = await getDocs(collection(db(), 'support', uid, 'messages'));
+        for (let i = 0; i < snap.docs.length; i += 400) {
+          const batch = writeBatch(db());
+          snap.docs.slice(i, i + 400).forEach((d) => batch.delete(d.ref));
+          await batch.commit();
+        }
+        await updateDoc(doc(db(), 'support', uid), { lastMessage: '', lastAt: serverTimestamp(), unreadForAdmin: false });
+        toast('Chat cleared', 'success');
+      } catch (err) { toast(errorMessage(err), 'error'); }
+    });
     chatEl.querySelector('#reply').addEventListener('submit', async (e) => {
       e.preventDefault();
       const text = e.target.text.value.trim();

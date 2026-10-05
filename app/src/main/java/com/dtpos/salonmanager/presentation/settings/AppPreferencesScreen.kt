@@ -70,6 +70,7 @@ fun AppPreferencesScreen(onBack: () -> Unit) {
     val themeMode by prefs.themeMode.collectAsStateWithLifecycle()
     val colorTheme by prefs.colorTheme.collectAsStateWithLifecycle()
     val sound by prefs.soundEffects.collectAsStateWithLifecycle()
+    val fast by prefs.fastMode.collectAsStateWithLifecycle()
     val language = prefs.language
 
     Scaffold(topBar = { SalonTopBar(stringResource(R.string.prefs_title), onBack = onBack) }) { padding ->
@@ -178,6 +179,22 @@ fun AppPreferencesScreen(onBack: () -> Unit) {
                         prefs.setSoundEffects(it)
                         if (it) container.soundEffects.tap()
                     })
+                }
+            }
+
+            SectionHeader(stringResource(R.string.prefs_performance))
+            ContentCard {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    androidx.compose.foundation.layout.Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.prefs_fast_mode), style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            stringResource(R.string.prefs_fast_mode_sub),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Switch(checked = fast, onCheckedChange = prefs::setFastMode)
                 }
             }
             Spacer(Modifier.height(24.dp))

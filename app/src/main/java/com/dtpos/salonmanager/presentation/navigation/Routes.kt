@@ -47,6 +47,7 @@ object Routes {
     const val AI = "ai"
     const val TOKENS = "tokens"
     const val CLOSE_DAY = "close-day"
+    const val GUIDE = "guide"
     const val MENU = "menu"
     const val PAYMENT_ACCOUNTS = "settings/accounts"
 
