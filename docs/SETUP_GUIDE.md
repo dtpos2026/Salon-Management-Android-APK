@@ -25,9 +25,11 @@ Salon owner ka phone (DT Salon app)            Aap (Super Admin panel, browser)
                        (Login + accounts + invoices)
 ```
 
-- Salon ki sales, customers, staff, kharche **kabhi online nahi jate**. Woh sirf phone mein rehte hain.
+- Salon ki raseedein, customers (naam/phone), staff, kharche **kabhi online nahi jate**. Woh sirf phone mein rehte hain.
 - Online sirf yeh hai: login, account ka status (pending/approved/...), kaunsa phone approved hai,
-  licence ki expiry aur aap ke invoices.
+  licence ki expiry, aap ke invoices, support chat, **rozana sale ka total** (sirf raqam, customers
+  aur services ki tadaad, cash / online / udhaar — billing ke liye) aur **phone ki halat** (model,
+  Android aur app version, last seen; location sirf jab salon khud "Share this phone's location" on kare).
 - Approved phone **internet ke baghair** chalta rehta hai. Har **7 din** (haftawar; admin panel se badal
   sakte hain) mein ek dafa internet se account check hona zaroori hai. Internet ho to suspend/approve
   foran (real time) lagta hai.
@@ -222,6 +224,21 @@ Is ke liye chahiye:
    (Purane phone ka data naye phone mein khud nahi jata: purane phone se Settings → Backup bana
    kar naye phone mein Restore karein.)
 
+### Salon ki sale (billing ke liye)
+- Dashboard par **All salons' sales today** aur **Sales by salon** (aaj / kal / is mahine).
+- Salons list mein **Sales today** column; salon ke page par **Sales** card: aaj, kal, mahina aur
+  pichle 30 din ki table (sale, customers, cash, online, udhaar).
+- Yeh numbers app khud bhejti hai (version 2.1.0+), jab internet ho. Customer ke naam/phone nahi aate.
+
+### Phones (Panel → Phones)
+- Har phone: salon, model, Android version, app version, **last seen** (Active now / Today / X days ago),
+  location ki halat.
+- **Map** (OpenStreetMap): sirf un phones ki andazan location jin ke malik ne app mein
+  Settings → Account → **Share this phone's location** on kiya ho. IP address collect nahi hota.
+- **Block / Unblock**: block kiya hua phone agli online check par app nahi khol sakta ("This phone is
+  blocked"); us phone ka data **delete nahi** hota. Unblock karte hi phir chalne lagta hai. Salon ke page
+  par har phone ke saath bhi Block button hai.
+
 ### Billing aur invoice
 1. Salon ke page par **+ Invoice** (ya Invoices → New invoice). Salon ki fee aur agla period khud
    bhar jata hai.
@@ -234,7 +251,8 @@ Is ke liye chahiye:
 
 ### Support chat
 - Panel → **Support**: har salon ki chat, naye paigham par "New". Chat kholein, jawab likhein,
-  **Send**. Jawab salon ki app mein foran nazar aata hai.
+  **Send**. Jawab salon ki app mein foran nazar aata hai. **Clear chat** se purani chat mit jati hai
+  (salon bhi app mein apni chat saaf kar sakta hai).
 - "AI replies first" tick ho to AI pehle jawab de deta hai; aap baad mein khud bhi likh sakte hain.
 
 ### Reminders (WhatsApp)
@@ -280,7 +298,23 @@ apps ke login, approval aur About screens par dikhte hain (WhatsApp/Call buttons
 - **Tokens aur booking (Settings → Tokens & booking, ON/OFF):** rush mein har gahak ko token
   number (#1, #2…), "Call next" se agla bulayein, token ki parchi print ya WhatsApp. Advance booking:
   din aur waqt chun kar token mil jata hai aur WhatsApp par confirmation bhej sakte hain.
-- **Udhaar:** Home → Udhaar: baqi bill darj karein, WhatsApp reminder, wasooli (poori ya thori).
+- **Naye (2.1.0):**
+  - **Payment accounts** (Settings): JazzCash, EasyPaisa, bank, card machine. Bill par Cash ya account chunein;
+    dashboard par "Paisa kis account mein".
+  - **Udhaar sale:** checkout par "Udhaar" → abhi jitna diya likhein, baqi khud udhaar bill ban jata hai.
+  - **Raseed theek karein:** raseed kholein → "Edit receipt" (PIN). Cash, commission aur udhaar khud theek.
+  - **Din band (Close day):** sale, customers, har account, udhaar, staff commission, malik ka apna kaam,
+    kharche, cash ginti; 58/80 mm par print ya share. Band karne ke baad nayi sale agle din mein (dashboard 0).
+  - **Dashboard filter:** Aaj / Kal / Hafta / Mahina / koi bhi tareekh (staff list mein bhi).
+  - **Staff:** role "Owner" (malik ka apna kaam alag), adaigi ke baad **staff parchi** print/share.
+  - **Services:** tasveer, "Bold name / Bold price" raseed par; **Menu** (restaurant jaisa, tasveer + qeemat).
+  - **Raseed designs:** Classic, Modern, Minimal, Elegant, **Mono**, **Mono table**.
+  - **Token:** banate hi print preview (bilkul jo printer chhapega) → Print, WhatsApp text, WhatsApp tasveer, SMS, Share.
+  - **Printer:** Bluetooth ya **LAN / Wi-Fi (IP + port 9100)**, connection check, test print.
+  - **Staff PIN:** Settings → Security → Manager aur Assistant ke alag PIN (har role sirf apni cheezein dekhe).
+  - **Guide (A–Z):** app ke andar har kaam ka tareeqa, 3 zubanon mein. **Fast mode** purane phones ke liye.
+- **Udhaar:** Home → Udhaar: baqi bill darj karein, WhatsApp **ya SMS** reminder, wasooli (poori ya thori;
+  "cash mein mila" tick se cash daraz mein).
 - **Promotions:** Home → Promotions: offer/Eid/naya service templates, gahak chunein, WhatsApp.
 - **Support:** Home → Support: DT se chat; AI foran jawab deta hai (agar chalu ho).
 - **AI Assistant:** Home → AI Assistant → ON: business barhane ke mashwaray, A se Z tajziya.
@@ -312,9 +346,10 @@ apps ke login, approval aur About screens par dikhte hain (WhatsApp/Call buttons
 
 - Signing key, passwords, google-services.json aur web config **sirf GitHub Secrets** mein hain,
   repo mein nahi.
-- Firestore rules par 9 automatic tests chalte hain (salon khud ko ya apna naya phone approve nahi
+- Firestore rules par 15 automatic tests chalte hain (salon khud ko ya apna naya phone approve nahi
   kar sakta, doosre salon ka data nahi dekh sakta, koi khud admin nahi ban sakta, bank details sirf
-  admin dekh sakta hai).
+  admin dekh sakta hai, sale ke total mein sirf numbers ja sakte hain, phone ki report sirf apni,
+  phone block sirf admin kar sakta hai, chat sirf apni mita sakta hai).
 - Super Admin panel ka end-to-end test bhi har change par chalta hai (login, approve, naya phone
   approve, suspend, invoice, PNG, payment, QR verify, settings).
 - Firebase ka free (Spark) plan is kaam ke liye kaafi hai.
@@ -322,6 +357,10 @@ apps ke login, approval aur About screens par dikhte hain (WhatsApp/Call buttons
 ---
 
 ## 11. Jo is version mein jaan boojh kar nahi hai
+
+- **IP address:** app ka apna server nahi, is liye phone ka IP collect nahi hota (Phones page par likha hai).
+- **Automatic WhatsApp/SMS bhejna:** WhatsApp aur Android ijazat nahi dete; app paigham tayyar kar ke
+  kholti hai, bhejna aap dabate hain. App kabhi "bhej diya" nahi kehti.
 
 - **Cloud sync / online salon data:** aap ki hidayat ke mutabiq salon ka data sirf phone mein hai.
   Architecture tayyar hai (har record mein businessId); baad mein add ho sakta hai.

@@ -7,8 +7,8 @@ business **and** household expenses (kept separate), cash counter reconciliation
 budgets, reports and offline business insights. English, Urdu and Roman Urdu; three luxury colour
 themes with light and dark modes.
 
-It is **offline-first**: all salon data lives in a local Room (SQLite) database on the phone and
-never goes online. Internet is used only for **email sign-in and admin approval**: each
+It is **offline-first**: all salon records live in a local Room (SQLite) database on the phone and
+never go online (only daily sales totals are shared with DT for billing). Internet is used for **email sign-in and admin approval**: each
 salon account (and the one phone it runs on) is approved, suspended or renewed by you from the **Super Admin web panel**
 (`admin-panel/`), backed by Firebase Authentication and Firestore. An approved phone keeps working
 offline (30 days by default, configurable).
@@ -24,6 +24,22 @@ Salon phone (DT Salon app)                    You (Super Admin panel in a browse
 ```
 
 ---
+
+## New in 2.1.0
+
+- **Payment accounts** (JazzCash, EasyPaisa, bank, card machine) chosen at checkout; per-account totals on the dashboard.
+- **Udhaar (credit) sales** from checkout: the unpaid part becomes the customer's pending bill; only the paid part enters the cash drawer.
+- **Receipt correction** by the owner (PIN): items, prices, staff, payment, udhaar; cash and commission follow.
+- **Close Day** report (sales, customers, money by account, udhaar, staff commission, owner's own work, expenses, cash count) printed on 58/80 mm or shared; after closing, new sales count for the next day.
+- **Dashboard and staff period filter**: Today / Yesterday / Week / Month / any date. Today's tokens on the dashboard.
+- **Token print preview** (exactly what prints) with Print, WhatsApp text, WhatsApp picture, SMS, Share. **LAN / Wi-Fi printers** (IP + port) next to Bluetooth.
+- **Services with photos**, bold name / bold price on receipts, restaurant-style **Menu**. Two new receipt designs: **Mono** and **Mono table**.
+- **Staff payment slips**, **Owner** role, **manager / assistant PINs** with role-based access.
+- **In-app A–Z Guide** (English, Urdu, Roman Urdu), **Fast mode**, **Clear chat**.
+- **Super Admin**: each salon's daily sales and customers (totals only), **Phones** page with OpenStreetMap map (only phones whose owner shares location), last seen, and server-side **Block / Unblock** of a phone.
+- WhatsApp hand-off rebuilt with fallbacks; the app never claims a message was sent.
+
+Database version 3 (new table and columns only; existing data is kept). Deploy the updated rules with the same commands: `npm install`, `npm run build`, `npx firebase-tools login`, `npx firebase-tools deploy`.
 
 ## Features
 

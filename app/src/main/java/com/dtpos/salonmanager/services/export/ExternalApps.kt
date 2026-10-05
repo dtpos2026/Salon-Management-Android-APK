@@ -25,8 +25,6 @@ object ExternalApps {
 
     fun whatsAppPackage(context: Context): String? = WHATSAPP_PACKAGES.firstOrNull { isInstalled(context, it) }
 
-    fun isWhatsAppInstalled(context: Context): Boolean = whatsAppPackage(context) != null
-
     /**
      * Opens a WhatsApp chat with [message] typed in (the owner presses send). Tries, in order:
      * WhatsApp's own whatsapp://send link, WhatsApp's text share, the api.whatsapp.com page in a
@@ -53,10 +51,6 @@ object ExternalApps {
         return if (shareText(context, message, chooserTitle)) WhatsAppResult.OTHER_APP else WhatsAppResult.FAILED
     }
 
-    /** Older call sites: true when WhatsApp or a fallback opened. */
-    fun openWhatsAppChat(context: Context, phone: String?, message: String): Boolean =
-        whatsAppText(context, phone, message) != WhatsAppResult.FAILED
-
     /**
      * Shares an image (receipt, token) to WhatsApp, straight into [phone]'s chat when WhatsApp
      * knows the number; without WhatsApp the Android share sheet opens with the same picture.
@@ -73,9 +67,6 @@ object ExternalApps {
         val chooser = Intent.createChooser(imageIntent(image, mimeType, message), chooserTitle)
         return if (start(context, chooser)) WhatsAppResult.OTHER_APP else WhatsAppResult.FAILED
     }
-
-    fun shareImageToWhatsApp(context: Context, image: Uri, mimeType: String, phone: String?, message: String): Boolean =
-        whatsAppImage(context, image, mimeType, phone, message) != WhatsAppResult.FAILED
 
     /** Android share sheet with plain text (WhatsApp, SMS, Messenger, ...). */
     fun shareText(context: Context, message: String, chooserTitle: String): Boolean {

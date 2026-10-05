@@ -53,7 +53,6 @@
     <string name="settings_security">سیکیورٹی</string>
     <string name="settings_security_sub">پن، پاس ورڈ اور فنگر پرنٹ لاک</string>
     <string name="settings_license">لائسنس</string>
-    <string name="settings_license_sub">لائسنس کی حالت اور ایکٹیویشن</string>
     <string name="settings_about_sub">ورژن اور معلومات</string>
     <string name="settings_erase">تمام ڈیٹا مٹائیں</string>
     <string name="settings_erase_sub">نئے سرے سے شروع کریں (پہلے حفاظتی بیک اپ بنتا ہے)</string>

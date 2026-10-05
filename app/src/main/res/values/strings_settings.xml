@@ -56,7 +56,6 @@
     <string name="settings_security">Security</string>
     <string name="settings_security_sub">PIN, password and fingerprint lock</string>
     <string name="settings_license">Licence</string>
-    <string name="settings_license_sub">Licence status and activation</string>
     <string name="settings_about_sub">Version and information</string>
     <string name="settings_erase">Erase all data</string>
     <string name="settings_erase_sub">Start fresh (a safety backup is saved first)</string>

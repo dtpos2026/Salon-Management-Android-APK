@@ -53,7 +53,6 @@
     <string name="settings_security">Security</string>
     <string name="settings_security_sub">PIN, password aur fingerprint lock</string>
     <string name="settings_license">Licence</string>
-    <string name="settings_license_sub">Licence ki halat aur activation</string>
     <string name="settings_about_sub">Version aur maloomat</string>
     <string name="settings_erase">Tamam data mitayein</string>
     <string name="settings_erase_sub">Naye sire se shuru karein (pehle safety backup banta hai)</string>
