@@ -110,11 +110,11 @@ class DuesViewModel(container: AppContainer) : BaseViewModel() {
         }
     }
 
-    fun pay(due: DueEntity, amount: String, onDone: () -> Unit) {
+    fun pay(due: DueEntity, amount: String, inCash: Boolean, onDone: () -> Unit) {
         val minor = Money.parse(amount)
         if (minor == null || minor <= 0) return showMessage(R.string.dues_error_amount)
         launchSafe {
-            when (val r = repo.recordPayment(due.id, minor)) {
+            when (val r = repo.recordPayment(due.id, minor, intoCashDrawer = inCash)) {
                 is DataResult.Success -> { showMessage(if (r.data == 0L) R.string.dues_settled else R.string.dues_payment_saved); onDone() }
                 is DataResult.Failure -> showMessage(r.error.messageRes)
             }
@@ -197,6 +197,10 @@ fun DuesScreen(onBack: () -> Unit) {
                         if (result != WhatsAppResult.FAILED) vm.reminded(due)
                         context.showWhatsAppResult(result)
                     },
+                    onSms = {
+                        val text = context.getString(R.string.dues_reminder_message, due.customerName, money.format(due.balanceMinor), salon)
+                        if (ExternalApps.sms(context, due.customerPhone, text)) vm.reminded(due) else context.showWhatsAppResult(WhatsAppResult.FAILED)
+                    },
                     onPay = { paying = due },
                     onDelete = { deleting = due },
                 )
@@ -207,6 +211,7 @@ fun DuesScreen(onBack: () -> Unit) {
     if (adding) AddDueDialog(vm, money.config.symbol, onDismiss = { adding = false })
     paying?.let { due ->
         var amount by remember(due.id) { mutableStateOf(Money.toInput(due.balanceMinor)) }
+        var inCash by remember(due.id) { mutableStateOf(true) }
         AlertDialog(
             onDismissRequest = { paying = null },
             icon = { Icon(Icons.Filled.Payments, contentDescription = null) },
@@ -216,9 +221,13 @@ fun DuesScreen(onBack: () -> Unit) {
                     Text(stringResource(R.string.dues_balance, money.format(due.balanceMinor)))
                     Spacer(Modifier.height(10.dp))
                     AmountField(amount, { amount = it }, stringResource(R.string.dues_amount_received), money.config.symbol)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        androidx.compose.material3.Checkbox(checked = inCash, onCheckedChange = { inCash = it })
+                        Text(stringResource(R.string.dues_in_cash), style = MaterialTheme.typography.bodyMedium)
+                    }
                 }
             },
-            confirmButton = { Button(onClick = { vm.pay(due, amount) { paying = null } }) { Text(stringResource(R.string.action_save)) } },
+            confirmButton = { Button(onClick = { vm.pay(due, amount, inCash) { paying = null } }) { Text(stringResource(R.string.action_save)) } },
             dismissButton = { TextButton(onClick = { paying = null }) { Text(stringResource(R.string.action_cancel)) } },
         )
     }
@@ -237,8 +246,9 @@ fun DuesScreen(onBack: () -> Unit) {
     }
 }
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-private fun DueCard(due: DueEntity, format: (Long) -> String, onRemind: () -> Unit, onPay: () -> Unit, onDelete: () -> Unit) {
+private fun DueCard(due: DueEntity, format: (Long) -> String, onRemind: () -> Unit, onSms: () -> Unit, onPay: () -> Unit, onDelete: () -> Unit) {
     val settled = due.settledAt != null
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
@@ -272,14 +282,14 @@ private fun DueCard(due: DueEntity, format: (Long) -> String, onRemind: () -> Un
             )
             if (!settled) {
                 Spacer(Modifier.height(10.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Button(onClick = onRemind, colors = ButtonDefaults.buttonColors(containerColor = WhatsAppGreen, contentColor = Color.White)) {
                         Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(6.dp))
                         Text(stringResource(R.string.dues_remind))
                     }
+                    OutlinedButton(onClick = onSms) { Text(stringResource(R.string.tokens_send_sms)) }
                     OutlinedButton(onClick = onPay) { Text(stringResource(R.string.dues_received)) }
-                    Spacer(Modifier.weight(1f))
                     IconButton(onClick = onDelete) { Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.action_delete)) }
                 }
             }

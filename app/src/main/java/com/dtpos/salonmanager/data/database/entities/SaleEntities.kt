@@ -1,5 +1,6 @@
 package com.dtpos.salonmanager.data.database.entities
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -52,7 +53,18 @@ data class SaleEntity(
     val createdAt: Long,
     val voidedAt: Long? = null,
     val voidReason: String? = null,
-)
+    /** Account the money went to (JazzCash, bank, ...); null for cash or the plain method. */
+    val paymentAccountId: Long? = null,
+    /** Account name snapshot, so old receipts stay correct after the account is renamed. */
+    val paymentAccountName: String? = null,
+    /** Part of the total the customer did not pay now (udhaar). 0 for a fully paid sale. */
+    @ColumnInfo(defaultValue = "0") val creditMinor: Long = 0,
+    /** Last time the owner corrected this receipt. */
+    val editedAt: Long? = null,
+) {
+    /** Money actually received for this sale. */
+    val paidMinor: Long get() = (totalMinor - creditMinor).coerceAtLeast(0)
+}
 
 @Entity(
     tableName = "sale_items",

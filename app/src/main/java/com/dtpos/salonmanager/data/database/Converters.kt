@@ -1,6 +1,7 @@
 package com.dtpos.salonmanager.data.database
 
 import androidx.room.TypeConverter
+import com.dtpos.salonmanager.domain.model.AccountKind
 import com.dtpos.salonmanager.domain.model.BudgetGroup
 import com.dtpos.salonmanager.domain.model.CashSessionStatus
 import com.dtpos.salonmanager.domain.model.BookingStatus
@@ -22,6 +23,9 @@ import com.dtpos.salonmanager.domain.model.TargetPeriod
 class Converters {
     @TypeConverter fun fromPaymentMethod(value: PaymentMethod): String = value.name
     @TypeConverter fun toPaymentMethod(value: String): PaymentMethod = enumOrDefault(value, PaymentMethod.OTHER)
+
+    @TypeConverter fun fromAccountKind(value: AccountKind): String = value.name
+    @TypeConverter fun toAccountKind(value: String): AccountKind = enumOrDefault(value, AccountKind.OTHER)
 
     @TypeConverter fun fromGender(value: Gender): String = value.name
     @TypeConverter fun toGender(value: String): Gender = enumOrDefault(value, Gender.UNSPECIFIED)

@@ -20,7 +20,9 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Storefront
+import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.ConfirmationNumber
@@ -72,9 +74,11 @@ fun SettingsScreen(onBack: () -> Unit, onNavigate: (String) -> Unit) {
         SettingsEntry(Routes.BUSINESS_PROFILE, R.string.settings_business, R.string.settings_business_sub, Icons.Filled.Storefront),
         SettingsEntry(Routes.RECEIPT_SETTINGS, R.string.settings_receipt, R.string.settings_receipt_sub, Icons.AutoMirrored.Filled.ReceiptLong),
         SettingsEntry(Routes.PRINTER, R.string.settings_printer, R.string.settings_printer_sub, Icons.Filled.Print),
+        SettingsEntry(Routes.PAYMENT_ACCOUNTS, R.string.nav_accounts, R.string.accounts_settings_sub, Icons.Filled.AccountBalance),
     )
     val catalog = listOf(
         SettingsEntry(Routes.SERVICES, R.string.nav_services, R.string.settings_services_sub, Icons.Filled.ContentCut),
+        SettingsEntry(Routes.MENU, R.string.nav_menu, R.string.menu_settings_sub, Icons.AutoMirrored.Filled.MenuBook),
         SettingsEntry(Routes.STAFF, R.string.nav_staff, R.string.settings_staff_sub, Icons.Filled.Groups),
         SettingsEntry(Routes.expenseCategories(ExpenseType.BUSINESS), R.string.expenses_categories, R.string.settings_categories_sub, Icons.Filled.Category),
         SettingsEntry(Routes.TARGETS, R.string.nav_targets, R.string.settings_targets_sub, Icons.Filled.Flag),

@@ -21,7 +21,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Backup
@@ -50,6 +53,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -71,7 +75,14 @@ import com.dtpos.salonmanager.R
 import com.dtpos.salonmanager.core.util.DateTimeUtils
 import com.dtpos.salonmanager.core.util.Percent
 import com.dtpos.salonmanager.data.database.entities.SaleEntity
+import com.dtpos.salonmanager.data.database.entities.BookingEntity
 import com.dtpos.salonmanager.data.repository.DashboardData
+import com.dtpos.salonmanager.data.repository.PeriodSummary
+import com.dtpos.salonmanager.domain.model.BookingStatus
+import com.dtpos.salonmanager.domain.model.PaymentMethod
+import com.dtpos.salonmanager.presentation.components.LabeledValueRow
+import com.dtpos.salonmanager.presentation.components.PeriodPicker
+import com.dtpos.salonmanager.presentation.tokens.formatSlot
 import com.dtpos.salonmanager.domain.calc.TargetProgress
 import com.dtpos.salonmanager.domain.insights.Insight
 import com.dtpos.salonmanager.domain.license.LicenseState
@@ -102,12 +113,13 @@ fun DashboardScreen(onNewSale: () -> Unit, onOpenSale: (Long) -> Unit, onNavigat
     val vm = appViewModel { DashboardViewModel(it) }
     val state by vm.state.collectAsStateWithLifecycle()
     val insights by vm.insights.collectAsStateWithLifecycle()
+    val period by vm.period.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
             SalonTopBar(
                 title = state.profile?.name?.ifBlank { null } ?: stringResource(R.string.app_name),
-                subtitle = DateTimeUtils.formatDate(DateTimeUtils.today()),
+                subtitle = DateTimeUtils.formatDate(period.businessDay),
                 actions = {
                     IconButton(onClick = { onNavigate(Routes.SETTINGS) }) {
                         Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.nav_settings))
@@ -140,8 +152,29 @@ fun DashboardScreen(onNewSale: () -> Unit, onOpenSale: (Long) -> Unit, onNavigat
                     Text(stringResource(R.string.dashboard_new_sale), style = MaterialTheme.typography.titleMedium)
                 }
             }
-            item { SectionHeader(stringResource(R.string.dashboard_today)) }
-            item { TodayGrid(data) }
+            item { RushButtons(period.tokensEnabled, onNavigate) }
+            if (period.todayClosed) {
+                item {
+                    InfoBanner(
+                        text = stringResource(R.string.dashboard_day_closed, DateTimeUtils.formatDate(period.businessDay)),
+                        icon = Icons.Filled.Lock,
+                        container = SalonTheme.extended.warningContainer,
+                        content = SalonTheme.extended.warning,
+                        actionLabel = stringResource(R.string.action_open),
+                        onAction = { onNavigate(Routes.CLOSE_DAY) },
+                    )
+                }
+            }
+            if (period.tokensEnabled && period.tokens.isNotEmpty()) {
+                item { TokensCard(period.tokens, onClick = { onNavigate(Routes.TOKENS) }) }
+            }
+            item { SectionHeader(stringResource(R.string.dashboard_period_title)) }
+            item { PeriodPicker(period.choice, vm::choose) }
+            period.summary?.let { summary ->
+                item { PeriodGrid(summary) }
+                item { MoneyByAccountCard(summary, onManage = { onNavigate(Routes.PAYMENT_ACCOUNTS) }) }
+                if (summary.staff.isNotEmpty()) item { StaffPeriodCard(summary, onClick = { onNavigate(Routes.STAFF) }) }
+            }
             item { TargetsCard(data, onClick = { onNavigate(Routes.TARGETS) }) }
             item { WeekChartCard(data) }
             item { InsightsPreview(insights, onViewAll = { onNavigate(Routes.INSIGHTS) }) }
@@ -240,12 +273,27 @@ private fun BackupReminder(lastBackupAt: Long, hasData: Boolean, onClick: () -> 
 }
 
 @Composable
-private fun TodayGrid(data: DashboardData) {
+private fun PeriodGrid(summary: PeriodSummary) {
     val money = LocalMoney.current
     val ext = SalonTheme.extended
-    val profit = data.todayProfit
+    val profit = summary.profit
+    val online = summary.received.filter { it.paymentMethod != PaymentMethod.CASH }.sumOf { it.totalMinor }
     val cards: List<@Composable (Modifier) -> Unit> = listOf(
-        { m -> StatCard(stringResource(R.string.dashboard_sales), money.format(data.todaySales.totalMinor), Icons.AutoMirrored.Filled.TrendingUp, m) },
+        { m -> StatCard(stringResource(R.string.dashboard_sales), money.format(summary.sales.totalMinor), Icons.AutoMirrored.Filled.TrendingUp, m) },
+        { m -> StatCard(stringResource(R.string.dashboard_customers), summary.sales.saleCount.toString(), Icons.Filled.People, m) },
+        { m -> StatCard(stringResource(R.string.dashboard_cash_received), money.format(summary.sales.cashMinor), Icons.Filled.Payments, m, accent = ext.gold) },
+        { m -> StatCard(stringResource(R.string.dashboard_online_received), money.format(online), Icons.Filled.AccountBalance, m, accent = ext.positive) },
+        { m ->
+            StatCard(
+                stringResource(R.string.dashboard_udhaar),
+                money.format(summary.sales.creditMinor),
+                Icons.AutoMirrored.Filled.ReceiptLong,
+                m,
+                accent = ext.warning,
+                valueColor = if (summary.sales.creditMinor > 0) ext.warning else MaterialTheme.colorScheme.onSurface,
+            )
+        },
+        { m -> StatCard(stringResource(R.string.dashboard_commission), money.format(summary.commissionMinor), Icons.Filled.Badge, m, accent = ext.warning) },
         { m ->
             StatCard(
                 stringResource(R.string.dashboard_expenses),
@@ -266,21 +314,111 @@ private fun TodayGrid(data: DashboardData) {
                 valueColor = if (profit.isLoss) ext.negative else ext.positive,
             )
         },
-        { m -> StatCard(stringResource(R.string.dashboard_cash_received), money.format(data.todaySales.cashMinor), Icons.Filled.Payments, m, accent = ext.gold) },
-        { m -> StatCard(stringResource(R.string.dashboard_customers), data.todaySales.saleCount.toString(), Icons.Filled.People, m) },
-        { m -> StatCard(stringResource(R.string.dashboard_services), data.todaySales.serviceCount.toString(), Icons.Filled.Spa, m) },
-        { m ->
-            StatCard(
-                stringResource(R.string.dashboard_staff_outstanding),
-                money.format(data.outstandingStaffPayMinor),
-                Icons.Filled.Badge,
-                m,
-                accent = ext.warning,
-                subtitle = stringResource(R.string.dashboard_this_month),
-            )
-        },
     )
     AdaptiveGrid(cards)
+}
+
+/** Where today's (or the period's) money is: cash drawer, JazzCash, EasyPaisa, bank, card, udhaar. */
+@Composable
+private fun MoneyByAccountCard(summary: PeriodSummary, onManage: () -> Unit) {
+    val money = LocalMoney.current
+    ContentCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.AccountBalanceWallet, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(R.string.dashboard_money_where), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            TextButton(onClick = onManage) { Text(stringResource(R.string.accounts_manage)) }
+        }
+        val cash = summary.received.filter { it.paymentMethod == PaymentMethod.CASH }.sumOf { it.totalMinor }
+        LabeledValueRow(stringResource(R.string.payment_cash), money.format(cash))
+        summary.received.filter { it.paymentMethod != PaymentMethod.CASH }.forEach { row ->
+            LabeledValueRow(row.accountName ?: stringResource(row.paymentMethod.labelRes), money.format(row.totalMinor))
+        }
+        if (summary.sales.creditMinor > 0) {
+            LabeledValueRow(stringResource(R.string.dashboard_udhaar), money.format(summary.sales.creditMinor), valueColor = SalonTheme.extended.warning)
+        }
+        HorizontalDivider(Modifier.padding(vertical = 6.dp))
+        LabeledValueRow(stringResource(R.string.dashboard_sales), money.format(summary.sales.totalMinor), emphasize = true)
+    }
+}
+
+/** Each staff member's customers, sales and commission for the chosen period. */
+@Composable
+private fun StaffPeriodCard(summary: PeriodSummary, onClick: () -> Unit) {
+    val money = LocalMoney.current
+    ContentCard(Modifier.clickable(onClick = onClick)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.Groups, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(R.string.dashboard_staff_work), style = MaterialTheme.typography.titleMedium)
+        }
+        Spacer(Modifier.height(6.dp))
+        summary.staff.forEach { row ->
+            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(row.staffName ?: stringResource(R.string.pos_no_staff), style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        stringResource(R.string.dashboard_staff_line, row.customerCount, money.format(row.salesMinor)),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                if (row.commissionMinor > 0) {
+                    Text(money.format(row.commissionMinor), style = MaterialTheme.typography.titleSmall, color = SalonTheme.extended.warning)
+                }
+            }
+        }
+    }
+}
+
+/** The big buttons for rush hour, right under "New sale". */
+@Composable
+private fun RushButtons(tokensEnabled: Boolean, onNavigate: (String) -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        val buttons = buildList {
+            if (tokensEnabled) add(Triple(Routes.TOKENS, R.string.nav_tokens, Icons.Filled.ConfirmationNumber))
+            add(Triple(Routes.DUES, R.string.nav_dues, Icons.AutoMirrored.Filled.ReceiptLong))
+            add(Triple(Routes.CLOSE_DAY, R.string.nav_close_day, Icons.Filled.Lock))
+        }
+        buttons.forEach { (route, label, icon) ->
+            OutlinedButton(onClick = { onNavigate(route) }, modifier = Modifier.weight(1f).height(48.dp), contentPadding = PaddingValues(horizontal = 6.dp)) {
+                Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(4.dp))
+                Text(stringResource(label), maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.labelLarge)
+            }
+        }
+    }
+}
+
+/** Today's queue at a glance: who is being served and who is next. */
+@Composable
+private fun TokensCard(tokens: List<BookingEntity>, onClick: () -> Unit) {
+    val serving = tokens.firstOrNull { it.status == BookingStatus.SERVING }
+    val waiting = tokens.filter { it.status == BookingStatus.WAITING }
+    ContentCard(Modifier.clickable(onClick = onClick)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.ConfirmationNumber, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(R.string.dashboard_tokens_today), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Text(stringResource(R.string.tokens_waiting_count, waiting.size), style = MaterialTheme.typography.labelLarge)
+        }
+        serving?.let {
+            Spacer(Modifier.height(6.dp))
+            Text(
+                stringResource(R.string.dashboard_token_serving, it.tokenNumber, it.customerName),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+        waiting.take(4).forEach { b ->
+            Text(
+                listOfNotNull("#${b.tokenNumber}", b.customerName, b.service, b.timeMinutes?.let { formatSlot(it) }).joinToString(" · "),
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
 }
 
 /** 2 columns on phones, 3-4 on tablets. */
@@ -407,6 +545,8 @@ private data class QuickAction(val route: String, val labelRes: Int, val icon: I
 
 private val quickActions = listOf(
     QuickAction(Routes.TOKENS, R.string.nav_tokens, Icons.Filled.ConfirmationNumber),
+    QuickAction(Routes.CLOSE_DAY, R.string.nav_close_day, Icons.Filled.Lock),
+    QuickAction(Routes.MENU, R.string.nav_menu, Icons.AutoMirrored.Filled.MenuBook),
     QuickAction(Routes.DUES, R.string.nav_dues, Icons.AutoMirrored.Filled.ReceiptLong),
     QuickAction(Routes.PROMOTIONS, R.string.nav_promotions, Icons.Filled.Campaign),
     QuickAction(Routes.AI, R.string.nav_ai, Icons.Filled.AutoAwesome),
@@ -414,6 +554,7 @@ private val quickActions = listOf(
     QuickAction(Routes.SERVICES, R.string.nav_services, Icons.Filled.ContentCut),
     QuickAction(Routes.STAFF, R.string.nav_staff, Icons.Filled.Groups),
     QuickAction(Routes.CASH, R.string.nav_cash, Icons.Filled.AccountBalanceWallet),
+    QuickAction(Routes.PAYMENT_ACCOUNTS, R.string.nav_accounts, Icons.Filled.AccountBalance),
     QuickAction(Routes.TARGETS, R.string.nav_targets, Icons.Filled.Flag),
     QuickAction(Routes.BUDGET, R.string.nav_budget, Icons.Filled.PieChart),
     QuickAction(Routes.INSIGHTS, R.string.nav_insights, Icons.Filled.AutoAwesome),

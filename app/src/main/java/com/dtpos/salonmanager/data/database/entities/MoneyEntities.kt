@@ -136,5 +136,7 @@ data class CashTransactionEntity(
         const val REF_SALE = "SALE"
         const val REF_EXPENSE = "EXPENSE"
         const val REF_STAFF_PAYMENT = "STAFF_PAYMENT"
+        /** Udhaar (pending bill) money received in cash. */
+        const val REF_DUE = "DUE"
     }
 }

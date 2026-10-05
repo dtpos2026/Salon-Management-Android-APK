@@ -11,6 +11,9 @@ data class ServiceInput(
     val priceMinor: Long,
     val durationMinutes: Int,
     val isActive: Boolean,
+    val imagePath: String? = null,
+    val boldName: Boolean = false,
+    val boldPrice: Boolean = false,
 )
 
 class ServiceRepository(
@@ -44,6 +47,9 @@ class ServiceRepository(
                         sortOrder = dao.count(businessId),
                         createdAt = now,
                         updatedAt = now,
+                        imagePath = input.imagePath,
+                        boldName = input.boldName,
+                        boldPrice = input.boldPrice,
                     ),
                 ),
             )
@@ -57,6 +63,9 @@ class ServiceRepository(
                     durationMinutes = input.durationMinutes,
                     isActive = input.isActive,
                     updatedAt = now,
+                    imagePath = input.imagePath,
+                    boldName = input.boldName,
+                    boldPrice = input.boldPrice,
                 ),
             )
             DataResult.Success(id)

@@ -1,0 +1,175 @@
+package com.dtpos.salonmanager.data
+
+import android.app.Application
+import androidx.test.core.app.ApplicationProvider
+import com.dtpos.salonmanager.core.util.DateTimeUtils
+import com.dtpos.salonmanager.data.database.entities.CashTransactionEntity
+import com.dtpos.salonmanager.data.repository.DataError
+import com.dtpos.salonmanager.data.repository.DataResult
+import com.dtpos.salonmanager.data.repository.DueRepository
+import com.dtpos.salonmanager.data.repository.PaymentAccountRepository
+import com.dtpos.salonmanager.data.repository.StaffInput
+import com.dtpos.salonmanager.domain.model.AccountKind
+import com.dtpos.salonmanager.domain.model.CashTxType
+import com.dtpos.salonmanager.domain.model.DateRange
+import com.dtpos.salonmanager.domain.model.PaymentMethod
+import com.dtpos.salonmanager.domain.model.SalaryType
+import com.dtpos.salonmanager.domain.model.StaffRole
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+
+/** Payment accounts, udhaar (credit) sales, receipt correction and Close Day. */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34], application = Application::class)
+class AccountsCreditCloseTest {
+    private val env = TestEnvironment(ApplicationProvider.getApplicationContext())
+    private val accounts = PaymentAccountRepository(env.db, env.businessId)
+    private val dues = DueRepository(env.db, env.businessId)
+    private val today = DateTimeUtils.today()
+    private val day get() = DateRange.single(today)
+
+    @Before
+    fun setUp() = runTest { env.setUp() }
+
+    private suspend fun cashOf(saleId: Long): Long =
+        env.cash.observeDay(today).first().transactions
+            .filter { it.referenceType == CashTransactionEntity.REF_SALE && it.referenceId == saleId }
+            .sumOf { it.amountMinor }
+
+    @Test
+    fun `account sale is reported under the account name`() = runTest {
+        val jazz = (accounts.save(null, "JazzCash", AccountKind.WALLET, "Ali Salon", "0300-1111111") as DataResult.Success).data
+        val request = env.request(listOf(env.line(env.service("Hair Cut"))), method = PaymentAccountRepository.methodFor(AccountKind.WALLET))
+            .copy(paymentAccountId = jazz, paymentAccountName = "JazzCash")
+        val saleId = (env.sales.completeSale(request, env.at(today)) as DataResult.Success).data
+
+        val received = env.sales.observeReceived(day).first()
+        assertEquals("JazzCash", received.single().accountName)
+        assertEquals(50_000L, received.single().totalMinor)
+        assertEquals(0L, cashOf(saleId))
+        assertEquals("JazzCash", env.sales.buildReceipt(saleId)!!.paymentAccountName)
+
+        // Used accounts are hidden, not deleted, so history keeps the name.
+        accounts.delete(jazz)
+        assertTrue(accounts.observeActive().first().isEmpty())
+        assertEquals(1, accounts.observeAll().first().size)
+    }
+
+    @Test
+    fun `credit sale puts only the paid part in the drawer and opens a due`() = runTest {
+        val customer = (env.customers.save(com.dtpos.salonmanager.data.repository.CustomerInput("Bilal", "0300-2222222", com.dtpos.salonmanager.domain.model.Gender.MALE, null, null, null)) as DataResult.Success).data
+        val request = env.request(listOf(env.line(env.service("Hair Cut"))), customerId = customer, customerName = "Bilal")
+            .copy(customerPhone = "0300-2222222", creditMinor = 30_000)
+        val saleId = (env.sales.completeSale(request, env.at(today)) as DataResult.Success).data
+
+        assertEquals(20_000L, cashOf(saleId))
+        val summary = env.sales.observeSummary(day).first()
+        assertEquals(50_000L, summary.totalMinor)
+        assertEquals(20_000L, summary.cashMinor)
+        assertEquals(30_000L, summary.creditMinor)
+        val due = dues.observeOpen().first().single()
+        assertEquals(saleId, due.saleId)
+        assertEquals(30_000L, due.amountMinor)
+        assertEquals("Bilal", due.customerName)
+        val receipt = env.sales.buildReceipt(saleId)!!
+        assertEquals(30_000L, receipt.creditMinor)
+        assertEquals(20_000L, receipt.paidMinor)
+
+        // Udhaar without a customer name is refused; more credit than the bill too.
+        val anonymous = env.request(listOf(env.line(env.service("Beard")))).copy(creditMinor = 10_000)
+        assertEquals(DataResult.Failure(DataError.INVALID), env.sales.completeSale(anonymous, env.at(today)))
+        val tooMuch = request.copy(creditMinor = 60_000)
+        assertEquals(DataResult.Failure(DataError.INVALID), env.sales.completeSale(tooMuch, env.at(today)))
+
+        // Voiding refunds only the paid part and removes the unpaid due.
+        env.sales.voidSale(saleId, "wrong customer")
+        assertEquals(0L, cashOf(saleId))
+        assertTrue(dues.observeOpen().first().isEmpty())
+    }
+
+    @Test
+    fun `editing a receipt updates totals cash and udhaar`() = runTest {
+        val haircut = env.service("Hair Cut")
+        val request = env.request(listOf(env.line(haircut)), customerName = "Hamza")
+        val saleId = (env.sales.completeSale(request, env.at(today)) as DataResult.Success).data
+        val number = env.sales.buildReceipt(saleId)!!.receiptNumber
+
+        // Wrong price punched: correct to 400 and leave 100 as udhaar.
+        val corrected = request.copy(lines = listOf(env.line(haircut).copy(unitPriceMinor = 40_000)), creditMinor = 10_000)
+        assertEquals(DataResult.Success(saleId), env.sales.updateSale(saleId, corrected, env.at(today) + 60_000))
+
+        val receipt = env.sales.buildReceipt(saleId)!!
+        assertEquals(number, receipt.receiptNumber)
+        assertEquals(40_000L, receipt.totalMinor)
+        assertEquals(30_000L, cashOf(saleId))
+        assertEquals(10_000L, dues.observeOpen().first().single().amountMinor)
+        assertNotNull(env.sales.saleWithItems(saleId)!!.sale.editedAt)
+
+        // Paid in full again: the unpaid due goes away.
+        env.sales.updateSale(saleId, corrected.copy(creditMinor = 0), env.at(today) + 120_000)
+        assertTrue(dues.observeOpen().first().isEmpty())
+        assertEquals(40_000L, cashOf(saleId))
+    }
+
+    @Test
+    fun `after close day new sales count for the next day`() = runTest {
+        val owner = (env.staff.save(StaffInput("Owner Sb", null, StaffRole.OWNER, SalaryType.FIXED, 0, 0, true, null)) as DataResult.Success).data
+        val barber = (env.staff.save(StaffInput("Asif", null, StaffRole.BARBER, SalaryType.COMMISSION, 2_000, 0, true, null)) as DataResult.Success).data
+        env.sales.completeSale(env.request(listOf(env.line(env.service("Hair Cut"), env.staff.get(owner)))), env.at(today))
+        env.sales.completeSale(env.request(listOf(env.line(env.service("Facial"), env.staff.get(barber)))), env.at(today))
+
+        val report = env.reports.buildDayClose(today)
+        assertEquals(200_000L, report.sales.totalMinor)
+        assertEquals(2, report.sales.saleCount)
+        assertEquals(50_000L, report.ownerWorkMinor)
+        assertEquals(30_000L, report.commissionMinor) // 20% of 1,500
+        assertEquals(200_000L, report.cash.expectedClosingMinor)
+
+        env.cash.closeDay(today, 200_000, null)
+        assertEquals(today.plusDays(1), env.cash.observeBusinessDay(today).first())
+        val late = (env.sales.completeSale(env.request(listOf(env.line(env.service("Beard")))), env.at(today) + 60_000) as DataResult.Success).data
+        assertEquals(today.plusDays(1).toEpochDay(), env.sales.saleWithItems(late)!!.sale.businessDate)
+        assertEquals(200_000L, env.reports.buildDayClose(today).sales.totalMinor)
+        assertEquals(30_000L, env.reports.buildDayClose(today.plusDays(1)).sales.totalMinor)
+
+        env.cash.reopenDay(today)
+        assertEquals(today, env.cash.observeBusinessDay(today).first())
+    }
+
+    @Test
+    fun `udhaar received in cash goes to the drawer and the report`() = runTest {
+        val id = (dues.add(null, "Kamran", null, 80_000, null) as DataResult.Success).data
+        dues.recordPayment(id, 50_000, intoCashDrawer = true)
+        val drawer = env.cash.observeDay(today).first()
+        assertEquals(50_000L, drawer.breakdown.cashInMinor)
+        assertEquals(CashTxType.CASH_IN, drawer.transactions.single().type)
+        assertEquals(50_000L, env.reports.buildDayClose(today).duesCollectedMinor)
+        // Without the cash option nothing reaches the drawer.
+        dues.recordPayment(id, 10_000)
+        assertEquals(50_000L, env.cash.observeDay(today).first().breakdown.cashInMinor)
+        assertNull(dues.observeOpen().first().single().settledAt)
+    }
+
+    @Test
+    fun `period summary splits cash online and udhaar`() = runTest {
+        val bank = (accounts.save(null, "Meezan", AccountKind.BANK, null, null) as DataResult.Success).data
+        env.sales.completeSale(env.request(listOf(env.line(env.service("Hair Cut")))), env.at(today))
+        env.sales.completeSale(
+            env.request(listOf(env.line(env.service("Facial"))), method = PaymentMethod.BANK).copy(paymentAccountId = bank, paymentAccountName = "Meezan"),
+            env.at(today),
+        )
+        val summary = env.reports.observePeriod(day).first()
+        assertEquals(200_000L, summary.sales.totalMinor)
+        assertEquals(50_000L, summary.sales.cashMinor)
+        assertEquals(150_000L, summary.received.single { it.accountName == "Meezan" }.totalMinor)
+    }
+}

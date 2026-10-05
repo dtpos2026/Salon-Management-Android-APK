@@ -469,4 +469,6 @@ fun receiptStyleName(style: ReceiptStyle): Int = when (style) {
     ReceiptStyle.MODERN -> R.string.receipt_style_modern
     ReceiptStyle.MINIMAL -> R.string.receipt_style_minimal
     ReceiptStyle.ELEGANT -> R.string.receipt_style_elegant
+    ReceiptStyle.MONO -> R.string.receipt_style_mono
+    ReceiptStyle.TABLE -> R.string.receipt_style_table
 }

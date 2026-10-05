@@ -3,7 +3,10 @@ package com.dtpos.salonmanager.presentation.dashboard
 import androidx.lifecycle.viewModelScope
 import com.dtpos.salonmanager.core.di.AppContainer
 import com.dtpos.salonmanager.core.util.DateTimeUtils
+import com.dtpos.salonmanager.data.database.entities.BookingEntity
 import com.dtpos.salonmanager.data.repository.DashboardData
+import com.dtpos.salonmanager.data.repository.PeriodSummary
+import com.dtpos.salonmanager.presentation.components.PeriodChoice
 import com.dtpos.salonmanager.data.repository.SettingKeys
 import com.dtpos.salonmanager.domain.insights.Insight
 import com.dtpos.salonmanager.domain.license.LicenseState
@@ -32,6 +35,18 @@ data class DashboardUiState(
     val isDemo: Boolean = false,
 )
 
+/** The chosen period's numbers, today's token queue and whether today is already closed. */
+data class DashboardPeriodState(
+    val choice: PeriodChoice = PeriodChoice(),
+    val businessDay: LocalDate = DateTimeUtils.today(),
+    val summary: PeriodSummary? = null,
+    val tokensEnabled: Boolean = false,
+    val tokens: List<BookingEntity> = emptyList(),
+) {
+    /** True after "Close day": new sales count for the next day. */
+    val todayClosed: Boolean get() = businessDay != DateTimeUtils.today()
+}
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class DashboardViewModel(private val container: AppContainer) : BaseViewModel() {
 
@@ -43,8 +58,27 @@ class DashboardViewModel(private val container: AppContainer) : BaseViewModel() 
         }
     }.distinctUntilChanged()
 
+    /** Today, or tomorrow once today has been closed. */
+    private val businessDay = today.flatMapLatest { container.cashRepository.observeBusinessDay(it) }.distinctUntilChanged()
+
+    private val choice = MutableStateFlow(PeriodChoice())
+
+    fun choose(value: PeriodChoice) {
+        choice.value = value
+    }
+
+    val period: StateFlow<DashboardPeriodState> = combine(choice, businessDay) { c, day -> c to day }
+        .flatMapLatest { (c, day) ->
+            combine(
+                container.reportRepository.observePeriod(c.range(day)),
+                container.settingsRepository.observeBoolean(SettingKeys.TOKENS_ENABLED),
+                container.bookingRepository.observeDay(DateTimeUtils.today()),
+            ) { summary, tokensOn, tokens -> DashboardPeriodState(c, day, summary, tokensOn, tokens) }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DashboardPeriodState())
+
     val state: StateFlow<DashboardUiState> = combine(
-        today.flatMapLatest { container.reportRepository.observeDashboard(it) },
+        businessDay.flatMapLatest { container.reportRepository.observeDashboard(it) },
         container.businessRepository.profile,
         container.licenseManager.state,
         container.settingsRepository.observeLong(SettingKeys.BACKUP_LAST_MANUAL),

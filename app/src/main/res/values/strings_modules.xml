@@ -5,7 +5,6 @@
     <string name="dashboard_greeting_sub">Here is how your salon is doing today</string>
     <string name="dashboard_demo_badge">DEMO DATA</string>
     <string name="dashboard_new_sale">New Sale</string>
-    <string name="dashboard_today">Today</string>
     <string name="dashboard_sales">Today\'s sales</string>
     <string name="dashboard_expenses">Today\'s expenses</string>
     <string name="dashboard_incl_staff">incl. staff pay %1$s</string>
@@ -13,8 +12,6 @@
     <string name="dashboard_cash_received">Cash received</string>
     <string name="dashboard_customers">Customers</string>
     <string name="dashboard_services">Services done</string>
-    <string name="dashboard_staff_outstanding">Staff pay outstanding</string>
-    <string name="dashboard_this_month">This month</string>
     <string name="dashboard_targets">Targets</string>
     <string name="dashboard_targets_none">Set daily and monthly targets to track your progress.</string>
     <string name="dashboard_target_detail">%1$s of %2$s · %3$s remaining</string>

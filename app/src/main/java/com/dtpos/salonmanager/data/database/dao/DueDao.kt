@@ -21,6 +21,9 @@ interface DueDao {
     @Query("SELECT * FROM customer_dues WHERE id = :id")
     suspend fun get(id: Long): DueEntity?
 
+    @Query("SELECT * FROM customer_dues WHERE saleId = :saleId LIMIT 1")
+    suspend fun getBySale(saleId: Long): DueEntity?
+
     @Query("SELECT * FROM customer_dues WHERE businessId = :businessId AND settledAt IS NULL ORDER BY createdAt DESC")
     fun observeOpen(businessId: Long): Flow<List<DueEntity>>
 

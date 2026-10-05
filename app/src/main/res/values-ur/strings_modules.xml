@@ -4,7 +4,6 @@
     <string name="dashboard_greeting_sub">آج آپ کے سیلون کا حال یہ ہے</string>
     <string name="dashboard_demo_badge">ڈیمو ڈیٹا</string>
     <string name="dashboard_new_sale">نئی فروخت</string>
-    <string name="dashboard_today">آج</string>
     <string name="dashboard_sales">آج کی فروخت</string>
     <string name="dashboard_expenses">آج کے اخراجات</string>
     <string name="dashboard_incl_staff">بشمول عملے کی ادائیگی %1$s</string>
@@ -12,8 +11,6 @@
     <string name="dashboard_cash_received">وصول شدہ نقد</string>
     <string name="dashboard_customers">گاہک</string>
     <string name="dashboard_services">مکمل سروسز</string>
-    <string name="dashboard_staff_outstanding">عملے کی باقی ادائیگی</string>
-    <string name="dashboard_this_month">اس مہینے</string>
     <string name="dashboard_targets">اہداف</string>
     <string name="dashboard_targets_none">اپنی پیش رفت دیکھنے کے لیے روزانہ اور ماہانہ ہدف مقرر کریں۔</string>
     <string name="dashboard_target_detail">%1$s از %2$s · %3$s باقی</string>

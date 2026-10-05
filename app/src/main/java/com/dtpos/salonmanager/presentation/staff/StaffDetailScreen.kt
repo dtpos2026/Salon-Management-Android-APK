@@ -18,6 +18,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Percent
 import androidx.compose.material.icons.filled.Spa
@@ -86,7 +87,11 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import com.dtpos.salonmanager.presentation.common.showWhatsAppResult
+import com.dtpos.salonmanager.services.export.ExternalApps
 import java.time.LocalDate
 
 data class StaffDetailState(
@@ -99,8 +104,42 @@ data class StaffDetailState(
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class StaffDetailViewModel(container: AppContainer, private val staffId: Long) : BaseViewModel() {
+class StaffDetailViewModel(private val container: AppContainer, private val staffId: Long) : BaseViewModel() {
     private val repo = container.staffRepository
+
+    /** The payment just recorded, offered for printing the staff slip. */
+    val justPaid = MutableStateFlow<StaffPaymentEntity?>(null)
+    val printing = MutableStateFlow(false)
+
+    private suspend fun slip(payment: StaffPaymentEntity, res: android.content.Context): List<com.dtpos.salonmanager.services.printer.PrintLine>? {
+        val staff = repo.get(staffId) ?: return null
+        val day = LocalDate.ofEpochDay(payment.paymentDate)
+        val month = DateRange(DateTimeUtils.monthStart(day), DateTimeUtils.monthEnd(day))
+        val settlement = repo.observeSettlement(staffId, month).first()
+        val profile = container.businessRepository.profile.first()
+        val money = com.dtpos.salonmanager.core.util.CurrencyFormatter(profile?.currency ?: com.dtpos.salonmanager.core.util.CurrencyConfig())
+        return com.dtpos.salonmanager.services.printer.Slips.staffPayment(payment, staff, settlement, profile?.name.orEmpty(), res, money)
+    }
+
+    /** Prints the staff payment slip (name, type, amount, this month's balance, signature line). */
+    fun printSlip(payment: StaffPaymentEntity) {
+        if (printing.value) return
+        printing.value = true
+        launchSafe {
+            try {
+                val lines = slip(payment, container.receiptPrinter.slipContext()) ?: return@launchSafe
+                when (val result = container.receiptPrinter.printLines(lines)) {
+                    com.dtpos.salonmanager.services.printer.PrintResult.Success -> showMessage(R.string.print_success)
+                    is com.dtpos.salonmanager.services.printer.PrintResult.Failure -> showMessage(result.error.messageRes)
+                }
+            } finally {
+                printing.value = false
+            }
+        }
+    }
+
+    suspend fun slipText(payment: StaffPaymentEntity): String? =
+        slip(payment, container.context)?.let(com.dtpos.salonmanager.services.printer.Slips::asText)
     private val month = MutableStateFlow(DateTimeUtils.monthStart(DateTimeUtils.today()))
 
     val state: StateFlow<StaffDetailState> = month.flatMapLatest { m ->
@@ -140,6 +179,7 @@ class StaffDetailViewModel(container: AppContainer, private val staffId: Long) :
                 is DataResult.Success -> {
                     showMessage(R.string.staff_payment_saved)
                     onDone()
+                    justPaid.value = repo.observePayments(staffId, 20).first().firstOrNull { it.id == result.data }
                 }
                 is DataResult.Failure -> showMessage(result.error.messageRes)
             }
@@ -163,6 +203,17 @@ fun StaffDetailScreen(staffId: Long, onBack: () -> Unit, onEdit: () -> Unit) {
     var deletePayment by remember { mutableStateOf<StaffPaymentEntity?>(null) }
     val money = LocalMoney.current
     MessageEffect(vm.messages, snackbar)
+    val justPaid by vm.justPaid.collectAsStateWithLifecycle()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val shareTitle = stringResource(R.string.staff_slip_share)
+    val shareSlip: (StaffPaymentEntity) -> Unit = { p ->
+        scope.launch {
+            vm.slipText(p)?.let { text ->
+                context.showWhatsAppResult(ExternalApps.whatsAppText(context, state.staff?.phone, text, shareTitle))
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -282,6 +333,9 @@ fun StaffDetailScreen(staffId: Long, onBack: () -> Unit, onEdit: () -> Unit) {
                         trailingContent = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(money.format(payment.amountMinor), style = MaterialTheme.typography.titleSmall)
+                                IconButton(onClick = { vm.printSlip(payment) }) {
+                                    Icon(Icons.Filled.Print, contentDescription = stringResource(R.string.staff_slip_print))
+                                }
                                 IconButton(onClick = { deletePayment = payment }) {
                                     Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.action_delete))
                                 }
@@ -291,6 +345,30 @@ fun StaffDetailScreen(staffId: Long, onBack: () -> Unit, onEdit: () -> Unit) {
                 }
             }
         }
+    }
+
+    justPaid?.let { p ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { vm.justPaid.value = null },
+            icon = { Icon(Icons.Filled.Print, contentDescription = null) },
+            title = { Text(stringResource(R.string.staff_slip_title)) },
+            text = { Text(stringResource(R.string.staff_slip_ask, money.format(p.amountMinor), state.staff?.name.orEmpty())) },
+            confirmButton = {
+                androidx.compose.material3.Button(onClick = {
+                    vm.printSlip(p)
+                    vm.justPaid.value = null
+                }) { Text(stringResource(R.string.staff_slip_print)) }
+            },
+            dismissButton = {
+                Row {
+                    androidx.compose.material3.TextButton(onClick = {
+                        shareSlip(p)
+                        vm.justPaid.value = null
+                    }) { Text(stringResource(R.string.staff_slip_share)) }
+                    androidx.compose.material3.TextButton(onClick = { vm.justPaid.value = null }) { Text(stringResource(R.string.action_close)) }
+                }
+            },
+        )
     }
 
     if (showPayment) {

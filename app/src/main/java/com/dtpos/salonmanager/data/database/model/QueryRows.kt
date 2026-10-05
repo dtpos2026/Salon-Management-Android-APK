@@ -50,14 +50,26 @@ data class DayTotalRow(
 data class SalesSummaryRow(
     val totalMinor: Long,
     val saleCount: Int,
+    /** Money received in cash (a cash sale's credit part is not included). */
     val cashMinor: Long,
     val discountMinor: Long,
     val serviceCount: Int,
+    /** Udhaar: billed but not paid yet. */
+    val creditMinor: Long = 0,
 ) {
     companion object {
         val EMPTY = SalesSummaryRow(0, 0, 0, 0, 0)
     }
 }
+
+/** Money received for sales per place: cash, a payment account, or a plain method. */
+data class ReceivedTotalRow(
+    val paymentMethod: PaymentMethod,
+    val accountId: Long?,
+    val accountName: String?,
+    val totalMinor: Long,
+    val saleCount: Int,
+)
 
 data class PaymentMethodTotalRow(
     val paymentMethod: PaymentMethod,

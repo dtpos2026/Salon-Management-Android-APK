@@ -25,6 +25,10 @@ enum class ReceiptStyle {
     MINIMAL,
     /** Serif headings, double rules and an outlined title. */
     ELEGANT,
+    /** Classic till slip: typewriter font, dashed lines, *** RECEIPT *** title, CAPITAL items. */
+    MONO,
+    /** Typewriter font with a proper item table: item, qty, rate, amount. */
+    TABLE,
 }
 
 /**
@@ -87,6 +91,23 @@ class ReceiptImageRenderer(
         pathEffect = DashPathEffect(floatArrayOf(6f * s, 4f * s), 0f)
     }
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+    private val itemNameBig = paint(16.5f, bold = true)
+    private val valueBig = paint(16f, bold = true)
+
+    // Typewriter (MONO / TABLE) designs.
+    private val mono = style == ReceiptStyle.MONO || style == ReceiptStyle.TABLE
+    private fun monoPaint(size: Float, bold: Boolean = false, color: Int = ink) = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+        textSize = size * s
+        this.color = color
+        typeface = Typeface.create(Typeface.MONOSPACE, if (bold) Typeface.BOLD else Typeface.NORMAL)
+    }
+    private val mTitle = monoPaint(18f, bold = true)
+    private val mText = monoPaint(13.5f)
+    private val mBold = monoPaint(13.5f, bold = true)
+    private val mBig = monoPaint(15.5f, bold = true)
+    private val mTotal = monoPaint(16.5f, bold = true)
+    private val mSmall = monoPaint(12f, color = muted)
+    private val mHead = monoPaint(12.5f, bold = true)
 
     fun render(receipt: ReceiptData, labels: ReceiptLabels, logo: Bitmap?): Bitmap {
         val height = draw(null, receipt, labels, logo).toInt().coerceAtLeast(1)
@@ -99,6 +120,7 @@ class ReceiptImageRenderer(
 
     /** Lays the receipt out; draws when [canvas] is not null. Returns the total height. */
     private fun draw(canvas: Canvas?, r: ReceiptData, labels: ReceiptLabels, logo: Bitmap?): Float {
+        if (mono) return drawMono(canvas, r, labels, logo)
         val money = CurrencyFormatter(r.currency)
         var y = 20f * s
 
@@ -150,6 +172,7 @@ class ReceiptImageRenderer(
                 y += text(canvas, labels.receiptTitle.uppercase(), outlineTitle, pad, contentWidth, Layout.Alignment.ALIGN_CENTER, y) + 8f * s
                 y += doubleRule(canvas, y) + 10f * s
             }
+            ReceiptStyle.MONO, ReceiptStyle.TABLE -> Unit // drawn by drawMono
         }
 
         if (r.isVoided) {
@@ -167,7 +190,7 @@ class ReceiptImageRenderer(
             val staff = r.items.mapNotNull { it.staffName?.takeIf { n -> n.isNotBlank() } }.distinct()
             if (staff.isNotEmpty()) y += row(canvas, labels.servedBy, staff.joinToString(", "), y)
         }
-        y += row(canvas, labels.payment, labels.paymentMethodName, y)
+        y += row(canvas, labels.payment, r.paymentAccountName ?: labels.paymentMethodName, y)
 
         y += 6f * s
         y += dashed(canvas, y)
@@ -177,8 +200,8 @@ class ReceiptImageRenderer(
         y += 10f * s
 
         r.items.forEach { item ->
-            y += text(canvas, item.serviceName, itemName, pad, contentWidth, start(), y) + 2f * s
-            y += row(canvas, "${item.quantity} × ${money.format(item.unitPriceMinor)}", money.plain(item.unitPriceMinor * item.quantity), y, valueBold, itemSub)
+            y += text(canvas, item.serviceName, if (item.boldName) itemNameBig else itemName, pad, contentWidth, start(), y) + 2f * s
+            y += row(canvas, "${item.quantity} × ${money.format(item.unitPriceMinor)}", money.plain(item.unitPriceMinor * item.quantity), y, if (item.boldPrice) valueBig else valueBold, itemSub)
             if (item.lineDiscountMinor > 0) y += row(canvas, labels.discount, "-" + money.plain(item.lineDiscountMinor), y, value, itemSub)
             y += 8f * s
         }
@@ -204,6 +227,7 @@ class ReceiptImageRenderer(
                     doubleRule(it, y)
                     doubleRule(it, y + boxHeight - 6f * s)
                 }
+                ReceiptStyle.MONO, ReceiptStyle.TABLE -> Unit // drawn by drawMono
             }
         }
         val totalText = money.format(r.totalMinor)
@@ -223,16 +247,20 @@ class ReceiptImageRenderer(
             y += row(canvas, labels.tendered, money.plain(it), y)
             y += row(canvas, labels.change, money.plain(r.changeMinor), y)
         }
+        if (r.creditMinor > 0) {
+            y += row(canvas, labels.paidNow, money.plain(r.paidMinor), y)
+            y += row(canvas, labels.balanceDue, money.format(r.creditMinor), y, TextPaint(valueBold).apply { color = alert }, valueBold)
+        }
 
         // PAID / VOID stamp (minimal: plain text).
         y += 10f * s
         if (style == ReceiptStyle.MINIMAL) {
-            val plain = if (r.isVoided) labels.voided.uppercase() else labels.paidStamp.uppercase()
+            val plain = stampLabel(r, labels)
             y += text(canvas, plain, header, pad, contentWidth, Layout.Alignment.ALIGN_CENTER, y) + 10f * s
             return footer(canvas, r, labels, y)
         }
-        val stampText = if (r.isVoided) labels.voided.uppercase() else labels.paidStamp.uppercase()
-        val stampPaint = if (r.isVoided) TextPaint(stamp).apply { color = alert } else stamp
+        val stampText = stampLabel(r, labels)
+        val stampPaint = if (r.isVoided || r.creditMinor > 0) TextPaint(stamp).apply { color = alert } else stamp
         val stampWidth = stampPaint.measureText(stampText) + 34f * s
         val stampHeight = 30f * s
         canvas?.let {
@@ -261,6 +289,167 @@ class ReceiptImageRenderer(
     }
 
     private fun start() = Layout.Alignment.ALIGN_NORMAL
+
+    private fun stampLabel(r: ReceiptData, labels: ReceiptLabels): String = when {
+        r.isVoided -> labels.voided.uppercase()
+        r.creditMinor > 0 -> labels.creditStamp.uppercase()
+        else -> labels.paidStamp.uppercase()
+    }
+
+    /**
+     * MONO / TABLE: the classic till slip in a typewriter font (logo or scissors badge, dashed
+     * rules, *** RECEIPT ***, CAPITAL item names); TABLE lays the items out in columns.
+     */
+    private fun drawMono(canvas: Canvas?, r: ReceiptData, labels: ReceiptLabels, logo: Bitmap?): Float {
+        val money = CurrencyFormatter(r.currency)
+        val center = Layout.Alignment.ALIGN_CENTER
+        var y = 18f * s
+        if (logo != null) {
+            val scale = minOf(widthPx * 0.36f / logo.width, 84f * s / logo.height)
+            val w = logo.width * scale
+            val h = logo.height * scale
+            canvas?.drawBitmap(logo, null, RectF((widthPx - w) / 2f, y, (widthPx + w) / 2f, y + h), Paint(Paint.FILTER_BITMAP_FLAG))
+            y += h + 10f * s
+        } else {
+            y += scissorsBadge(canvas, y) + 10f * s
+        }
+        y += text(canvas, r.businessName.uppercase(), mTitle, pad, contentWidth, center, y) + 2f * s
+        r.headerNote?.takeIf { it.isNotBlank() }?.let { y += text(canvas, it, mText, pad, contentWidth, center, y) }
+        r.businessAddress?.takeIf { it.isNotBlank() }?.let { y += text(canvas, it, mText, pad, contentWidth, center, y) }
+        r.businessPhone?.takeIf { it.isNotBlank() }?.let { y += text(canvas, it, mText, pad, contentWidth, center, y) }
+        y += 8f * s
+        y += dashed(canvas, y) + 8f * s
+        y += text(canvas, "*** ${labels.receiptTitle.uppercase()} ***", mBig, pad, contentWidth, center, y) + 4f * s
+        if (r.isVoided) {
+            y += text(canvas, "*** ${labels.voided.uppercase()} ***", TextPaint(mBig).apply { color = alert }, pad, contentWidth, center, y) + 2f * s
+            r.voidReason?.takeIf { it.isNotBlank() }?.let { y += text(canvas, it, mSmall, pad, contentWidth, center, y) + 2f * s }
+        }
+        y += row(canvas, "${labels.date.uppercase()}: ${DateTimeUtils.formatDate(r.createdAtMillis)}", "${labels.time.uppercase()}: ${DateTimeUtils.formatTime(r.createdAtMillis)}", y, mText, mText)
+        y += row(canvas, "${labels.receiptNo.uppercase()}:", r.receiptNumber, y, mBold, mText)
+        y += 2f * s
+        y += dashed(canvas, y) + 6f * s
+        y += text(canvas, "${labels.customer.uppercase()}: ${r.customerName?.takeIf { it.isNotBlank() } ?: labels.walkIn}", mText, pad, contentWidth, start(), y) + 2f * s
+        r.customerPhone?.takeIf { it.isNotBlank() }?.let { y += text(canvas, "${labels.phone.uppercase()}: $it", mText, pad, contentWidth, start(), y) + 2f * s }
+        if (r.showStaff) {
+            val staff = r.items.mapNotNull { it.staffName?.takeIf { n -> n.isNotBlank() } }.distinct()
+            if (staff.isNotEmpty()) y += text(canvas, "${labels.servedBy.uppercase()}: ${staff.joinToString(", ")}", mText, pad, contentWidth, start(), y) + 2f * s
+        }
+        y += 4f * s
+        y += dashed(canvas, y) + 6f * s
+
+        if (style == ReceiptStyle.TABLE) {
+            y = monoTable(canvas, r, labels, money, y)
+        } else {
+            r.items.forEach { item ->
+                val name = item.serviceName.uppercase() + if (item.quantity > 1) " x${item.quantity}" else ""
+                y += row(
+                    canvas, name, money.format(item.unitPriceMinor * item.quantity), y,
+                    if (item.boldPrice) mBold else mText, if (item.boldName) mBold else mText,
+                )
+                if (item.quantity > 1) y += text(canvas, "  ${item.quantity} x ${money.format(item.unitPriceMinor)}", mSmall, pad, contentWidth, start(), y) + 2f * s
+                if (item.lineDiscountMinor > 0) y += row(canvas, "  ${labels.discount.uppercase()}", "-" + money.format(item.lineDiscountMinor), y, mSmall, mSmall)
+            }
+            y += 4f * s
+        }
+
+        canvas?.drawLine(pad, y, widthPx - pad, y, Paint(linePaint).apply { strokeWidth = 1.4f * s; color = muted })
+        y += 8f * s
+        y += row(canvas, labels.subtotal.uppercase(), money.format(r.subtotalMinor), y, mText, mText)
+        if (r.totalDiscountMinor > 0) y += row(canvas, labels.discount.uppercase(), "-" + money.format(r.totalDiscountMinor), y, mText, mText)
+        canvas?.drawLine(pad, y + 2f * s, widthPx - pad, y + 2f * s, Paint(linePaint).apply { strokeWidth = 1.4f * s; color = muted })
+        y += 10f * s
+        y += row(canvas, labels.total.uppercase(), money.format(r.totalMinor), y, mTotal, mTotal) + 4f * s
+        y += row(canvas, labels.payment.uppercase(), (r.paymentAccountName ?: labels.paymentMethodName).uppercase(), y, mText, mText)
+        r.amountTenderedMinor?.takeIf { it > 0 }?.let {
+            y += row(canvas, labels.tendered.uppercase(), money.format(it), y, mText, mText)
+            y += row(canvas, labels.change.uppercase(), money.format(r.changeMinor), y, mText, mText)
+        }
+        if (r.creditMinor > 0) {
+            y += row(canvas, labels.paidNow.uppercase(), money.format(r.paidMinor), y, mText, mText)
+            y += row(canvas, labels.balanceDue.uppercase(), money.format(r.creditMinor), y, TextPaint(mBold).apply { color = alert }, mBold)
+        } else if (r.amountTenderedMinor == null) {
+            y += row(canvas, labels.amount.uppercase(), money.format(r.totalMinor), y, mText, mText)
+        }
+
+        y += 10f * s
+        val inset = 34f * s
+        canvas?.drawLine(inset, y, widthPx - inset, y, Paint(linePaint).apply { strokeWidth = 1.2f * s })
+        y += 8f * s
+        val footer = r.footer?.takeIf { it.isNotBlank() } ?: labels.defaultFooter
+        footer.lines().filter { it.isNotBlank() }.forEach { y += text(canvas, it.trim(), mText, pad, contentWidth, center, y) }
+        y += 6f * s
+        canvas?.drawLine(inset, y, widthPx - inset, y, Paint(linePaint).apply { strokeWidth = 1.2f * s })
+        y += 8f * s
+        if (labels.poweredBy.isNotBlank()) y += text(canvas, labels.poweredBy, mSmall, pad, contentWidth, center, y)
+        return y + 22f * s
+    }
+
+    /** Item table for [ReceiptStyle.TABLE]: ITEM | QTY | RATE | AMOUNT with staff under the item. */
+    private fun monoTable(canvas: Canvas?, r: ReceiptData, labels: ReceiptLabels, money: CurrencyFormatter, top: Float): Float {
+        var y = top
+        val gap = 6f * s
+        val amountW = maxOf(mHead.measureText(labels.amount.uppercase()), r.items.maxOfOrNull { mBold.measureText(money.plain(it.unitPriceMinor * it.quantity)) } ?: 0f)
+        val rateW = maxOf(mHead.measureText("RATE"), r.items.maxOfOrNull { mText.measureText(money.plain(it.unitPriceMinor)) } ?: 0f)
+        val qtyW = maxOf(mHead.measureText("QTY"), mText.measureText("99"))
+        val itemW = (contentWidth - amountW - rateW - qtyW - gap * 3).coerceAtLeast(contentWidth * 0.3f)
+        val xItem = pad
+        val xQty = xItem + itemW + gap
+        val xRate = xQty + qtyW + gap
+        val xAmount = xRate + rateW + gap
+        val rule = Paint(linePaint).apply { strokeWidth = 1.2f * s }
+
+        fun cell(value: String, paint: TextPaint, x: Float, w: Float, end: Boolean, at: Float): Float {
+            val mirroredX = if (rtl) widthPx - x - w else x
+            val align = if (end == !rtl) Layout.Alignment.ALIGN_OPPOSITE else Layout.Alignment.ALIGN_NORMAL
+            return text(canvas, value, paint, mirroredX, w, if (end) align else Layout.Alignment.ALIGN_NORMAL, at)
+        }
+
+        canvas?.drawLine(pad, y, widthPx - pad, y, rule)
+        y += 5f * s
+        val headH = maxOf(
+            cell(labels.item.uppercase(), mHead, xItem, itemW, false, y),
+            cell("QTY", mHead, xQty, qtyW, true, y),
+            cell("RATE", mHead, xRate, rateW, true, y),
+            cell(labels.amount.uppercase(), mHead, xAmount, amountW, true, y),
+        )
+        y += headH + 4f * s
+        canvas?.drawLine(pad, y, widthPx - pad, y, rule)
+        y += 6f * s
+        r.items.forEach { item ->
+            val h = maxOf(
+                cell(item.serviceName.uppercase(), if (item.boldName) mBold else mText, xItem, itemW, false, y),
+                cell(item.quantity.toString(), mText, xQty, qtyW, true, y),
+                cell(money.plain(item.unitPriceMinor), mText, xRate, rateW, true, y),
+                cell(money.plain(item.unitPriceMinor * item.quantity), if (item.boldPrice) mBold else mText, xAmount, amountW, true, y),
+            )
+            y += h + 2f * s
+            if (r.showStaff && !item.staffName.isNullOrBlank()) {
+                y += cell("  ${labels.by}: ${item.staffName}", mSmall, xItem, contentWidth, false, y) + 2f * s
+            }
+            if (item.lineDiscountMinor > 0) {
+                y += row(canvas, "  ${labels.discount.uppercase()}", "-" + money.plain(item.lineDiscountMinor), y, mSmall, mSmall)
+            }
+            y += 4f * s
+        }
+        return y
+    }
+
+    /** Round badge with a pair of scissors, used when the salon has no logo. */
+    private fun scissorsBadge(canvas: Canvas?, top: Float): Float {
+        val radius = 27f * s
+        canvas?.let {
+            val cx = widthPx / 2f
+            val cy = top + radius
+            val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 2.2f * s; color = ink }
+            it.drawCircle(cx, cy, radius, stroke)
+            val blade = Paint(stroke).apply { strokeWidth = 2.6f * s; strokeCap = Paint.Cap.ROUND }
+            it.drawCircle(cx - 8f * s, cy - 8f * s, 5f * s, stroke)
+            it.drawCircle(cx - 8f * s, cy + 8f * s, 5f * s, stroke)
+            it.drawLine(cx - 4.5f * s, cy - 4.5f * s, cx + 12f * s, cy + 11f * s, blade)
+            it.drawLine(cx - 4.5f * s, cy + 4.5f * s, cx + 12f * s, cy - 11f * s, blade)
+        }
+        return radius * 2
+    }
 
     /** Salon name, note, address and phone (centred). Returns the height used. */
     private fun headerText(canvas: Canvas?, r: ReceiptData, top: Float): Float {

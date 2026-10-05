@@ -9,6 +9,7 @@ import com.dtpos.salonmanager.data.database.SalonDatabase
 import com.dtpos.salonmanager.data.repository.SettingKeys
 import com.dtpos.salonmanager.data.repository.SettingsRepository
 import com.dtpos.salonmanager.services.branding.LogoStore
+import com.dtpos.salonmanager.services.branding.ServiceImageStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -56,6 +57,8 @@ class PreparedRestore internal constructor(
     val manifest: BackupManifest,
     internal val databaseFile: File,
     internal val logoBytes: ByteArray?,
+    /** Service menu photos: relative path ("menu/<name>.jpg") to bytes. */
+    internal val menuImages: Map<String, ByteArray> = emptyMap(),
 )
 
 /**
@@ -105,6 +108,7 @@ class BackupManager(
                     zip.put(ENTRY_DB, dbBytes)
                     walBytes?.let { zip.put(ENTRY_WAL, it) }
                     logoStore.resolve(LogoStore.RELATIVE_PATH)?.let { zip.put(ENTRY_LOGO, it.readBytes()) }
+                    ServiceImageStore(context).all().forEach { (path, file) -> zip.put(path, file.readBytes()) }
                 }
                 buffer.toByteArray()
             }
@@ -234,7 +238,9 @@ class BackupManager(
             candidate.delete()
             return@withContext BackupInspection.Invalid(BackupError.CORRUPT)
         }
-        BackupInspection.Ready(PreparedRestore(manifest, candidate, entries[ENTRY_LOGO]))
+        BackupInspection.Ready(
+            PreparedRestore(manifest, candidate, entries[ENTRY_LOGO], entries.filterKeys { ServiceImageStore.isValidPath(it) }),
+        )
     }
 
     /**
@@ -257,6 +263,11 @@ class BackupManager(
                     val logo = File(context.filesDir, LogoStore.RELATIVE_PATH)
                     logo.parentFile?.mkdirs()
                     logo.writeBytes(bytes)
+                }
+                prepared.menuImages.forEach { (path, bytes) ->
+                    if (ServiceImageStore.isValidPath(path)) {
+                        File(context.filesDir, path).apply { parentFile?.mkdirs() }.writeBytes(bytes)
+                    }
                 }
                 parked.forEach { it.delete() }
                 prepared.databaseFile.delete()
@@ -284,7 +295,9 @@ class BackupManager(
             while (true) {
                 val entry = zip.nextEntry ?: break
                 // Only accept the known flat entry names (prevents zip path traversal).
-                if (!entry.isDirectory && entry.name in KNOWN_ENTRIES) result[entry.name] = zip.readBytes()
+                if (!entry.isDirectory && (entry.name in KNOWN_ENTRIES || ServiceImageStore.isValidPath(entry.name))) {
+                    result[entry.name] = zip.readBytes()
+                }
                 zip.closeEntry()
             }
         }

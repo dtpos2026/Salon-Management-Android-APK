@@ -45,6 +45,15 @@ val StaffRole.labelRes: Int
         StaffRole.BEAUTICIAN -> R.string.role_beautician
         StaffRole.RECEPTIONIST -> R.string.role_receptionist
         StaffRole.OTHER -> R.string.role_other
+        StaffRole.OWNER -> R.string.role_owner
+    }
+
+val com.dtpos.salonmanager.domain.model.AccountKind.labelRes: Int
+    get() = when (this) {
+        com.dtpos.salonmanager.domain.model.AccountKind.WALLET -> R.string.account_kind_wallet
+        com.dtpos.salonmanager.domain.model.AccountKind.BANK -> R.string.account_kind_bank
+        com.dtpos.salonmanager.domain.model.AccountKind.CARD -> R.string.account_kind_card
+        com.dtpos.salonmanager.domain.model.AccountKind.OTHER -> R.string.account_kind_other
     }
 
 val SalaryType.labelRes: Int

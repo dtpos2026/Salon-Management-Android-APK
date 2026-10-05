@@ -45,5 +45,30 @@ object Migrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2)
+    /**
+     * Version 3: payment accounts (JazzCash / EasyPaisa / bank), sale account + credit (udhaar)
+     * + edit time, service photo and bold printing, and the sale a due came from. Only new
+     * tables and columns; every existing row keeps its values (new columns start empty / 0).
+     */
+    val MIGRATION_2_3 = object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `payment_accounts` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`businessId` INTEGER NOT NULL, `name` TEXT NOT NULL, `kind` TEXT NOT NULL, `accountTitle` TEXT, " +
+                    "`accountNumber` TEXT, `isActive` INTEGER NOT NULL, `sortOrder` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, " +
+                    "FOREIGN KEY(`businessId`) REFERENCES `businesses`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_payment_accounts_businessId_isActive` ON `payment_accounts` (`businessId`, `isActive`)")
+            db.execSQL("ALTER TABLE `sales` ADD COLUMN `paymentAccountId` INTEGER")
+            db.execSQL("ALTER TABLE `sales` ADD COLUMN `paymentAccountName` TEXT")
+            db.execSQL("ALTER TABLE `sales` ADD COLUMN `creditMinor` INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE `sales` ADD COLUMN `editedAt` INTEGER")
+            db.execSQL("ALTER TABLE `services` ADD COLUMN `imagePath` TEXT")
+            db.execSQL("ALTER TABLE `services` ADD COLUMN `boldName` INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE `services` ADD COLUMN `boldPrice` INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE `customer_dues` ADD COLUMN `saleId` INTEGER")
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
 }

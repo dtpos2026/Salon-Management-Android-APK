@@ -10,6 +10,7 @@ import com.dtpos.salonmanager.domain.model.CashSessionStatus
 import com.dtpos.salonmanager.domain.model.CashTxType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 
 data class CashDayState(
@@ -45,6 +46,16 @@ class CashRepository(
             )
         }
     }
+
+    /**
+     * The day new sales count for: [today], or the next day once the owner has closed today.
+     * After "Close day" the dashboard starts again from zero.
+     */
+    fun observeBusinessDay(today: LocalDate): Flow<LocalDate> =
+        dao.observeSession(businessId, today.toEpochDay()).map { if (it?.status == CashSessionStatus.CLOSED) today.plusDays(1) else today }
+
+    suspend fun businessDay(today: LocalDate): LocalDate =
+        if (dao.getSession(businessId, today.toEpochDay())?.status == CashSessionStatus.CLOSED) today.plusDays(1) else today
 
     fun observeHistory(limit: Int = 60): Flow<List<CashSessionEntity>> = dao.observeRecentSessions(businessId, limit)
 

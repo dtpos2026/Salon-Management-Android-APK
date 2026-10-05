@@ -41,6 +41,8 @@ import com.dtpos.salonmanager.presentation.common.LocalMoney
 import com.dtpos.salonmanager.presentation.common.appViewModel
 import com.dtpos.salonmanager.presentation.common.labelRes
 import com.dtpos.salonmanager.presentation.components.EmptyState
+import com.dtpos.salonmanager.presentation.components.PeriodChoice
+import com.dtpos.salonmanager.presentation.components.PeriodPicker
 import com.dtpos.salonmanager.presentation.components.InitialsAvatar
 import com.dtpos.salonmanager.presentation.components.SalonTopBar
 import com.dtpos.salonmanager.presentation.components.SearchField
@@ -64,9 +66,16 @@ class StaffListViewModel(container: AppContainer) : BaseViewModel() {
     private val query = MutableStateFlow("")
     val queryText: StateFlow<String> = query
 
+    private val period = MutableStateFlow(PeriodChoice())
+    val periodChoice: StateFlow<PeriodChoice> = period
+
+    fun choose(value: PeriodChoice) {
+        period.value = value
+    }
+
     val state: StateFlow<StaffListState> = combine(
         query.flatMapLatest { repo.observeAll(it) },
-        repo.observeTeamPerformance(Periods.targetRange(TargetPeriod.MONTHLY, DateTimeUtils.today())),
+        period.flatMapLatest { repo.observeTeamPerformance(it.range(DateTimeUtils.today())) },
     ) { staff, perf ->
         StaffListState(staff, perf.mapNotNull { row -> row.staffId?.let { it to row } }.toMap())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), StaffListState())
@@ -81,10 +90,11 @@ fun StaffListScreen(onBack: () -> Unit, onOpenStaff: (Long) -> Unit, onAddStaff:
     val vm = appViewModel { StaffListViewModel(it) }
     val state by vm.state.collectAsStateWithLifecycle()
     val query by vm.queryText.collectAsStateWithLifecycle()
+    val choice by vm.periodChoice.collectAsStateWithLifecycle()
     val money = LocalMoney.current
 
     Scaffold(
-        topBar = { SalonTopBar(stringResource(R.string.nav_staff), onBack = onBack, subtitle = stringResource(PeriodPreset.THIS_MONTH.labelRes)) },
+        topBar = { SalonTopBar(stringResource(R.string.nav_staff), onBack = onBack) },
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = onAddStaff,
@@ -99,6 +109,7 @@ fun StaffListScreen(onBack: () -> Unit, onOpenStaff: (Long) -> Unit, onAddStaff:
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             item { SearchField(query, vm::onQuery, stringResource(R.string.staff_search)) }
+            item { PeriodPicker(choice, vm::choose) }
             val list = state.staff
             if (list != null && list.isEmpty()) {
                 item {
@@ -130,6 +141,13 @@ fun StaffListScreen(onBack: () -> Unit, onOpenStaff: (Long) -> Unit, onAddStaff:
                                     stringResource(R.string.staff_customers_count, perf?.customerCount ?: 0),
                                     style = MaterialTheme.typography.labelSmall,
                                 )
+                                if ((perf?.commissionMinor ?: 0L) > 0L) {
+                                    Text(
+                                        stringResource(R.string.staff_commission_short, money.format(perf?.commissionMinor ?: 0L)),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = com.dtpos.salonmanager.presentation.theme.SalonTheme.extended.warning,
+                                    )
+                                }
                                 if (!member.isActive) {
                                     StatusBadge(
                                         stringResource(R.string.status_inactive),

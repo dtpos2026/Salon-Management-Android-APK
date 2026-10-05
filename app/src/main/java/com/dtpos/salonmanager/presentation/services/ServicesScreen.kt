@@ -1,5 +1,17 @@
 package com.dtpos.salonmanager.presentation.services
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -79,6 +91,9 @@ data class ServiceForm(
     val price: String = "",
     val duration: String = "",
     val active: Boolean = true,
+    val imagePath: String? = null,
+    val boldName: Boolean = false,
+    val boldPrice: Boolean = false,
     val nameError: ValidationError? = null,
     val categoryError: ValidationError? = null,
     val priceError: ValidationError? = null,
@@ -86,7 +101,7 @@ data class ServiceForm(
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class ServicesViewModel(container: AppContainer) : BaseViewModel() {
+class ServicesViewModel(private val container: AppContainer) : BaseViewModel() {
     private val repo = container.serviceRepository
     private val query = MutableStateFlow("")
     val queryText: StateFlow<String> = query
@@ -117,7 +132,16 @@ class ServicesViewModel(container: AppContainer) : BaseViewModel() {
             price = Money.toInput(service.priceMinor),
             duration = if (service.durationMinutes > 0) service.durationMinutes.toString() else "",
             active = service.isActive,
+            imagePath = service.imagePath,
+            boldName = service.boldName,
+            boldPrice = service.boldPrice,
         )
+    }
+
+    /** Saves the picked photo into the app and shows it in the form (kept when the form is saved). */
+    fun pickImage(uri: android.net.Uri) = launchSafe {
+        val path = container.serviceImageStore.importFrom(uri)
+        if (path == null) showMessage(R.string.services_photo_failed) else updateForm { it.copy(imagePath = path) }
     }
 
     fun updateForm(transform: (ServiceForm) -> ServiceForm) {
@@ -142,8 +166,11 @@ class ServicesViewModel(container: AppContainer) : BaseViewModel() {
         )
         if (name !is FieldResult.Valid || category !is FieldResult.Valid || price !is FieldResult.Valid || duration !is FieldResult.Valid) return
         launchSafe {
-            when (val result = repo.save(ServiceInput(name.value, category.value, price.value, duration.value, f.active), f.id)) {
+            val previousImage = f.id?.let { repo.get(it)?.imagePath }
+            val input = ServiceInput(name.value, category.value, price.value, duration.value, f.active, f.imagePath, f.boldName, f.boldPrice)
+            when (val result = repo.save(input, f.id)) {
                 is DataResult.Success -> {
+                    if (previousImage != null && previousImage != f.imagePath) container.serviceImageStore.delete(previousImage)
                     closeForm()
                     showMessage(R.string.saved)
                 }
@@ -158,8 +185,10 @@ class ServicesViewModel(container: AppContainer) : BaseViewModel() {
     fun toggleActive(service: ServiceEntity) = launchSafe { repo.setActive(service.id, !service.isActive) }
 
     fun delete(id: Long) = launchSafe {
+        val image = repo.get(id)?.imagePath
         when (val result = repo.delete(id)) {
             is DataResult.Success -> {
+                container.serviceImageStore.delete(image)
                 closeForm()
                 showMessage(R.string.deleted)
             }
@@ -231,7 +260,10 @@ fun ServicesScreen(onBack: () -> Unit) {
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     ) {
                         ListItem(
-                            headlineContent = { Text(service.name) },
+                            leadingContent = {
+                                ServicePhoto(service.imagePath, Modifier.size(52.dp).clip(RoundedCornerShape(10.dp)), maxSize = 160)
+                            },
+                            headlineContent = { Text(service.name, fontWeight = if (service.boldName) FontWeight.Bold else null) },
                             supportingContent = {
                                 Text(
                                     buildString {
@@ -255,11 +287,26 @@ fun ServicesScreen(onBack: () -> Unit) {
 @Composable
 private fun ServiceDialog(form: ServiceForm, categories: List<String>, symbol: String, vm: ServicesViewModel) {
     var confirmDelete by remember { mutableStateOf(false) }
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> uri?.let(vm::pickImage) }
     AlertDialog(
         onDismissRequest = vm::closeForm,
         title = { Text(stringResource(if (form.id == null) R.string.services_add else R.string.services_edit)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    ServicePhoto(form.imagePath, Modifier.size(72.dp).clip(RoundedCornerShape(12.dp)), maxSize = 200)
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        TextButton(onClick = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }) {
+                            Text(stringResource(if (form.imagePath == null) R.string.services_photo_add else R.string.services_photo_change))
+                        }
+                        if (form.imagePath != null) {
+                            TextButton(onClick = { vm.updateForm { it.copy(imagePath = null) } }) {
+                                Text(stringResource(R.string.services_photo_remove), color = MaterialTheme.colorScheme.error)
+                            }
+                        }
+                    }
+                }
                 FormTextField(
                     form.name,
                     { v -> vm.updateForm { it.copy(name = v, nameError = null) } },
@@ -300,6 +347,14 @@ private fun ServiceDialog(form: ServiceForm, categories: List<String>, symbol: S
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.field_active), modifier = Modifier.weight(1f))
                     Switch(checked = form.active, onCheckedChange = { v -> vm.updateForm { it.copy(active = v) } })
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.services_bold_name), modifier = Modifier.weight(1f))
+                    Switch(checked = form.boldName, onCheckedChange = { v -> vm.updateForm { it.copy(boldName = v) } })
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.services_bold_price), modifier = Modifier.weight(1f))
+                    Switch(checked = form.boldPrice, onCheckedChange = { v -> vm.updateForm { it.copy(boldPrice = v) } })
                 }
                 if (form.id != null) {
                     TextButton(onClick = { confirmDelete = true }) {

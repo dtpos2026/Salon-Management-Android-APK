@@ -2,7 +2,10 @@ package com.dtpos.salonmanager.data.repository
 
 import com.dtpos.salonmanager.core.util.DateTimeUtils
 import com.dtpos.salonmanager.data.database.SalonDatabase
+import com.dtpos.salonmanager.data.database.entities.CashSessionEntity
+import com.dtpos.salonmanager.data.database.entities.CashTransactionEntity
 import com.dtpos.salonmanager.data.database.entities.SaleEntity
+import com.dtpos.salonmanager.data.database.model.ReceivedTotalRow
 import com.dtpos.salonmanager.data.database.model.CategoryTotalRow
 import com.dtpos.salonmanager.data.database.model.DayTotalRow
 import com.dtpos.salonmanager.data.database.model.NamedTotalRow
@@ -11,6 +14,8 @@ import com.dtpos.salonmanager.data.database.model.SalesSummaryRow
 import com.dtpos.salonmanager.data.database.model.StaffPerformanceRow
 import com.dtpos.salonmanager.domain.calc.BudgetCalculator
 import com.dtpos.salonmanager.domain.calc.BudgetLine
+import com.dtpos.salonmanager.domain.calc.CashBreakdown
+import com.dtpos.salonmanager.domain.calc.CashCalculator
 import com.dtpos.salonmanager.domain.calc.ProfitCalculator
 import com.dtpos.salonmanager.domain.calc.ProfitSummary
 import com.dtpos.salonmanager.domain.calc.TargetCalculator
@@ -19,6 +24,9 @@ import com.dtpos.salonmanager.domain.insights.BusinessSnapshot
 import com.dtpos.salonmanager.domain.insights.NamedAmount
 import com.dtpos.salonmanager.domain.insights.WeekdayStat
 import com.dtpos.salonmanager.domain.model.BudgetGroup
+import com.dtpos.salonmanager.domain.model.CashSessionStatus
+import com.dtpos.salonmanager.domain.model.PaymentMethod
+import com.dtpos.salonmanager.domain.model.StaffRole
 import com.dtpos.salonmanager.domain.model.DateRange
 import com.dtpos.salonmanager.domain.model.ExpenseType
 import com.dtpos.salonmanager.domain.model.Periods
@@ -61,6 +69,51 @@ data class ReportData(
     val personalExpensesByCategory: List<CategoryTotalRow>,
 ) {
     val averageSaleMinor: Long get() = if (sales.saleCount == 0) 0L else sales.totalMinor / sales.saleCount
+}
+
+/** Everything the dashboard shows for the chosen period (today, yesterday, week, month, a date). */
+data class PeriodSummary(
+    val range: DateRange,
+    val sales: SalesSummaryRow,
+    /** Money received per place: cash, each JazzCash / EasyPaisa / bank account, card. */
+    val received: List<ReceivedTotalRow>,
+    val businessExpensesMinor: Long,
+    val staffPaidMinor: Long,
+    val profit: ProfitSummary,
+    val staff: List<StaffPerformanceRow>,
+) {
+    val commissionMinor: Long get() = staff.sumOf { it.commissionMinor }
+}
+
+/** One staff member's day (or the owner's own work) on the Close Day report. */
+data class StaffDayLine(
+    val staffId: Long?,
+    val name: String?,
+    val isOwner: Boolean,
+    val customers: Int,
+    val services: Int,
+    val salesMinor: Long,
+    val commissionMinor: Long,
+)
+
+/** The day's full account before closing: sales, where the money is, staff, cash in the drawer. */
+data class DayCloseReport(
+    val day: LocalDate,
+    val sales: SalesSummaryRow,
+    val received: List<ReceivedTotalRow>,
+    val staff: List<StaffDayLine>,
+    val businessExpensesMinor: Long,
+    val staffPaidMinor: Long,
+    /** Old udhaar received in cash today. */
+    val duesCollectedMinor: Long,
+    val cash: CashBreakdown,
+    val session: CashSessionEntity?,
+    val profit: ProfitSummary,
+) {
+    val isClosed: Boolean get() = session?.status == CashSessionStatus.CLOSED
+    val ownerWorkMinor: Long get() = staff.filter { it.isOwner }.sumOf { it.salesMinor }
+    val commissionMinor: Long get() = staff.filterNot { it.isOwner }.sumOf { it.commissionMinor }
+    val onlineMinor: Long get() = received.filter { it.paymentMethod != PaymentMethod.CASH }.sumOf { it.totalMinor }
 }
 
 class ReportRepository(
@@ -113,6 +166,63 @@ class ReportRepository(
                 recentSales = recent,
             )
         }
+    }
+
+    fun observePeriod(range: DateRange): Flow<PeriodSummary> {
+        val from = range.startEpochDay
+        val to = range.endEpochDay
+        val money = combine(
+            saleDao.observeSummary(businessId, from, to),
+            expenseDao.observeTotal(businessId, ExpenseType.BUSINESS, from, to),
+            expenseDao.observeTotal(businessId, ExpenseType.PERSONAL, from, to),
+            staffDao.observeTotalPaid(businessId, from, to),
+        ) { sales, business, personal, staffPaid ->
+            Triple(sales, business to staffPaid, ProfitCalculator.summarize(sales.totalMinor, business, staffPaid, personal))
+        }
+        return combine(
+            money,
+            saleDao.observeReceivedBreakdown(businessId, from, to),
+            staffDao.observePerformance(businessId, from, to),
+        ) { (sales, costs, profit), received, staff ->
+            PeriodSummary(range, sales, received, costs.first, costs.second, profit, staff)
+        }
+    }
+
+    suspend fun buildDayClose(day: LocalDate): DayCloseReport {
+        val d = day.toEpochDay()
+        val sales = saleDao.summary(businessId, d, d)
+        val roles = staffDao.getAll(businessId).associate { it.id to it.role }
+        val staff = staffDao.observePerformance(businessId, d, d).first().map {
+            StaffDayLine(
+                staffId = it.staffId,
+                name = it.staffName,
+                isOwner = it.staffId != null && roles[it.staffId] == StaffRole.OWNER,
+                customers = it.customerCount,
+                services = it.serviceCount,
+                salesMinor = it.salesMinor,
+                commissionMinor = it.commissionMinor,
+            )
+        }
+        val business = expenseDao.total(businessId, ExpenseType.BUSINESS, d, d)
+        val personal = expenseDao.total(businessId, ExpenseType.PERSONAL, d, d)
+        val staffPaid = staffDao.totalPaid(businessId, d, d)
+        val cashDao = db.cashDao()
+        val session = cashDao.getSession(businessId, d)
+        return DayCloseReport(
+            day = day,
+            sales = sales,
+            received = saleDao.receivedBreakdown(businessId, d, d),
+            staff = staff,
+            businessExpensesMinor = business,
+            staffPaidMinor = staffPaid,
+            duesCollectedMinor = cashDao.sumByReference(businessId, d, CashTransactionEntity.REF_DUE),
+            cash = CashCalculator.breakdown(
+                session?.openingCashMinor ?: 0L,
+                cashDao.totalsByType(businessId, d).associate { it.type to it.totalMinor },
+            ),
+            session = session,
+            profit = ProfitCalculator.summarize(sales.totalMinor, business, staffPaid, personal),
+        )
     }
 
     suspend fun buildReport(range: DateRange): ReportData {

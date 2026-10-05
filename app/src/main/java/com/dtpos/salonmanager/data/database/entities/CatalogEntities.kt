@@ -1,5 +1,6 @@
 package com.dtpos.salonmanager.data.database.entities
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -52,6 +53,30 @@ data class ServiceEntity(
     val sortOrder: Int = 0,
     val createdAt: Long,
     val updatedAt: Long,
+    /** Photo for the service menu (style / beard look), stored in the app's private files. */
+    val imagePath: String? = null,
+    /** Print the service name in bold on receipts. */
+    @ColumnInfo(defaultValue = "0") val boldName: Boolean = false,
+    /** Print the price in bold on receipts. */
+    @ColumnInfo(defaultValue = "0") val boldPrice: Boolean = false,
+)
+
+/** A place the salon receives non-cash payments: JazzCash, EasyPaisa, bank account, card machine. */
+@Entity(
+    tableName = "payment_accounts",
+    indices = [Index(value = ["businessId", "isActive"])],
+    foreignKeys = [ForeignKey(entity = BusinessEntity::class, parentColumns = ["id"], childColumns = ["businessId"], onDelete = ForeignKey.CASCADE)],
+)
+data class PaymentAccountEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val businessId: Long,
+    val name: String,
+    val kind: com.dtpos.salonmanager.domain.model.AccountKind,
+    val accountTitle: String? = null,
+    val accountNumber: String? = null,
+    val isActive: Boolean = true,
+    val sortOrder: Int = 0,
+    val createdAt: Long,
 )
 
 @Entity(

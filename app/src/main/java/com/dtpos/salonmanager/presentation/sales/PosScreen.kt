@@ -19,7 +19,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.FilterChip
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -96,8 +101,8 @@ import com.dtpos.salonmanager.presentation.components.SegmentedChoice
 import com.dtpos.salonmanager.presentation.theme.SalonTheme
 
 @Composable
-fun PosScreen(initialCustomerId: Long?, onBack: () -> Unit, onSaleCompleted: (Long) -> Unit) {
-    val vm = appViewModel { PosViewModel(it, initialCustomerId) }
+fun PosScreen(initialCustomerId: Long?, onBack: () -> Unit, onSaleCompleted: (Long) -> Unit, editSaleId: Long? = null) {
+    val vm = appViewModel(key = "pos-${editSaleId ?: "new"}") { PosViewModel(it, initialCustomerId, editSaleId) }
     val state by vm.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     var showCustomerSheet by remember { mutableStateOf(false) }
@@ -118,7 +123,8 @@ fun PosScreen(initialCustomerId: Long?, onBack: () -> Unit, onSaleCompleted: (Lo
     Scaffold(
         topBar = {
             SalonTopBar(
-                title = stringResource(if (state.draft.step == PosStep.SERVICES) R.string.pos_title else R.string.pos_checkout),
+                title = state.draft.editingReceiptNumber?.let { stringResource(R.string.pos_editing_title, it) }
+                    ?: stringResource(if (state.draft.step == PosStep.SERVICES) R.string.pos_title else R.string.pos_checkout),
                 onBack = { if (state.draft.step == PosStep.CHECKOUT) vm.goTo(PosStep.SERVICES) else exit() },
                 actions = {
                     if (state.draft.cart.isNotEmpty()) {
@@ -276,28 +282,40 @@ private fun ServicesPane(
 private fun ServiceTile(service: ServiceEntity, quantity: Int, price: String, onClick: () -> Unit) {
     val selected = quantity > 0
     Card(
-        modifier = Modifier.fillMaxWidth().height(96.dp).clickable(onClick = onClick),
+        modifier = Modifier.fillMaxWidth().then(if (service.imagePath == null) Modifier.height(96.dp) else Modifier).clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
             containerColor = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface,
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
-        Column(Modifier.fillMaxSize().padding(12.dp), verticalArrangement = Arrangement.SpaceBetween) {
-            Row(verticalAlignment = Alignment.Top) {
-                Text(
-                    service.name,
-                    style = MaterialTheme.typography.titleSmall,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
-                if (selected) Badge { Text(quantity.toString()) }
+        if (service.imagePath != null) {
+            Box {
+                com.dtpos.salonmanager.presentation.services.ServicePhoto(service.imagePath, Modifier.fillMaxWidth().height(96.dp), maxSize = 240)
+                if (selected) Badge(Modifier.align(Alignment.TopEnd).padding(6.dp)) { Text(quantity.toString()) }
             }
-            Text(price, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+                Text(service.name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(price, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            }
+        } else {
+            Column(Modifier.fillMaxSize().padding(12.dp), verticalArrangement = Arrangement.SpaceBetween) {
+                Row(verticalAlignment = Alignment.Top) {
+                    Text(
+                        service.name,
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (selected) Badge { Text(quantity.toString()) }
+                }
+                Text(price, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            }
         }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun CheckoutPane(state: PosUiState, vm: PosViewModel, onPickCustomer: () -> Unit, modifier: Modifier) {
     val money = LocalMoney.current
@@ -314,8 +332,8 @@ private fun CheckoutPane(state: PosUiState, vm: PosViewModel, onPickCustomer: ()
                     Icon(Icons.Filled.Person, contentDescription = null)
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(state.draft.customer?.name ?: stringResource(R.string.walk_in_customer), style = MaterialTheme.typography.titleMedium)
-                        state.draft.customer?.phone?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+                        Text(state.customerName ?: stringResource(R.string.walk_in_customer), style = MaterialTheme.typography.titleMedium)
+                        (state.draft.customer?.phone ?: state.draft.snapshotPhone)?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                     }
                     TextButton(onClick = onPickCustomer) { Text(stringResource(R.string.action_change)) }
                 }
@@ -377,13 +395,49 @@ private fun CheckoutPane(state: PosUiState, vm: PosViewModel, onPickCustomer: ()
             ContentCard {
                 Text(stringResource(R.string.pos_payment_method), style = MaterialTheme.typography.titleSmall)
                 Spacer(Modifier.height(8.dp))
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    state.payOptions.forEach { option ->
+                        FilterChip(
+                            selected = state.draft.pay == option,
+                            onClick = { vm.onPay(option) },
+                            label = { Text(option.accountName ?: stringResource(option.method.labelRes)) },
+                            leadingIcon = if (state.draft.pay == option) {
+                                { Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                            } else {
+                                null
+                            },
+                        )
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
                 SegmentedChoice(
-                    options = PaymentMethod.entries.toList(),
-                    selected = state.draft.paymentMethod,
-                    label = { stringResource(it.labelRes) },
-                    onSelect = vm::onPaymentMethod,
+                    options = listOf(false, true),
+                    selected = state.draft.credit,
+                    label = { stringResource(if (it) R.string.pos_pay_credit else R.string.pos_pay_full) },
+                    onSelect = vm::onCredit,
                 )
-                if (state.draft.paymentMethod == PaymentMethod.CASH) {
+                if (state.draft.credit) {
+                    Spacer(Modifier.height(8.dp))
+                    if (state.customerName.isNullOrBlank()) {
+                        InfoBanner(
+                            text = stringResource(R.string.pos_credit_need_customer),
+                            icon = Icons.Filled.Person,
+                            container = SalonTheme.extended.warningContainer,
+                            content = SalonTheme.extended.warning,
+                            actionLabel = stringResource(R.string.action_change),
+                            onAction = onPickCustomer,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                    }
+                    AmountField(
+                        value = state.draft.paidNowInput,
+                        onValueChange = vm::onPaidNow,
+                        label = stringResource(R.string.pos_paid_now),
+                        currencySymbol = symbol,
+                        error = if (state.paidNowMinor == null || (state.paidNowMinor ?: 0L) > state.totals.totalMinor) stringResource(R.string.error_invalid_amount) else null,
+                        supporting = stringResource(R.string.pos_credit_balance, money.format(state.creditMinor)),
+                    )
+                } else if (state.draft.paymentMethod == PaymentMethod.CASH) {
                     Spacer(Modifier.height(8.dp))
                     AmountField(
                         value = state.draft.tenderedInput,
@@ -414,7 +468,11 @@ private fun CheckoutPane(state: PosUiState, vm: PosViewModel, onPickCustomer: ()
                     CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
                 } else {
                     Text(
-                        stringResource(R.string.pos_complete, money.format(state.totals.totalMinor)),
+                        when {
+                            state.draft.editingSaleId != null -> stringResource(R.string.pos_save_changes, money.format(state.totals.totalMinor))
+                            state.draft.credit -> stringResource(R.string.pos_complete_credit, money.format(state.creditMinor))
+                            else -> stringResource(R.string.pos_complete, money.format(state.totals.totalMinor))
+                        },
                         style = MaterialTheme.typography.titleMedium,
                     )
                 }

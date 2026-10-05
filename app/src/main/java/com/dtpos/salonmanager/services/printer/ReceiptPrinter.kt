@@ -54,6 +54,20 @@ class ReceiptPrinter(
         PrinterConnection.LAN -> lan.send(settings.lanHost, settings.lanPort, bytes, copies)
     }
 
+    /** Prints any slip (Close Day report, staff payment) on the active printer. */
+    suspend fun printLines(lines: List<PrintLine>): PrintResult {
+        val settings = settingsStore.current()
+        if (!settings.isConfigured) return PrintResult.Failure(PrinterError.NO_PRINTER_SELECTED)
+        return transmit(settings, buildBytes(lines, settings, logoPath = null), copies = 1)
+    }
+
+    /**
+     * Context for slip labels: English when a text-mode printer would get Urdu (its built-in
+     * font has Latin letters only), otherwise the app language.
+     */
+    suspend fun slipContext(): Context =
+        if (settingsStore.current().mode == PrintMode.TEXT && isRtl()) englishContext() else context
+
     /** Checks that a network printer answers on its IP and port (nothing is printed). */
     suspend fun checkLan(host: String, port: Int): PrintResult = lan.check(host, port)
 
@@ -206,6 +220,9 @@ class ReceiptPrinter(
         servedBy = context.getString(R.string.receipt_served_by),
         paidStamp = context.getString(R.string.receipt_paid_stamp),
         poweredBy = context.getString(R.string.receipt_powered_by, context.getString(R.string.app_name)),
+        paidNow = context.getString(R.string.receipt_paid_now),
+        balanceDue = context.getString(R.string.receipt_balance_due),
+        creditStamp = context.getString(R.string.receipt_credit_stamp),
     )
 
     companion object {

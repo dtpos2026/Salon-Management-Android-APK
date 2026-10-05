@@ -89,8 +89,10 @@ class AppContainer(
     val targetRepository by lazy { TargetRepository(database, businessId) }
     val saleRepository by lazy { SaleRepository(database, businessId) { licenseManager.state.value.isReadOnly } }
     val reportRepository by lazy { ReportRepository(database, businessId, staffRepository) }
+    val paymentAccountRepository by lazy { com.dtpos.salonmanager.data.repository.PaymentAccountRepository(database, businessId) }
 
     val logoStore by lazy { LogoStore(app) }
+    val serviceImageStore by lazy { com.dtpos.salonmanager.services.branding.ServiceImageStore(app) }
 
     /** Appearance, colour theme, language and sound preferences (read at startup, so not lazy). */
     val uiPreferences = UiPreferences(app)

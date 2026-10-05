@@ -27,6 +27,7 @@ import com.dtpos.salonmanager.data.database.entities.BookingEntity
 import com.dtpos.salonmanager.data.database.entities.ExpenseCategoryEntity
 import com.dtpos.salonmanager.data.database.entities.ExpenseEntity
 import com.dtpos.salonmanager.data.database.entities.LicenseEntity
+import com.dtpos.salonmanager.data.database.entities.PaymentAccountEntity
 import com.dtpos.salonmanager.data.database.entities.ReceiptSequenceEntity
 import com.dtpos.salonmanager.data.database.entities.SaleEntity
 import com.dtpos.salonmanager.data.database.entities.SaleItemEntity
@@ -58,6 +59,7 @@ import com.dtpos.salonmanager.data.database.entities.VisitEntity
         CashTransactionEntity::class,
         DueEntity::class,
         BookingEntity::class,
+        PaymentAccountEntity::class,
     ],
     version = SalonDatabase.VERSION,
     exportSchema = true,
@@ -76,10 +78,11 @@ abstract class SalonDatabase : RoomDatabase() {
     abstract fun cashDao(): CashDao
     abstract fun dueDao(): DueDao
     abstract fun bookingDao(): BookingDao
+    abstract fun paymentAccountDao(): com.dtpos.salonmanager.data.database.dao.PaymentAccountDao
 
     companion object {
         const val NAME = "salon.db"
-        const val VERSION = 2
+        const val VERSION = 3
 
         /**
          * No destructive fallback is configured on purpose: if a migration is ever missing the

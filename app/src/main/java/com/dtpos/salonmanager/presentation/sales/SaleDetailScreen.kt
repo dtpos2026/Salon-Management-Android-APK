@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
@@ -232,6 +233,7 @@ fun SaleDetailScreen(
     onBack: () -> Unit,
     onNewSale: () -> Unit,
     onOpenCustomer: (Long) -> Unit,
+    onEdit: (Long) -> Unit = {},
 ) {
     val container = LocalAppContainer.current
     val vm = appViewModel(key = "sale_$saleId") { SaleDetailViewModel(it, saleId, isNewSale) }
@@ -376,8 +378,15 @@ fun SaleDetailScreen(
                 }
             }
             if (!data.isVoided) {
-                TextButton(onClick = { showVoid = true }) {
-                    Text(stringResource(R.string.sale_void), color = MaterialTheme.colorScheme.error)
+                Row(Modifier.widthIn(max = 420.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    TextButton(onClick = { onEdit(saleId) }) {
+                        Icon(Icons.Filled.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(stringResource(R.string.sale_edit))
+                    }
+                    TextButton(onClick = { showVoid = true }) {
+                        Text(stringResource(R.string.sale_void), color = MaterialTheme.colorScheme.error)
+                    }
                 }
             }
         }

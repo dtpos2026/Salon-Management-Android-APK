@@ -24,6 +24,8 @@ data class DueEntity(
     val createdAt: Long,
     val settledAt: Long?,
     val lastReminderAt: Long?,
+    /** The credit sale this due came from (null for a due added by hand). */
+    val saleId: Long? = null,
 ) {
     val balanceMinor: Long get() = (amountMinor - paidMinor).coerceAtLeast(0)
 }

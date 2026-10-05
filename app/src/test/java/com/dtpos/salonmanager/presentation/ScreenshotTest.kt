@@ -29,6 +29,7 @@ import com.dtpos.salonmanager.services.printer.ReceiptStyle
 import com.dtpos.salonmanager.services.printer.ReceiptLabels
 import kotlinx.coroutines.runBlocking
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -246,5 +247,74 @@ class ScreenshotTest {
         )
         FileOutputStream(File(outDir, "11-token.png")).use { token.compress(Bitmap.CompressFormat.PNG, 100, it) }
         compose.setContent { Text("ok") }
+    }
+
+    @Test
+    fun monoReceiptsTokenSlipAndCloseDay() {
+        val receipt = ReceiptData(
+            saleId = 2, businessName = "Classic Cuts Barbershop", businessPhone = "0300-2223344", businessAddress = "45 Main Street, Burewala",
+            logoPath = null, headerNote = null, footer = "Walk-ins welcome!\nOpen Tue-Sun 10AM-10PM", currency = CurrencyConfig(),
+            showStaff = true, showLogo = false, receiptNumber = "SAL-000124", createdAtMillis = System.currentTimeMillis(),
+            customerName = "Marcus Taylor", customerPhone = null,
+            items = listOf(
+                ReceiptItem("Men's haircut", "Tony", 1, 50_000, 0, 50_000, boldName = true),
+                ReceiptItem("Beard trim & shape", "Tony", 1, 30_000, 0, 30_000),
+                ReceiptItem("Hot towel shave", "Asif", 1, 25_000, 0, 25_000, boldPrice = true),
+            ),
+            subtotalMinor = 105_000, itemDiscountMinor = 0, saleDiscountMinor = 5_000, totalMinor = 100_000,
+            paymentMethod = PaymentMethod.BANK, amountTenderedMinor = null, changeMinor = 0, isVoided = false, voidReason = null,
+            paymentAccountName = "JazzCash", creditMinor = 40_000,
+        )
+        val labels = container.receiptPrinter.labels(receipt.paymentMethod)
+        val designs = listOf(ReceiptStyle.MONO, ReceiptStyle.TABLE).map { ReceiptImageRenderer(384, style = it).render(receipt, labels, logo = null) } +
+            ReceiptImageRenderer(576, style = ReceiptStyle.TABLE, forPrinter = true).render(receipt.copy(creditMinor = 0), labels, logo = null)
+        designs.forEach { assertTrue(it.height > 500) }
+        val sheet = Bitmap.createBitmap(designs.sumOf { it.width } + 40 * (designs.size + 1), designs.maxOf { it.height } + 80, Bitmap.Config.ARGB_8888)
+        android.graphics.Canvas(sheet).apply {
+            drawColor(android.graphics.Color.rgb(0xEE, 0xEB, 0xF3))
+            var x = 40f
+            designs.forEach { drawBitmap(it, x, 40f, null); x += it.width + 40 }
+        }
+        FileOutputStream(File(outDir, "12-receipt-mono-designs.jpg")).use { sheet.compress(Bitmap.CompressFormat.JPEG, 85, it) }
+
+        // Token slip exactly as the 58 mm printer gets it.
+        val slip = com.dtpos.salonmanager.services.export.TokenImage.render(
+            salon = "Royal Cuts Salon", title = "Your token", token = 7, name = "Ali Raza",
+            whenText = "05 Oct 2026  ·  4:30 PM", service = "Hair cut", footer = "Please wait for your turn",
+            accent = android.graphics.Color.BLACK, width = 384, forPrinter = true,
+        )
+        assertEquals(384, slip.width)
+        FileOutputStream(File(outDir, "13-token-printer-58mm.png")).use { slip.compress(Bitmap.CompressFormat.PNG, 100, it) }
+
+        runBlocking {
+            container.initialize()
+            container.demoDataSeeder.seed()
+            container.businessRepository.completeSetup("Royal Cuts", "0300-1234567", "Main Bazar, Burewala", CurrencyConfig(), addDefaultServices = true)
+            container.paymentAccountRepository.save(null, "JazzCash", com.dtpos.salonmanager.domain.model.AccountKind.WALLET, null, "0300-1111111")
+        }
+        compose.setContent {
+            SalonTheme(darkTheme = false, colorTheme = ColorTheme.ROYAL_PURPLE) {
+                CompositionLocalProvider(LocalAppContainer provides container) {
+                    com.dtpos.salonmanager.presentation.cash.CloseDayScreen(onBack = {})
+                }
+            }
+        }
+        repeat(5) {
+            Thread.sleep(400)
+            compose.waitForIdle()
+        }
+        capture("14-close-day")
+        compose.setContent {
+            SalonTheme(darkTheme = false, colorTheme = ColorTheme.ROYAL_PURPLE) {
+                CompositionLocalProvider(LocalAppContainer provides container) {
+                    com.dtpos.salonmanager.presentation.settings.PaymentAccountsScreen(onBack = {})
+                }
+            }
+        }
+        repeat(3) {
+            Thread.sleep(300)
+            compose.waitForIdle()
+        }
+        capture("15-payment-accounts")
     }
 }

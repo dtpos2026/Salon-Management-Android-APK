@@ -49,6 +49,10 @@ data class ReceiptLabels(
     val paidStamp: String = "PAID",
     /** e.g. "Powered by DT Salon Management"; blank hides the line. */
     val poweredBy: String = "",
+    /** Credit (udhaar) sale: paid now, the balance still owed and the stamp. */
+    val paidNow: String = "Paid",
+    val balanceDue: String = "Balance due",
+    val creditStamp: String = "CREDIT",
 )
 
 object ReceiptLayout {
@@ -81,7 +85,7 @@ object ReceiptLayout {
 
         receipt.items.forEach { item ->
             val name = if (item.quantity > 1) "${item.serviceName} x${item.quantity}" else item.serviceName
-            lines += PrintLine.Columns(name, money.plain(item.unitPriceMinor * item.quantity))
+            lines += PrintLine.Columns(name, money.plain(item.unitPriceMinor * item.quantity), bold = item.boldName || item.boldPrice)
             if (item.quantity > 1) {
                 lines += PrintLine.Text("  ${item.quantity} x ${money.plain(item.unitPriceMinor)}")
             }
@@ -99,10 +103,14 @@ object ReceiptLayout {
             lines += PrintLine.Columns(labels.discount, "-" + money.plain(receipt.totalDiscountMinor))
         }
         lines += PrintLine.Columns(labels.total, money.format(receipt.totalMinor), bold = true, large = true)
-        lines += PrintLine.Columns(labels.payment, labels.paymentMethodName)
+        lines += PrintLine.Columns(labels.payment, receipt.paymentAccountName ?: labels.paymentMethodName)
         receipt.amountTenderedMinor?.takeIf { it > 0 }?.let {
             lines += PrintLine.Columns(labels.tendered, money.plain(it))
             lines += PrintLine.Columns(labels.change, money.plain(receipt.changeMinor))
+        }
+        if (receipt.creditMinor > 0) {
+            lines += PrintLine.Columns(labels.paidNow, money.plain(receipt.paidMinor))
+            lines += PrintLine.Columns(labels.balanceDue, money.format(receipt.creditMinor), bold = true)
         }
         lines += PrintLine.Separator('=')
         val footer = receipt.footer?.takeIf { it.isNotBlank() } ?: labels.defaultFooter

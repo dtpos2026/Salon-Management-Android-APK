@@ -4,7 +4,6 @@
     <string name="dashboard_greeting_sub">Aaj aap ke salon ka haal yeh hai</string>
     <string name="dashboard_demo_badge">DEMO DATA</string>
     <string name="dashboard_new_sale">Nayi Sale</string>
-    <string name="dashboard_today">Aaj</string>
     <string name="dashboard_sales">Aaj ki sales</string>
     <string name="dashboard_expenses">Aaj ke kharche</string>
     <string name="dashboard_incl_staff">staff payment shamil %1$s</string>
@@ -12,8 +11,6 @@
     <string name="dashboard_cash_received">Cash wasool</string>
     <string name="dashboard_customers">Customers</string>
     <string name="dashboard_services">Services ho gayin</string>
-    <string name="dashboard_staff_outstanding">Staff ki baqi payment</string>
-    <string name="dashboard_this_month">Is mahine</string>
     <string name="dashboard_targets">Targets</string>
     <string name="dashboard_targets_none">Apni progress dekhne ke liye rozana aur mahana target set karein.</string>
     <string name="dashboard_target_detail">%1$s / %2$s · %3$s baqi</string>

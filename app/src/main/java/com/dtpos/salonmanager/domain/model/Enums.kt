@@ -7,7 +7,8 @@ enum class PaymentMethod { CASH, CARD, BANK, OTHER }
 
 enum class Gender { UNSPECIFIED, MALE, FEMALE, OTHER }
 
-enum class StaffRole { BARBER, HAIRDRESSER, BEAUTICIAN, RECEPTIONIST, OTHER }
+/** OWNER: the salon owner doing the work himself; his work earns no commission and is shown apart. */
+enum class StaffRole { BARBER, HAIRDRESSER, BEAUTICIAN, RECEPTIONIST, OTHER, OWNER }
 
 enum class SalaryType {
     FIXED,
@@ -29,6 +30,9 @@ enum class SaleStatus { COMPLETED, VOIDED }
 enum class BookingStatus { WAITING, SERVING, DONE, CANCELLED }
 
 enum class DiscountType { AMOUNT, PERCENT }
+
+/** Where non-cash money is received: JazzCash / EasyPaisa (WALLET), a bank account, a card machine. */
+enum class AccountKind { WALLET, BANK, CARD, OTHER }
 
 /** Movements in the physical cash drawer. Amounts are signed: + into the drawer, - out of it. */
 enum class CashTxType { SALE, SALE_VOID, EXPENSE, STAFF_PAYMENT, CASH_IN, CASH_OUT }

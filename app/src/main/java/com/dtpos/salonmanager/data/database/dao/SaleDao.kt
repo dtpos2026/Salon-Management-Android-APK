@@ -10,6 +10,7 @@ import com.dtpos.salonmanager.data.database.entities.VisitEntity
 import com.dtpos.salonmanager.data.database.model.DayTotalRow
 import com.dtpos.salonmanager.data.database.model.NamedTotalRow
 import com.dtpos.salonmanager.data.database.model.PaymentMethodTotalRow
+import com.dtpos.salonmanager.data.database.model.ReceivedTotalRow
 import com.dtpos.salonmanager.data.database.model.SalesSummaryRow
 import kotlinx.coroutines.flow.Flow
 
@@ -87,9 +88,10 @@ interface SaleDao {
         """
         SELECT COALESCE(SUM(totalMinor), 0) AS totalMinor,
             COUNT(*) AS saleCount,
-            COALESCE(SUM(CASE WHEN paymentMethod = 'CASH' THEN totalMinor ELSE 0 END), 0) AS cashMinor,
+            COALESCE(SUM(CASE WHEN paymentMethod = 'CASH' THEN totalMinor - creditMinor ELSE 0 END), 0) AS cashMinor,
             COALESCE(SUM(itemDiscountMinor + saleDiscountMinor), 0) AS discountMinor,
-            COALESCE(SUM(serviceCount), 0) AS serviceCount
+            COALESCE(SUM(serviceCount), 0) AS serviceCount,
+            COALESCE(SUM(creditMinor), 0) AS creditMinor
         FROM sales
         WHERE businessId = :businessId AND status = 'COMPLETED' AND businessDate BETWEEN :fromDay AND :toDay
         """,
@@ -100,9 +102,10 @@ interface SaleDao {
         """
         SELECT COALESCE(SUM(totalMinor), 0) AS totalMinor,
             COUNT(*) AS saleCount,
-            COALESCE(SUM(CASE WHEN paymentMethod = 'CASH' THEN totalMinor ELSE 0 END), 0) AS cashMinor,
+            COALESCE(SUM(CASE WHEN paymentMethod = 'CASH' THEN totalMinor - creditMinor ELSE 0 END), 0) AS cashMinor,
             COALESCE(SUM(itemDiscountMinor + saleDiscountMinor), 0) AS discountMinor,
-            COALESCE(SUM(serviceCount), 0) AS serviceCount
+            COALESCE(SUM(serviceCount), 0) AS serviceCount,
+            COALESCE(SUM(creditMinor), 0) AS creditMinor
         FROM sales
         WHERE businessId = :businessId AND status = 'COMPLETED' AND businessDate BETWEEN :fromDay AND :toDay
         """,
@@ -133,7 +136,7 @@ interface SaleDao {
 
     @Query(
         """
-        SELECT paymentMethod, COALESCE(SUM(totalMinor), 0) AS totalMinor, COUNT(*) AS saleCount
+        SELECT paymentMethod, COALESCE(SUM(totalMinor - creditMinor), 0) AS totalMinor, COUNT(*) AS saleCount
         FROM sales
         WHERE businessId = :businessId AND status = 'COMPLETED' AND businessDate BETWEEN :fromDay AND :toDay
         GROUP BY paymentMethod
@@ -176,4 +179,38 @@ interface SaleDao {
         """,
     )
     suspend fun returningCustomers(businessId: Long, fromDay: Long, toDay: Long): Int
+
+    /** Money received per place (cash, each account, or the plain method) - credit not included. */
+    @Query(
+        """
+        SELECT paymentMethod, paymentAccountId AS accountId, MAX(paymentAccountName) AS accountName,
+            COALESCE(SUM(totalMinor - creditMinor), 0) AS totalMinor, COUNT(*) AS saleCount
+        FROM sales
+        WHERE businessId = :businessId AND status = 'COMPLETED' AND businessDate BETWEEN :fromDay AND :toDay
+        GROUP BY paymentMethod, paymentAccountId
+        ORDER BY totalMinor DESC
+        """,
+    )
+    fun observeReceivedBreakdown(businessId: Long, fromDay: Long, toDay: Long): Flow<List<ReceivedTotalRow>>
+
+    @Query(
+        """
+        SELECT paymentMethod, paymentAccountId AS accountId, MAX(paymentAccountName) AS accountName,
+            COALESCE(SUM(totalMinor - creditMinor), 0) AS totalMinor, COUNT(*) AS saleCount
+        FROM sales
+        WHERE businessId = :businessId AND status = 'COMPLETED' AND businessDate BETWEEN :fromDay AND :toDay
+        GROUP BY paymentMethod, paymentAccountId
+        ORDER BY totalMinor DESC
+        """,
+    )
+    suspend fun receivedBreakdown(businessId: Long, fromDay: Long, toDay: Long): List<ReceivedTotalRow>
+
+    @androidx.room.Update
+    suspend fun updateSale(sale: SaleEntity)
+
+    @Query("DELETE FROM sale_items WHERE saleId = :saleId")
+    suspend fun deleteItems(saleId: Long)
+
+    @Query("DELETE FROM visits WHERE saleId = :saleId")
+    suspend fun deleteVisit(saleId: Long)
 }

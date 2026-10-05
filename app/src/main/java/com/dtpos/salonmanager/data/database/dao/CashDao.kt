@@ -63,6 +63,14 @@ interface CashDao {
     )
     suspend fun totalsByType(businessId: Long, day: Long): List<CashTypeTotalRow>
 
+    @Query(
+        """
+        SELECT COALESCE(SUM(amountMinor), 0) FROM cash_transactions
+        WHERE businessId = :businessId AND txDate = :day AND referenceType = :referenceType
+        """,
+    )
+    suspend fun sumByReference(businessId: Long, day: Long, referenceType: String): Long
+
     @Query("SELECT * FROM cash_transactions WHERE businessId = :businessId AND txDate = :day ORDER BY createdAt DESC")
     fun observeTransactions(businessId: Long, day: Long): Flow<List<CashTransactionEntity>>
 }

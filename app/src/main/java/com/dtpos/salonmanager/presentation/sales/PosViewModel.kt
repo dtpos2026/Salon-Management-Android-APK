@@ -8,6 +8,8 @@ import com.dtpos.salonmanager.core.util.Percent
 import com.dtpos.salonmanager.core.validation.FieldResult
 import com.dtpos.salonmanager.core.validation.Validators
 import com.dtpos.salonmanager.data.database.entities.CustomerEntity
+import com.dtpos.salonmanager.data.database.entities.PaymentAccountEntity
+import com.dtpos.salonmanager.data.repository.PaymentAccountRepository
 import com.dtpos.salonmanager.data.database.entities.ServiceEntity
 import com.dtpos.salonmanager.data.database.entities.StaffEntity
 import com.dtpos.salonmanager.data.database.model.CustomerListRow
@@ -43,6 +45,13 @@ import java.util.UUID
 
 enum class PosStep { SERVICES, CHECKOUT }
 
+/** Where the money goes: the cash drawer, a JazzCash / EasyPaisa / bank account, or a plain method. */
+data class PayOption(val method: PaymentMethod, val accountId: Long? = null, val accountName: String? = null) {
+    companion object {
+        val CASH = PayOption(PaymentMethod.CASH)
+    }
+}
+
 /** Editable POS state (catalog data comes from separate flows). */
 data class PosDraft(
     val step: PosStep = PosStep.SERVICES,
@@ -53,12 +62,23 @@ data class PosDraft(
     val customer: CustomerEntity? = null,
     val discountType: DiscountType = DiscountType.AMOUNT,
     val discountInput: String = "",
-    val paymentMethod: PaymentMethod = PaymentMethod.CASH,
+    val pay: PayOption = PayOption.CASH,
     val tenderedInput: String = "",
     val note: String = "",
     val saving: Boolean = false,
     val problems: List<CartProblem> = emptyList(),
-)
+    /** Udhaar: the customer pays part (or nothing) now and the rest is a pending bill. */
+    val credit: Boolean = false,
+    val paidNowInput: String = "",
+    /** Set when an existing receipt is being corrected. */
+    val editingSaleId: Long? = null,
+    val editingReceiptNumber: String? = null,
+    /** Customer name / phone kept on a receipt whose customer record no longer exists. */
+    val snapshotName: String? = null,
+    val snapshotPhone: String? = null,
+) {
+    val paymentMethod: PaymentMethod get() = pay.method
+}
 
 data class PosUiState(
     val draft: PosDraft = PosDraft(),
@@ -69,7 +89,23 @@ data class PosUiState(
     val discountValid: Boolean = true,
     val tenderedMinor: Long? = null,
     val readOnly: Boolean = false,
+    val accounts: List<PaymentAccountEntity> = emptyList(),
+    /** Paid now when selling on udhaar (null = invalid input). */
+    val paidNowMinor: Long? = 0,
 ) {
+    /** Cash first, then the owner's accounts; without accounts the plain card / bank / other methods. */
+    val payOptions: List<PayOption>
+        get() {
+            val fromAccounts = accounts.map { PayOption(PaymentAccountRepository.methodFor(it.kind), it.id, it.name) }
+            val base = listOf(PayOption.CASH) + fromAccounts.ifEmpty {
+                listOf(PayOption(PaymentMethod.CARD), PayOption(PaymentMethod.BANK), PayOption(PaymentMethod.OTHER))
+            }
+            return if (draft.pay in base) base else base + draft.pay
+        }
+    val creditMinor: Long
+        get() = if (!draft.credit) 0L else (totals.totalMinor - (paidNowMinor ?: 0L)).coerceAtLeast(0L)
+    val customerName: String? get() = draft.customer?.name ?: draft.snapshotName
+
     val filteredServices: List<ServiceEntity>
         get() = services.filter { s ->
             (draft.category == null || s.category == draft.category) &&
@@ -81,7 +117,7 @@ data class PosUiState(
 }
 
 @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
-class PosViewModel(private val container: AppContainer, initialCustomerId: Long?) : BaseViewModel() {
+class PosViewModel(private val container: AppContainer, initialCustomerId: Long?, editSaleId: Long? = null) : BaseViewModel() {
 
     private val draft = MutableStateFlow(PosDraft())
 
@@ -90,9 +126,10 @@ class PosViewModel(private val container: AppContainer, initialCustomerId: Long?
         container.serviceRepository.observeActive(),
         container.staffRepository.observeActive(),
         container.licenseManager.state,
-    ) { d, services, staff, license ->
+        container.paymentAccountRepository.observeActive(),
+    ) { d, services, staff, license, accounts ->
         val discount = discountOf(d)
-        val tendered = if (d.paymentMethod == PaymentMethod.CASH) Money.parse(d.tenderedInput) else null
+        val tendered = if (d.paymentMethod == PaymentMethod.CASH && !d.credit) Money.parse(d.tenderedInput) else null
         PosUiState(
             draft = d,
             services = services,
@@ -102,6 +139,8 @@ class PosViewModel(private val container: AppContainer, initialCustomerId: Long?
             discountValid = discount != null,
             tenderedMinor = tendered,
             readOnly = license.isReadOnly,
+            accounts = accounts,
+            paidNowMinor = if (d.paidNowInput.isBlank()) 0L else Money.parse(d.paidNowInput),
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PosUiState())
 
@@ -119,6 +158,7 @@ class PosViewModel(private val container: AppContainer, initialCustomerId: Long?
     val completed: SharedFlow<Long> = _completed.asSharedFlow()
 
     init {
+        if (editSaleId != null) loadForEdit(editSaleId)
         if (initialCustomerId != null) {
             viewModelScope.launch {
                 container.customerRepository.get(initialCustomerId)?.let { c -> draft.update { it.copy(customer = c) } }
@@ -138,7 +178,7 @@ class PosViewModel(private val container: AppContainer, initialCustomerId: Long?
         customerQuery.value = value
     }
 
-    fun selectCustomer(customer: CustomerEntity?) = draft.update { it.copy(customer = customer) }
+    fun selectCustomer(customer: CustomerEntity?) = draft.update { it.copy(customer = customer, snapshotName = null, snapshotPhone = null) }
 
     /** Quick customer creation from the POS (name + optional phone). */
     fun quickAddCustomer(name: String, phone: String, onDone: () -> Unit) {
@@ -244,7 +284,52 @@ class PosViewModel(private val container: AppContainer, initialCustomerId: Long?
 
     fun onDiscountType(type: DiscountType) = draft.update { it.copy(discountType = type, discountInput = "") }
     fun onDiscountInput(value: String) = draft.update { it.copy(discountInput = value, problems = emptyList()) }
-    fun onPaymentMethod(method: PaymentMethod) = draft.update { it.copy(paymentMethod = method, problems = emptyList()) }
+    fun onPay(option: PayOption) = draft.update { it.copy(pay = option, problems = emptyList()) }
+    fun onCredit(credit: Boolean) = draft.update { it.copy(credit = credit, paidNowInput = "", problems = emptyList()) }
+    fun onPaidNow(value: String) = draft.update { it.copy(paidNowInput = value) }
+
+    /** Loads a completed receipt into the cart so the owner can correct it. */
+    private fun loadForEdit(saleId: Long) = launchSafe {
+        val loaded = container.saleRepository.saleWithItems(saleId)
+        if (loaded == null) {
+            showMessage(R.string.error_not_found)
+            return@launchSafe
+        }
+        val sale = loaded.sale
+        val customer = sale.customerId?.let { container.customerRepository.get(it) }
+        draft.value = PosDraft(
+            step = PosStep.CHECKOUT,
+            cart = loaded.items.map {
+                CartLine(
+                    key = UUID.randomUUID().toString(),
+                    serviceId = it.serviceId,
+                    serviceName = it.serviceName,
+                    staffId = it.staffId,
+                    staffName = it.staffName,
+                    unitPriceMinor = it.unitPriceMinor,
+                    quantity = it.quantity,
+                    discountMinor = it.lineDiscountMinor,
+                    commissionBps = it.commissionBps,
+                )
+            },
+            customer = customer,
+            discountType = sale.saleDiscountType,
+            discountInput = when {
+                sale.saleDiscountValue <= 0L -> ""
+                sale.saleDiscountType == DiscountType.AMOUNT -> Money.toInput(sale.saleDiscountValue)
+                else -> Percent.formatBps(sale.saleDiscountValue.toInt())
+            },
+            pay = PayOption(sale.paymentMethod, sale.paymentAccountId, sale.paymentAccountName),
+            tenderedInput = sale.amountTenderedMinor?.let(Money::toInput).orEmpty(),
+            note = sale.note.orEmpty(),
+            credit = sale.creditMinor > 0,
+            paidNowInput = if (sale.creditMinor > 0 && sale.paidMinor > 0) Money.toInput(sale.paidMinor) else "",
+            editingSaleId = sale.id,
+            editingReceiptNumber = sale.receiptNumber,
+            snapshotName = if (customer == null) sale.customerName else null,
+            snapshotPhone = if (customer == null) sale.customerPhone else null,
+        )
+    }
     fun onTendered(value: String) = draft.update { it.copy(tenderedInput = value, problems = emptyList()) }
     fun onNote(value: String) = draft.update { it.copy(note = value.take(Validators.MAX_NOTE_LENGTH)) }
 
@@ -260,10 +345,27 @@ class PosViewModel(private val container: AppContainer, initialCustomerId: Long?
             showMessage(R.string.error_invalid_amount)
             return
         }
-        val tendered = if (d.paymentMethod == PaymentMethod.CASH && d.tenderedInput.isNotBlank()) Money.parse(d.tenderedInput) else null
-        if (d.paymentMethod == PaymentMethod.CASH && d.tenderedInput.isNotBlank() && tendered == null) {
+        val cashTendered = d.paymentMethod == PaymentMethod.CASH && !d.credit && d.tenderedInput.isNotBlank()
+        val tendered = if (cashTendered) Money.parse(d.tenderedInput) else null
+        if (cashTendered && tendered == null) {
             showMessage(R.string.error_invalid_amount)
             return
+        }
+        val s = state.value
+        if (d.credit) {
+            if (s.customerName.isNullOrBlank()) {
+                showMessage(R.string.pos_credit_need_customer)
+                return
+            }
+            val paidNow = s.paidNowMinor
+            if (paidNow == null || paidNow > s.totals.totalMinor) {
+                showMessage(R.string.error_invalid_amount)
+                return
+            }
+            if (s.creditMinor <= 0L) {
+                showMessage(R.string.pos_credit_nothing)
+                return
+            }
         }
         val problems = SaleCalculator.validate(d.cart, discount, tendered)
         if (problems.isNotEmpty()) {
@@ -273,18 +375,21 @@ class PosViewModel(private val container: AppContainer, initialCustomerId: Long?
         }
         draft.update { it.copy(saving = true) }
         launchSafe {
-            val result = container.saleRepository.completeSale(
-                NewSaleRequest(
-                    customerId = d.customer?.id,
-                    customerName = d.customer?.name,
-                    customerPhone = d.customer?.phone,
-                    lines = d.cart,
-                    discount = discount,
-                    paymentMethod = d.paymentMethod,
-                    amountTenderedMinor = tendered,
-                    note = d.note,
-                ),
+            val request = NewSaleRequest(
+                customerId = d.customer?.id,
+                customerName = d.customer?.name ?: d.snapshotName,
+                customerPhone = d.customer?.phone ?: d.snapshotPhone,
+                lines = d.cart,
+                discount = discount,
+                paymentMethod = d.paymentMethod,
+                amountTenderedMinor = tendered,
+                note = d.note,
+                paymentAccountId = d.pay.accountId,
+                paymentAccountName = d.pay.accountName,
+                creditMinor = s.creditMinor,
             )
+            val result = d.editingSaleId?.let { container.saleRepository.updateSale(it, request) }
+                ?: container.saleRepository.completeSale(request)
             when (result) {
                 is DataResult.Success -> {
                     draft.value = PosDraft(defaultStaffId = d.defaultStaffId)

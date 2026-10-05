@@ -154,17 +154,31 @@ private fun SalonNavHost(nav: NavHostController) {
 
         composable(
             Routes.POS,
-            arguments = listOf(navArgument("customerId") { type = NavType.LongType; defaultValue = -1L }),
+            arguments = listOf(
+                navArgument("customerId") { type = NavType.LongType; defaultValue = -1L },
+                navArgument("editSaleId") { type = NavType.LongType; defaultValue = -1L },
+            ),
         ) { entry ->
-            PosScreen(
-                initialCustomerId = entry.arguments?.getLong("customerId")?.takeIf { it > 0 },
-                onBack = back,
-                onSaleCompleted = { saleId ->
-                    nav.navigate(Routes.saleDetail(saleId, fresh = true)) {
-                        popUpTo(Routes.POS) { inclusive = true }
-                    }
-                },
-            )
+            val editSaleId = entry.arguments?.getLong("editSaleId")?.takeIf { it > 0 }
+            val pos: @Composable () -> Unit = {
+                PosScreen(
+                    initialCustomerId = entry.arguments?.getLong("customerId")?.takeIf { it > 0 },
+                    editSaleId = editSaleId,
+                    onBack = back,
+                    onSaleCompleted = { saleId ->
+                        if (editSaleId != null) {
+                            // The receipt screen below shows the corrected receipt.
+                            nav.popBackStack()
+                        } else {
+                            nav.navigate(Routes.saleDetail(saleId, fresh = true)) {
+                                popUpTo(Routes.POS) { inclusive = true }
+                            }
+                        }
+                    },
+                )
+            }
+            // Correcting a receipt is for the owner: it asks for the owner PIN when one is set.
+            if (editSaleId != null) SecuredArea(ProtectedArea.SETTINGS) { pos() } else pos()
         }
         composable(
             Routes.SALE_DETAIL,
@@ -181,6 +195,7 @@ private fun SalonNavHost(nav: NavHostController) {
                     nav.navigate(Routes.pos()) { popUpTo(Routes.SALE_DETAIL) { inclusive = true } }
                 },
                 onOpenCustomer = { nav.navigate(Routes.customerDetail(it)) },
+                onEdit = { nav.navigate(Routes.editSale(it)) },
             )
         }
 
@@ -264,6 +279,17 @@ private fun SalonNavHost(nav: NavHostController) {
         composable(Routes.PROMOTIONS) { PromotionsScreen(onBack = back) }
         composable(Routes.SUPPORT) { SupportScreen(onBack = back) }
         composable(Routes.TOKENS) { TokensScreen(onBack = back) }
+        composable(Routes.CLOSE_DAY) { com.dtpos.salonmanager.presentation.cash.CloseDayScreen(onBack = back) }
+        composable(Routes.MENU) {
+            com.dtpos.salonmanager.presentation.services.MenuScreen(
+                onBack = back,
+                onNewSale = { nav.navigate(Routes.pos()) },
+                onManage = { nav.navigate(Routes.SERVICES) },
+            )
+        }
+        composable(Routes.PAYMENT_ACCOUNTS) {
+            SecuredArea(ProtectedArea.SETTINGS) { com.dtpos.salonmanager.presentation.settings.PaymentAccountsScreen(onBack = back) }
+        }
         composable(Routes.AI) { SecuredArea(ProtectedArea.REPORTS) { AiAssistantScreen(onBack = back, onOpenInsights = { nav.navigate(Routes.INSIGHTS) }) } }
         composable(Routes.INSIGHTS) { SecuredArea(ProtectedArea.REPORTS) { InsightsScreen(onBack = back) } }
 

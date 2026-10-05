@@ -63,4 +63,9 @@ data class NewSaleRequest(
     /** Cash handed over by the customer (optional; used to show change). */
     val amountTenderedMinor: Long?,
     val note: String?,
+    /** JazzCash / EasyPaisa / bank account the money went to (null = cash or plain method). */
+    val paymentAccountId: Long? = null,
+    val paymentAccountName: String? = null,
+    /** Udhaar: the part of the total not paid now. Becomes a pending bill for the customer. */
+    val creditMinor: Long = 0,
 )

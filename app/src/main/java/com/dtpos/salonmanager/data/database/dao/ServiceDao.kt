@@ -23,6 +23,9 @@ interface ServiceDao {
     @Delete
     suspend fun delete(service: ServiceEntity)
 
+    @Query("SELECT * FROM services WHERE id IN (:ids)")
+    suspend fun getByIds(ids: List<Long>): List<ServiceEntity>
+
     @Query("SELECT * FROM services WHERE id = :id")
     suspend fun get(id: Long): ServiceEntity?
 

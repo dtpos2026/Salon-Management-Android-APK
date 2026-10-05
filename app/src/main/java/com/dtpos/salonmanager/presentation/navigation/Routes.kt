@@ -10,8 +10,10 @@ object Routes {
     const val EXPENSES = "expenses"
     const val REPORTS = "reports"
 
-    const val POS = "pos?customerId={customerId}"
-    fun pos(customerId: Long? = null) = "pos?customerId=${customerId ?: -1}"
+    const val POS = "pos?customerId={customerId}&editSaleId={editSaleId}"
+    fun pos(customerId: Long? = null) = "pos?customerId=${customerId ?: -1}&editSaleId=-1"
+    /** Opens a completed receipt in the POS to correct it. */
+    fun editSale(saleId: Long) = "pos?customerId=-1&editSaleId=$saleId"
 
     const val SALE_DETAIL = "sale/{saleId}?fresh={fresh}"
     fun saleDetail(saleId: Long, fresh: Boolean = false) = "sale/$saleId?fresh=$fresh"
@@ -44,6 +46,9 @@ object Routes {
     const val SUPPORT = "support"
     const val AI = "ai"
     const val TOKENS = "tokens"
+    const val CLOSE_DAY = "close-day"
+    const val MENU = "menu"
+    const val PAYMENT_ACCOUNTS = "settings/accounts"
 
     const val SETTINGS = "settings"
     const val BUSINESS_PROFILE = "settings/business"
