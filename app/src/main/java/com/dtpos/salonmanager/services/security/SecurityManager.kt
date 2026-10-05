@@ -52,7 +52,9 @@ data class SecurityConfig(
         ProtectedArea.REPORTS -> protectReports
         ProtectedArea.EXPENSES -> protectExpenses
         ProtectedArea.SETTINGS -> protectSettings
-        ProtectedArea.CLOSE_DAY, ProtectedArea.RECEIPT_EDIT, ProtectedArea.STAFF -> hasStaffPins
+        // Correcting a receipt was always behind the settings PIN; staff PINs also protect it.
+        ProtectedArea.RECEIPT_EDIT -> protectSettings || hasStaffPins
+        ProtectedArea.CLOSE_DAY, ProtectedArea.STAFF -> hasStaffPins
     }
 }
 
