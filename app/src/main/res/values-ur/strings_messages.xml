@@ -20,7 +20,7 @@
     <string name="dues_amount_received">وصول شدہ رقم</string>
     <string name="dues_paid_of">%2$s میں سے %1$s ادا</string>
     <string name="dues_paid_on">ادا %1$s</string>
-    <string name="dues_reminded_on">یاد دہانی %1$s</string>
+    <string name="dues_reminded_on">یاد دہانی کھولی %1$s</string>
     <string name="dues_added">ادھار محفوظ ہو گیا</string>
     <string name="dues_settled">مکمل ادا ہو گیا۔</string>
     <string name="dues_payment_saved">ادائیگی محفوظ ہو گئی</string>
@@ -40,14 +40,14 @@
     <string name="promo_audience_all">تمام گاہک</string>
     <string name="promo_audience_inactive">30 دن سے نہیں آئے</string>
     <string name="promo_audience_top">بہترین گاہک</string>
-    <string name="promo_how">فون نمبر والے %1$d گاہک · %2$d کو بھیجا۔ ہر چیٹ واٹس ایپ میں تیار پیغام کے ساتھ کھلتی ہے، وہاں بھیجیں دبائیں۔</string>
+    <string name="promo_how">فون نمبر والے %1$d گاہک · %2$d کھولے۔ ہر چیٹ واٹس ایپ میں تیار پیغام کے ساتھ کھلتی ہے، وہاں بھیجیں دبائیں۔</string>
     <string name="promo_recipients">گاہک</string>
     <string name="promo_empty_title">فون نمبر والا کوئی گاہک نہیں</string>
     <string name="promo_empty_message">آفرز بھیجنے کے لیے گاہکوں کے فون نمبر شامل کریں۔</string>
     <string name="promo_last_visit">آخری آمد %1$s</string>
     <string name="promo_send">بھیجیں</string>
     <string name="promo_send_again">دوبارہ</string>
-    <string name="promo_sent">بھیج دیا</string>
+    <string name="promo_sent">واٹس ایپ میں کھولا</string>
     <string name="promo_offer">رعایتی آفر</string>
     <string name="promo_festival">عید / تہوار</string>
     <string name="promo_new_service">نئی سروس</string>
@@ -123,9 +123,6 @@
     <string name="tokens_cancel">منسوخ کریں</string>
     <string name="tokens_print">پرنٹ</string>
     <string name="tokens_printed">ٹوکن پرنٹ ہو گیا</string>
-    <string name="tokens_print_failed">پرنٹ نہیں ہوا۔ سیٹنگز &gt; پرنٹر چیک کریں۔</string>
-    <string name="tokens_issued">ٹوکن جاری</string>
-    <string name="tokens_booked">بکنگ کنفرم</string>
     <string name="tokens_name">گاہک کا نام</string>
     <string name="tokens_phone">واٹس ایپ / فون (اختیاری)</string>
     <string name="tokens_service">سروس (اختیاری)</string>
@@ -138,4 +135,13 @@
 براہ کرم 5 منٹ پہلے تشریف لائیں۔ شکریہ!</string>
     <string name="tokens_wa_turn">السلام علیکم %1$s،
 آپ کی باری آ رہی ہے: ٹوکن نمبر %2$d، %3$s۔ براہ کرم ابھی تشریف لائیں۔ شکریہ!</string>
+    <string name="whatsapp_fallback_opened">واٹس ایپ نہیں ملا، اس لیے بھیجنے کا کوئی اور طریقہ کھولا گیا۔ براہ راست بھیجنے کے لیے واٹس ایپ انسٹال کریں۔</string>
+    <string name="whatsapp_failed">واٹس ایپ یا بھیجنے کی کوئی ایپ نہیں کھل سکی۔ واٹس ایپ انسٹال کر کے دوبارہ کوشش کریں۔</string>
+    <string name="tokens_preview_title">ٹوکن #%1$d — پرنٹ پیش منظر</string>
+    <string name="tokens_preview_hint">پرنٹر بالکل یہی پرنٹ کرے گا۔</string>
+    <string name="tokens_send_title">کسٹمر کو بھیجیں</string>
+    <string name="tokens_send_wa_text">واٹس ایپ پیغام</string>
+    <string name="tokens_send_wa_image">واٹس ایپ تصویر</string>
+    <string name="tokens_send_sms">SMS</string>
+    <string name="tokens_send_share">شیئر…</string>
 </resources>

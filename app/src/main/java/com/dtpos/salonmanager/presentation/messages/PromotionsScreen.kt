@@ -1,5 +1,7 @@
 package com.dtpos.salonmanager.presentation.messages
 
+import com.dtpos.salonmanager.services.export.WhatsAppResult
+import com.dtpos.salonmanager.presentation.common.showWhatsAppResult
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -115,7 +117,6 @@ fun PromotionsScreen(onBack: () -> Unit) {
     var message by rememberSaveable(template, salon) { mutableStateOf(context.getString(template.text, salon)) }
     val sent = remember { mutableStateListOf<Long>() }
     val targets = remember(customers, audience) { vm.audience(customers, audience) }
-    val notInstalled = stringResource(R.string.whatsapp_not_installed)
 
     Scaffold(topBar = { SalonTopBar(stringResource(R.string.promo_title), onBack = onBack) }) { padding ->
         LazyColumn(
@@ -172,8 +173,9 @@ fun PromotionsScreen(onBack: () -> Unit) {
                         Button(
                             onClick = {
                                 val text = if (greetByName) context.getString(R.string.promo_greeting, row.customer.name) + "\n" + message else message
-                                if (ExternalApps.openWhatsAppChat(context, row.customer.phone, text)) sent.add(row.customer.id)
-                                else Toast.makeText(context, notInstalled, Toast.LENGTH_LONG).show()
+                                val result = ExternalApps.whatsAppText(context, row.customer.phone, text)
+                                if (result != WhatsAppResult.FAILED) sent.add(row.customer.id)
+                                context.showWhatsAppResult(result)
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = if (done) MaterialTheme.colorScheme.surfaceVariant else WhatsAppGreen, contentColor = if (done) MaterialTheme.colorScheme.onSurfaceVariant else Color.White),
                         ) {

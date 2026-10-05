@@ -1,5 +1,7 @@
 package com.dtpos.salonmanager.presentation.messages
 
+import com.dtpos.salonmanager.services.export.WhatsAppResult
+import com.dtpos.salonmanager.presentation.common.showWhatsAppResult
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -138,7 +140,6 @@ fun DuesScreen(onBack: () -> Unit) {
     var paying by remember { mutableStateOf<DueEntity?>(null) }
     var deleting by remember { mutableStateOf<DueEntity?>(null) }
     val context = LocalContext.current
-    val notInstalled = stringResource(R.string.whatsapp_not_installed)
     MessageEffect(vm.messages, snackbar)
 
     val salon = profile?.name.orEmpty()
@@ -192,8 +193,9 @@ fun DuesScreen(onBack: () -> Unit) {
                     format = money::format,
                     onRemind = {
                         val text = context.getString(R.string.dues_reminder_message, due.customerName, money.format(due.balanceMinor), salon)
-                        if (ExternalApps.openWhatsAppChat(context, due.customerPhone, text)) vm.reminded(due)
-                        else Toast.makeText(context, notInstalled, Toast.LENGTH_LONG).show()
+                        val result = ExternalApps.whatsAppText(context, due.customerPhone, text)
+                        if (result != WhatsAppResult.FAILED) vm.reminded(due)
+                        context.showWhatsAppResult(result)
                     },
                     onPay = { paying = due },
                     onDelete = { deleting = due },

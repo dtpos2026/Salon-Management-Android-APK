@@ -235,4 +235,18 @@
     <string name="receipt_style_minimal">Saada</string>
     <string name="receipt_style_elegant">Elegant</string>
     <string name="receipt_style_hint">Print, preview aur WhatsApp par bheji gayi receipt ke liye. Saada design kaghaz bachata hai.</string>
+    <string name="printer_test_connection">Connection</string>
+    <string name="printer_connection">Printer connection</string>
+    <string name="printer_connection_bluetooth">Bluetooth</string>
+    <string name="printer_connection_lan">LAN / Wi-Fi (IP)</string>
+    <string name="printer_lan_name">Network printer (LAN)</string>
+    <string name="printer_lan_title">Network printer</string>
+    <string name="printer_lan_hint">Phone aur printer ek hi Wi-Fi / router par hon. Aksar printer port 9100 use karte hain. IP printer ke self-test page par likha hota hai.</string>
+    <string name="printer_lan_ip">Printer IP address (maslan 192.168.1.100)</string>
+    <string name="printer_lan_port">Port</string>
+    <string name="printer_lan_use">Save karein aur use karein</string>
+    <string name="printer_lan_check">Connection check karein</string>
+    <string name="printer_lan_invalid">Sahi IP address aur port (1–65535) likhein.</string>
+    <string name="printer_lan_reachable">Printer ne network par jawab diya. Paper check karne ke liye Test print karein.</string>
+    <string name="printer_lan_unreachable">Is IP / port se jawab nahi aaya. Wi-Fi, IP aur printer on hona check karein.</string>
 </resources>

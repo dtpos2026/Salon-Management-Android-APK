@@ -235,4 +235,18 @@
     <string name="receipt_style_minimal">سادہ</string>
     <string name="receipt_style_elegant">شاندار</string>
     <string name="receipt_style_hint">پرنٹ، پیش منظر اور واٹس ایپ پر بھیجی گئی رسید کے لیے۔ سادہ ڈیزائن کاغذ بچاتا ہے۔</string>
+    <string name="printer_test_connection">Connection</string>
+    <string name="printer_connection">پرنٹر کنکشن</string>
+    <string name="printer_connection_bluetooth">بلوٹوتھ</string>
+    <string name="printer_connection_lan">LAN / وائی فائی (IP)</string>
+    <string name="printer_lan_name">نیٹ ورک پرنٹر (LAN)</string>
+    <string name="printer_lan_title">نیٹ ورک پرنٹر</string>
+    <string name="printer_lan_hint">فون اور پرنٹر ایک ہی وائی فائی / راؤٹر پر ہوں۔ زیادہ تر پرنٹر پورٹ 9100 استعمال کرتے ہیں۔ IP پرنٹر کے سیلف ٹیسٹ صفحے پر لکھا ہوتا ہے۔</string>
+    <string name="printer_lan_ip">پرنٹر IP ایڈریس (مثلاً 192.168.1.100)</string>
+    <string name="printer_lan_port">پورٹ</string>
+    <string name="printer_lan_use">محفوظ کریں اور استعمال کریں</string>
+    <string name="printer_lan_check">کنکشن چیک کریں</string>
+    <string name="printer_lan_invalid">درست IP ایڈریس اور پورٹ (1–65535) لکھیں۔</string>
+    <string name="printer_lan_reachable">پرنٹر نے نیٹ ورک پر جواب دیا۔ کاغذ چیک کرنے کے لیے ٹیسٹ پرنٹ کریں۔</string>
+    <string name="printer_lan_unreachable">اس IP / پورٹ سے جواب نہیں آیا۔ وائی فائی، IP اور پرنٹر آن ہونا چیک کریں۔</string>
 </resources>

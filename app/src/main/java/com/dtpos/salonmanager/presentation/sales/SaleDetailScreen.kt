@@ -1,5 +1,6 @@
 package com.dtpos.salonmanager.presentation.sales
 
+import com.dtpos.salonmanager.presentation.common.showWhatsAppResult
 import androidx.compose.foundation.Image
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -253,7 +254,6 @@ fun SaleDetailScreen(
         pendingFormat = null
         if (granted && format != null) vm.saveImage(format) else Toast.makeText(context, permissionDenied, Toast.LENGTH_LONG).show()
     }
-    val whatsappMissing = stringResource(R.string.whatsapp_not_installed)
     val shareImageTitle = stringResource(R.string.receipt_share_image)
     LaunchedEffect(vm) {
         vm.imageActions.collect { action ->
@@ -261,9 +261,10 @@ fun SaleDetailScreen(
                 is SaleDetailViewModel.ImageAction.Share -> ShareHelper.shareFile(context, action.file, "image/png", shareImageTitle)
                 is SaleDetailViewModel.ImageAction.WhatsApp -> {
                     val uri = ShareHelper.uriFor(context, action.file)
-                    if (uri == null || !ExternalApps.shareImageToWhatsApp(context, uri, "image/png", action.phone, action.message)) {
-                        Toast.makeText(context, whatsappMissing, Toast.LENGTH_LONG).show()
-                    }
+                    context.showWhatsAppResult(
+                        if (uri == null) ExternalApps.whatsAppText(context, action.phone, action.message, shareImageTitle)
+                        else ExternalApps.whatsAppImage(context, uri, "image/png", action.phone, action.message, shareImageTitle),
+                    )
                 }
                 is SaleDetailViewModel.ImageAction.RequestPermission -> {
                     pendingFormat = action.format

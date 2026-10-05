@@ -20,7 +20,7 @@
     <string name="dues_amount_received">Wasool shuda raqam</string>
     <string name="dues_paid_of">%2$s mein se %1$s ada</string>
     <string name="dues_paid_on">Ada %1$s</string>
-    <string name="dues_reminded_on">Reminder %1$s</string>
+    <string name="dues_reminded_on">Reminder khola %1$s</string>
     <string name="dues_added">Udhaar mehfooz ho gaya</string>
     <string name="dues_settled">Mukammal ada ho gaya.</string>
     <string name="dues_payment_saved">Payment mehfooz ho gayi</string>
@@ -40,14 +40,14 @@ Shukriya!</string>
     <string name="promo_audience_all">Tamam customers</string>
     <string name="promo_audience_inactive">30 din se nahi aaye</string>
     <string name="promo_audience_top">Behtareen customers</string>
-    <string name="promo_how">Phone number wale %1$d customers · %2$d ko bheja. Har chat WhatsApp mein tayyar paigham ke saath khulti hai, wahan send dabayein.</string>
+    <string name="promo_how">Phone number wale %1$d customers · %2$d khole. Har chat WhatsApp mein tayyar paigham ke saath khulti hai, wahan send dabayein.</string>
     <string name="promo_recipients">Customers</string>
     <string name="promo_empty_title">Phone number wala koi customer nahi</string>
     <string name="promo_empty_message">Offers bhejne ke liye customers ke phone number shamil karein.</string>
     <string name="promo_last_visit">Aakhri aamad %1$s</string>
     <string name="promo_send">Bhejein</string>
     <string name="promo_send_again">Dobara</string>
-    <string name="promo_sent">Bhej diya</string>
+    <string name="promo_sent">WhatsApp mein khola</string>
     <string name="promo_offer">Discount offer</string>
     <string name="promo_festival">Eid / tehwar</string>
     <string name="promo_new_service">Nayi service</string>
@@ -123,9 +123,6 @@ Shukriya!</string>
     <string name="tokens_cancel">Mansookh karein</string>
     <string name="tokens_print">Print</string>
     <string name="tokens_printed">Token print ho gaya</string>
-    <string name="tokens_print_failed">Print nahi hua. Settings &gt; Printer check karein.</string>
-    <string name="tokens_issued">Token jari</string>
-    <string name="tokens_booked">Booking confirm</string>
     <string name="tokens_name">Customer ka naam</string>
     <string name="tokens_phone">WhatsApp / phone (ikhtiyari)</string>
     <string name="tokens_service">Service (ikhtiyari)</string>
@@ -138,4 +135,13 @@ Aap ki booking confirm hai. Token #%2$d, %3$s, %4$s par.
 Barah-e-karam 5 minute pehle tashreef layein. Shukriya!</string>
     <string name="tokens_wa_turn">Assalam o Alaikum %1$s,
 Aap ki baari aa rahi hai: token #%2$d, %3$s. Barah-e-karam abhi tashreef layein. Shukriya!</string>
+    <string name="whatsapp_fallback_opened">WhatsApp nahi mila, is liye bhejne ka koi aur tareeqa khola gaya. Seedha bhejne ke liye WhatsApp install karein.</string>
+    <string name="whatsapp_failed">WhatsApp ya bhejne ki koi app nahi khul saki. WhatsApp install kar ke dobara koshish karein.</string>
+    <string name="tokens_preview_title">Token #%1$d — print preview</string>
+    <string name="tokens_preview_hint">Printer bilkul yahi print karega.</string>
+    <string name="tokens_send_title">Customer ko bhejein</string>
+    <string name="tokens_send_wa_text">WhatsApp text</string>
+    <string name="tokens_send_wa_image">WhatsApp tasveer</string>
+    <string name="tokens_send_sms">SMS</string>
+    <string name="tokens_send_share">Share…</string>
 </resources>

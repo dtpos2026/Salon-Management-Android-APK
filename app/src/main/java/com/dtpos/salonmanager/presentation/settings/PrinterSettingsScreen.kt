@@ -42,6 +42,15 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.Lan
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
+import com.dtpos.salonmanager.presentation.components.FormTextField
+import com.dtpos.salonmanager.services.printer.LanPrinterService
+import com.dtpos.salonmanager.services.printer.PrinterConnection
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -136,10 +145,47 @@ class PrinterSettingsViewModel(private val container: AppContainer) : BaseViewMo
 
     fun select(device: PrinterDevice) = launchSafe {
         store.savePrinter(device.address, device.name)
+        store.save(settings.value.copy(connection = PrinterConnection.BLUETOOTH))
         showMessage(R.string.printer_saved)
     }
 
     fun forget() = launchSafe { store.clearPrinter() }
+
+    /** Network printer: saves IP / port and makes it the active printer. */
+    fun saveLan(host: String, port: String) = launchSafe {
+        val h = host.trim()
+        val p = port.trim().toIntOrNull()
+        if (!LanPrinterService.isValidHost(h) || p == null || p !in 1..65535) {
+            showMessage(R.string.printer_lan_invalid)
+            return@launchSafe
+        }
+        store.save(settings.value.copy(connection = PrinterConnection.LAN, lanHost = h, lanPort = p))
+        showMessage(R.string.printer_saved)
+    }
+
+    fun useConnection(connection: PrinterConnection) = updateOptions { it.copy(connection = connection) }
+
+    /** Opens a connection to the network printer; prints nothing. */
+    fun checkLan(host: String, port: String) {
+        val h = host.trim()
+        val p = port.trim().toIntOrNull()
+        if (!LanPrinterService.isValidHost(h) || p == null || p !in 1..65535) {
+            showMessage(R.string.printer_lan_invalid)
+            return
+        }
+        if (_status.value.testing) return
+        _status.update { it.copy(testing = true) }
+        launchSafe {
+            try {
+                when (container.receiptPrinter.checkLan(h, p)) {
+                    PrintResult.Success -> showMessage(R.string.printer_lan_reachable)
+                    is PrintResult.Failure -> showMessage(R.string.printer_lan_unreachable)
+                }
+            } finally {
+                _status.update { it.copy(testing = false) }
+            }
+        }
+    }
 
     fun updateOptions(transform: (PrinterSettings) -> PrinterSettings) = launchSafe { store.save(transform(settings.value)) }
 
@@ -201,12 +247,17 @@ fun PrinterSettingsScreen(onBack: () -> Unit) {
                 ContentCard {
                     Text(stringResource(R.string.printer_selected), style = MaterialTheme.typography.labelMedium)
                     if (settings.isConfigured) {
+                        val lan = settings.connection == PrinterConnection.LAN
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Filled.Print, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Icon(if (lan) Icons.Filled.Lan else Icons.Filled.Print, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(8.dp))
-                            Text(settings.name ?: settings.address.orEmpty(), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                            Text(
+                                if (lan) stringResource(R.string.printer_lan_name) else settings.name ?: settings.address.orEmpty(),
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.weight(1f),
+                            )
                         }
-                        Text(settings.address.orEmpty(), style = MaterialTheme.typography.bodySmall)
+                        Text(if (lan) "${settings.lanHost}:${settings.lanPort}" else settings.address.orEmpty(), style = MaterialTheme.typography.bodySmall)
                         Spacer(Modifier.height(8.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Button(onClick = { vm.testPrint() }, enabled = !status.testing) {
@@ -226,6 +277,23 @@ fun PrinterSettingsScreen(onBack: () -> Unit) {
             }
 
             item {
+                ContentCard {
+                    Text(stringResource(R.string.printer_connection), style = MaterialTheme.typography.titleSmall)
+                    Spacer(Modifier.height(6.dp))
+                    SegmentedChoice(
+                        options = PrinterConnection.entries.toList(),
+                        selected = settings.connection,
+                        label = { stringResource(if (it == PrinterConnection.LAN) R.string.printer_connection_lan else R.string.printer_connection_bluetooth) },
+                        onSelect = vm::useConnection,
+                    )
+                }
+            }
+
+            if (settings.connection == PrinterConnection.LAN) {
+                item { LanPrinterCard(settings, status.testing, vm) }
+            }
+
+            if (settings.connection == PrinterConnection.BLUETOOTH) item {
                 when {
                     !status.supported -> InfoBanner(
                         stringResource(R.string.printer_error_unsupported),
@@ -259,7 +327,7 @@ fun PrinterSettingsScreen(onBack: () -> Unit) {
                 }
             }
 
-            if (status.supported && status.hasConnectPermission) {
+            if (settings.connection == PrinterConnection.BLUETOOTH && status.supported && status.hasConnectPermission) {
                 item { SectionHeader(stringResource(R.string.printer_paired)) }
                 if (status.paired.isEmpty()) {
                     item { Text(stringResource(R.string.printer_no_paired), color = MaterialTheme.colorScheme.onSurfaceVariant) }
@@ -344,6 +412,28 @@ fun PrinterSettingsScreen(onBack: () -> Unit) {
                     Text(stringResource(R.string.printer_feed), style = MaterialTheme.typography.titleSmall)
                     SegmentedChoice(listOf(1, 3, 5, 8), settings.feedLines, { it.toString() }, { f -> vm.updateOptions { it.copy(feedLines = f) } })
                 }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun LanPrinterCard(settings: PrinterSettings, testing: Boolean, vm: PrinterSettingsViewModel) {
+    var host by rememberSaveable(settings.lanHost) { mutableStateOf(settings.lanHost.orEmpty()) }
+    var port by rememberSaveable(settings.lanPort) { mutableStateOf(settings.lanPort.toString()) }
+    ContentCard {
+        Text(stringResource(R.string.printer_lan_title), style = MaterialTheme.typography.titleSmall)
+        Text(stringResource(R.string.printer_lan_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(8.dp))
+        FormTextField(host, { host = it.trim() }, stringResource(R.string.printer_lan_ip), keyboardType = KeyboardType.Uri, capitalization = KeyboardCapitalization.None)
+        Spacer(Modifier.height(6.dp))
+        FormTextField(port, { v -> port = v.filter(Char::isDigit).take(5) }, stringResource(R.string.printer_lan_port), keyboardType = KeyboardType.Number)
+        Spacer(Modifier.height(8.dp))
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = { vm.saveLan(host, port) }) { Text(stringResource(R.string.printer_lan_use)) }
+            OutlinedButton(onClick = { vm.checkLan(host, port) }, enabled = !testing) {
+                if (testing) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp) else Text(stringResource(R.string.printer_lan_check))
             }
         }
     }

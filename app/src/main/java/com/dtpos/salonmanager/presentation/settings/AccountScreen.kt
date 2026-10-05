@@ -1,5 +1,6 @@
 package com.dtpos.salonmanager.presentation.settings
 
+import com.dtpos.salonmanager.presentation.common.showWhatsAppResult
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -185,13 +186,10 @@ fun AccountScreen(onBack: () -> Unit) {
             val whatsapp = branding.whatsapp.ifBlank { branding.contactNumber }
             if (whatsapp.isNotBlank() || branding.contactNumber.isNotBlank()) {
                 val message = stringResource(R.string.support_message, account?.customerId ?: user?.email ?: "-")
-                val notInstalled = stringResource(R.string.whatsapp_not_installed)
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     if (whatsapp.isNotBlank()) {
                         OutlinedButton(onClick = {
-                            if (!ExternalApps.openWhatsAppChat(context, whatsapp, message)) {
-                                Toast.makeText(context, notInstalled, Toast.LENGTH_LONG).show()
-                            }
+                            context.showWhatsAppResult(ExternalApps.whatsAppText(context, whatsapp, message))
                         }, modifier = Modifier.weight(1f)) {
                             Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(6.dp))

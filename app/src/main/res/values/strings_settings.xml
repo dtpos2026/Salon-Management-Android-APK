@@ -245,4 +245,18 @@
     <string name="receipt_style_minimal">Minimal</string>
     <string name="receipt_style_elegant">Elegant</string>
     <string name="receipt_style_hint">Used for printing, the preview and receipts shared on WhatsApp. Minimal saves paper.</string>
+    <string name="printer_test_connection">Connection</string>
+    <string name="printer_connection">Printer connection</string>
+    <string name="printer_connection_bluetooth">Bluetooth</string>
+    <string name="printer_connection_lan">LAN / Wi-Fi (IP)</string>
+    <string name="printer_lan_name">Network printer (LAN)</string>
+    <string name="printer_lan_title">Network printer</string>
+    <string name="printer_lan_hint">Phone and printer must be on the same Wi-Fi / router. Most printers use port 9100. The IP is printed on the printer\'s self-test page.</string>
+    <string name="printer_lan_ip">Printer IP address (e.g. 192.168.1.100)</string>
+    <string name="printer_lan_port">Port</string>
+    <string name="printer_lan_use">Save and use</string>
+    <string name="printer_lan_check">Check connection</string>
+    <string name="printer_lan_invalid">Enter a valid IP address and port (1–65535).</string>
+    <string name="printer_lan_reachable">Printer answered on the network. Use Test print to check paper.</string>
+    <string name="printer_lan_unreachable">No answer from this IP / port. Check Wi-Fi, IP and that the printer is on.</string>
 </resources>

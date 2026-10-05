@@ -1,7 +1,14 @@
 package com.dtpos.salonmanager.presentation.tokens
 
-import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import com.dtpos.salonmanager.presentation.common.showWhatsAppResult
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -109,8 +116,9 @@ class TokensViewModel(private val container: AppContainer) : BaseViewModel() {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val profile: StateFlow<BusinessProfile?> = container.businessRepository.profile.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    /** The token just issued, shown big so it can be told, printed or sent. */
-    val issued = MutableStateFlow<BookingEntity?>(null)
+    /** Print preview: the exact black-and-white slip the printer will print. */
+    val preview = MutableStateFlow<TokenPreview?>(null)
+    val printing = MutableStateFlow(false)
 
     fun setEnabled(value: Boolean) = launchSafe { settings.putBoolean(SettingKeys.TOKENS_ENABLED, value) }
 
@@ -119,10 +127,10 @@ class TokensViewModel(private val container: AppContainer) : BaseViewModel() {
     fun issue(day: LocalDate, name: String, phone: String, service: String, timeMinutes: Int?, onDone: () -> Unit) = launchSafe {
         when (val r = container.bookingRepository.issue(day, name, phone, service, timeMinutes)) {
             is DataResult.Success -> {
-                issued.value = r.data
                 date.value = day
                 container.soundEffects.success()
                 onDone()
+                openPreview(r.data, turn = false)
             }
             is DataResult.Failure -> showMessage(r.error.messageRes)
         }
@@ -138,13 +146,35 @@ class TokensViewModel(private val container: AppContainer) : BaseViewModel() {
 
     fun setStatus(booking: BookingEntity, status: BookingStatus) = launchSafe { repo.setStatus(booking.id, status) }
 
-    fun print(booking: BookingEntity) = launchSafe {
-        when (container.receiptPrinter.printToken(booking, profile.value?.name.orEmpty())) {
-            is PrintResult.Success -> showMessage(R.string.tokens_printed)
-            is PrintResult.Failure -> showMessage(R.string.tokens_print_failed)
+    /** Renders the slip at the printer's paper width and shows it before printing or sending. */
+    fun openPreview(booking: BookingEntity, turn: Boolean) = launchSafe {
+        val slip = container.receiptPrinter.tokenSlip(booking, profile.value?.name.orEmpty())
+        preview.value = TokenPreview(booking, slip, turn)
+    }
+
+    fun closePreview() {
+        preview.value = null
+    }
+
+    fun printPreview() {
+        val current = preview.value ?: return
+        if (printing.value) return
+        printing.value = true
+        launchSafe {
+            try {
+                when (val result = container.receiptPrinter.printTokenSlip(current.slip)) {
+                    is PrintResult.Success -> showMessage(R.string.tokens_printed)
+                    is PrintResult.Failure -> showMessage(result.error.messageRes)
+                }
+            } finally {
+                printing.value = false
+            }
         }
     }
 }
+
+/** A token slip ready to print or send; [turn] picks the "your turn" message instead of the confirmation. */
+class TokenPreview(val booking: BookingEntity, val slip: android.graphics.Bitmap, val turn: Boolean)
 
 @Composable
 fun TokensScreen(onBack: () -> Unit) {
@@ -152,44 +182,15 @@ fun TokensScreen(onBack: () -> Unit) {
     val enabled by vm.enabled.collectAsStateWithLifecycle()
     val date by vm.date.collectAsStateWithLifecycle()
     val queue by vm.queue.collectAsStateWithLifecycle()
-    val issued by vm.issued.collectAsStateWithLifecycle()
+    val preview by vm.preview.collectAsStateWithLifecycle()
+    val printing by vm.printing.collectAsStateWithLifecycle()
     val profile by vm.profile.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     var creating by remember { mutableStateOf<Boolean?>(null) } // false = walk-in, true = booking
     val context = LocalContext.current
-    val notInstalled = stringResource(R.string.whatsapp_not_installed)
     MessageEffect(vm.messages, snackbar)
 
     val accent = MaterialTheme.colorScheme.primary.toArgb()
-
-    fun whatsapp(b: BookingEntity, turn: Boolean) {
-        val salon = profile?.name.orEmpty()
-        val text = if (turn) {
-            context.getString(R.string.tokens_wa_turn, b.customerName, b.tokenNumber, salon)
-        } else {
-            context.getString(
-                R.string.tokens_wa_confirm, b.customerName, b.tokenNumber,
-                DateTimeUtils.formatDate(LocalDate.ofEpochDay(b.dateEpochDay)) + (b.timeMinutes?.let { ", " + formatSlot(it) } ?: ""),
-                salon,
-            )
-        }
-        // The token slip goes as a picture with the message; plain text if the image cannot be made.
-        val whenText = DateTimeUtils.formatDate(LocalDate.ofEpochDay(b.dateEpochDay)) + (b.timeMinutes?.let { "  ·  " + formatSlot(it) } ?: "")
-        val image = TokenImage.render(
-            salon = salon,
-            title = context.getString(R.string.tokens_slip_title),
-            token = b.tokenNumber,
-            name = b.customerName,
-            whenText = whenText,
-            service = b.service,
-            footer = context.getString(R.string.tokens_slip_wait),
-            accent = accent,
-        )
-        val uri = TokenImage.cacheFile(context, image, b.tokenNumber)?.let { ShareHelper.uriFor(context, it) }
-        val sent = if (uri != null) ExternalApps.shareImageToWhatsApp(context, uri, "image/png", b.customerPhone, text)
-        else ExternalApps.openWhatsAppChat(context, b.customerPhone, text)
-        if (!sent) Toast.makeText(context, notInstalled, Toast.LENGTH_LONG).show()
-    }
 
     Scaffold(topBar = { SalonTopBar(stringResource(R.string.tokens_title), onBack = onBack) }, snackbarHost = { SnackbarHost(snackbar) }) { padding ->
         LazyColumn(
@@ -260,8 +261,8 @@ fun TokensScreen(onBack: () -> Unit) {
             items(queue, key = { it.id }) { b ->
                 TokenRow(
                     b,
-                    onWhatsApp = { whatsapp(b, turn = b.status == BookingStatus.SERVING || (b.timeMinutes == null && b.status == BookingStatus.WAITING)) },
-                    onPrint = { vm.print(b) },
+                    onWhatsApp = { vm.openPreview(b, turn = b.status == BookingStatus.SERVING || (b.timeMinutes == null && b.status == BookingStatus.WAITING)) },
+                    onPrint = { vm.openPreview(b, turn = false) },
                     onDone = { vm.setStatus(b, BookingStatus.DONE) },
                     onCancel = { vm.setStatus(b, BookingStatus.CANCELLED) },
                     onServe = { vm.setStatus(b, BookingStatus.SERVING) },
@@ -278,29 +279,122 @@ fun TokensScreen(onBack: () -> Unit) {
             onSave = { day, name, phone, service, time -> vm.issue(day, name, phone, service, time) { creating = null } },
         )
     }
-    issued?.let { b ->
-        AlertDialog(
-            onDismissRequest = { vm.issued.value = null },
-            title = { Text(stringResource(if (b.timeMinutes != null) R.string.tokens_booked else R.string.tokens_issued), modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center) },
-            text = {
-                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("#${b.tokenNumber}", fontSize = 64.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    Text(b.customerName, style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        DateTimeUtils.formatDate(LocalDate.ofEpochDay(b.dateEpochDay)) + (b.timeMinutes?.let { " · " + formatSlot(it) } ?: ""),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
-            },
-            confirmButton = {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    TextButton(onClick = { vm.print(b) }) { Text(stringResource(R.string.tokens_print)) }
-                    if (!b.customerPhone.isNullOrBlank()) TextButton(onClick = { whatsapp(b, turn = false) }) { Text("WhatsApp") }
-                    Button(onClick = { vm.issued.value = null }) { Text(stringResource(R.string.action_close)) }
-                }
-            },
+    preview?.let { p ->
+        TokenPreviewDialog(
+            preview = p,
+            salon = profile?.name.orEmpty(),
+            printing = printing,
+            accent = accent,
+            onPrint = vm::printPreview,
+            onDismiss = vm::closePreview,
         )
     }
+}
+
+/** Message for the customer, built from the real booking. */
+fun tokenMessage(context: android.content.Context, b: BookingEntity, salon: String, turn: Boolean): String =
+    if (turn) {
+        context.getString(R.string.tokens_wa_turn, b.customerName, b.tokenNumber, salon)
+    } else {
+        context.getString(
+            R.string.tokens_wa_confirm, b.customerName, b.tokenNumber,
+            DateTimeUtils.formatDate(LocalDate.ofEpochDay(b.dateEpochDay)) + (b.timeMinutes?.let { ", " + formatSlot(it) } ?: "") +
+                (b.service?.takeIf { it.isNotBlank() }?.let { " (" + it + ")" } ?: ""),
+            salon,
+        )
+    }
+
+@Composable
+private fun TokenPreviewDialog(
+    preview: TokenPreview,
+    salon: String,
+    printing: Boolean,
+    accent: Int,
+    onPrint: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val context = LocalContext.current
+    val b = preview.booking
+    val message = remember(b.id, preview.turn) { tokenMessage(context, b, salon, preview.turn) }
+    val chooser = stringResource(R.string.tokens_send_title)
+
+    // Colour picture for WhatsApp / share (the printer gets the black-and-white slip shown above).
+    fun pictureUri(): android.net.Uri? {
+        val whenText = DateTimeUtils.formatDate(LocalDate.ofEpochDay(b.dateEpochDay)) + (b.timeMinutes?.let { "  ·  " + formatSlot(it) } ?: "")
+        val image = TokenImage.render(
+            salon = salon,
+            title = context.getString(R.string.tokens_slip_title),
+            token = b.tokenNumber,
+            name = b.customerName,
+            whenText = whenText,
+            service = b.service,
+            footer = context.getString(R.string.tokens_slip_wait),
+            accent = accent,
+        )
+        return TokenImage.cacheFile(context, image, b.tokenNumber)?.let { ShareHelper.uriFor(context, it) }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.tokens_preview_title, b.tokenNumber)) },
+        text = {
+            Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(stringResource(R.string.tokens_preview_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Box(
+                    Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(8.dp))
+                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp)).padding(8.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Image(
+                        bitmap = preview.slip.asImageBitmap(),
+                        contentDescription = stringResource(R.string.tokens_preview_title, b.tokenNumber),
+                        modifier = Modifier.fillMaxWidth(0.8f),
+                        contentScale = ContentScale.FillWidth,
+                    )
+                }
+                Button(onClick = onPrint, enabled = !printing, modifier = Modifier.fillMaxWidth()) {
+                    if (printing) {
+                        CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                    } else {
+                        Icon(Icons.Filled.Print, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(stringResource(R.string.tokens_print))
+                    }
+                }
+                Text(stringResource(R.string.tokens_send_title), style = MaterialTheme.typography.labelLarge)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(
+                        onClick = { context.showWhatsAppResult(ExternalApps.whatsAppText(context, b.customerPhone, message, chooser)) },
+                        modifier = Modifier.weight(1f),
+                    ) { Text(stringResource(R.string.tokens_send_wa_text), color = WhatsAppGreen) }
+                    OutlinedButton(
+                        onClick = {
+                            val uri = pictureUri()
+                            val result = if (uri != null) ExternalApps.whatsAppImage(context, uri, "image/png", b.customerPhone, message, chooser)
+                            else ExternalApps.whatsAppText(context, b.customerPhone, message, chooser)
+                            context.showWhatsAppResult(result)
+                        },
+                        modifier = Modifier.weight(1f),
+                    ) { Text(stringResource(R.string.tokens_send_wa_image), color = WhatsAppGreen) }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(
+                        onClick = { if (!ExternalApps.sms(context, b.customerPhone, message)) context.showWhatsAppResult(com.dtpos.salonmanager.services.export.WhatsAppResult.FAILED) },
+                        modifier = Modifier.weight(1f),
+                    ) { Text(stringResource(R.string.tokens_send_sms)) }
+                    OutlinedButton(
+                        onClick = {
+                            val uri = pictureUri()
+                            val ok = if (uri != null) ExternalApps.shareImage(context, uri, "image/png", message, chooser) else ExternalApps.shareText(context, message, chooser)
+                            if (!ok) context.showWhatsAppResult(com.dtpos.salonmanager.services.export.WhatsAppResult.FAILED)
+                        },
+                        modifier = Modifier.weight(1f),
+                    ) { Text(stringResource(R.string.tokens_send_share)) }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) } },
+    )
 }
 
 @Composable

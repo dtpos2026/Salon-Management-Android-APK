@@ -124,8 +124,9 @@ class AppContainer(
 
     val printerSettingsStore by lazy { PrinterSettingsStore(settingsRepository) }
     val bluetoothPrinterService by lazy { BluetoothPrinterService(app) }
+    val lanPrinterService by lazy { com.dtpos.salonmanager.services.printer.LanPrinterService() }
     val receiptPrinter by lazy {
-        ReceiptPrinter(app, bluetoothPrinterService, printerSettingsStore, saleRepository, logoStore)
+        ReceiptPrinter(app, bluetoothPrinterService, lanPrinterService, printerSettingsStore, saleRepository, logoStore)
     }
 
     val receiptExporter by lazy {

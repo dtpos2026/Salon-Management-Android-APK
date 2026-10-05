@@ -5,18 +5,24 @@ import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.view.View
 import com.dtpos.salonmanager.R
+import com.dtpos.salonmanager.core.util.DateTimeUtils
+import com.dtpos.salonmanager.data.database.entities.BookingEntity
 import com.dtpos.salonmanager.data.repository.SaleRepository
 import com.dtpos.salonmanager.domain.model.PaymentMethod
 import com.dtpos.salonmanager.domain.model.ReceiptData
+import com.dtpos.salonmanager.presentation.tokens.formatSlot
 import com.dtpos.salonmanager.services.branding.LogoStore
+import com.dtpos.salonmanager.services.export.TokenImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.time.LocalDate
 import java.util.Locale
 
 /** High-level printing: turns a stored sale into ESC/POS bytes and sends it to the saved printer. */
 class ReceiptPrinter(
     private val context: Context,
     private val bluetooth: BluetoothPrinterService,
+    private val lan: LanPrinterService,
     private val settingsStore: PrinterSettingsStore,
     private val saleRepository: SaleRepository,
     private val logoStore: LogoStore,
@@ -39,32 +45,62 @@ class ReceiptPrinter(
         } catch (e: OutOfMemoryError) {
             return PrintResult.Failure(PrinterError.NOTHING_TO_PRINT)
         }
-        return bluetooth.send(settings.address, bytes, settings.copies)
+        return transmit(settings, bytes, settings.copies)
+    }
+
+    /** Sends to the active printer: the paired Bluetooth printer or the network (IP / port) printer. */
+    private suspend fun transmit(settings: PrinterSettings, bytes: ByteArray, copies: Int): PrintResult = when (settings.connection) {
+        PrinterConnection.BLUETOOTH -> bluetooth.send(settings.address, bytes, copies)
+        PrinterConnection.LAN -> lan.send(settings.lanHost, settings.lanPort, bytes, copies)
+    }
+
+    /** Checks that a network printer answers on its IP and port (nothing is printed). */
+    suspend fun checkLan(host: String, port: Int): PrintResult = lan.check(host, port)
+
+    /**
+     * The token slip exactly as the printer prints it: black and white at the paper's dot width.
+     * The print preview shows this bitmap and [printTokenSlip] sends the same bitmap.
+     */
+    suspend fun tokenSlip(booking: BookingEntity, salonName: String): Bitmap {
+        val settings = settingsStore.current()
+        val whenText = DateTimeUtils.formatDate(LocalDate.ofEpochDay(booking.dateEpochDay)) +
+            (booking.timeMinutes?.let { "  ·  " + formatSlot(it) } ?: "")
+        return withContext(Dispatchers.Default) {
+            TokenImage.render(
+                salon = salonName,
+                title = context.getString(R.string.tokens_slip_title),
+                token = booking.tokenNumber,
+                name = booking.customerName,
+                whenText = whenText,
+                service = booking.service,
+                footer = context.getString(R.string.tokens_slip_wait),
+                accent = android.graphics.Color.BLACK,
+                width = settings.paper.dots,
+                forPrinter = true,
+            )
+        }
+    }
+
+    suspend fun printTokenSlip(slip: Bitmap): PrintResult {
+        val settings = settingsStore.current()
+        if (!settings.isConfigured) return PrintResult.Failure(PrinterError.NO_PRINTER_SELECTED)
+        val bytes = withContext(Dispatchers.Default) {
+            EscPos.encodeImage(ReceiptCanvasRenderer.toMonochrome(slip, dither = false), settings.feedLines, settings.cut)
+        }
+        return transmit(settings, bytes, copies = 1)
     }
 
     /** Small queue slip: salon, big token number, name, date / booked time. */
-    suspend fun printToken(booking: com.dtpos.salonmanager.data.database.entities.BookingEntity, salonName: String): PrintResult {
-        val settings = settingsStore.current()
-        val address = settings.address ?: return PrintResult.Failure(PrinterError.NO_PRINTER_SELECTED)
-        val date = com.dtpos.salonmanager.core.util.DateTimeUtils.formatDate(java.time.LocalDate.ofEpochDay(booking.dateEpochDay))
-        val lines = listOfNotNull(
-            salonName.takeIf { it.isNotBlank() }?.let { PrintLine.Text(it, PrintAlign.CENTER, bold = true) },
-            PrintLine.Separator(),
-            PrintLine.Text(context.getString(R.string.tokens_slip_title), PrintAlign.CENTER, bold = true),
-            PrintLine.Text("#${booking.tokenNumber}", PrintAlign.CENTER, bold = true, large = true),
-            PrintLine.Text(booking.customerName, PrintAlign.CENTER),
-            PrintLine.Text(date + (booking.timeMinutes?.let { "  " + com.dtpos.salonmanager.presentation.tokens.formatSlot(it) } ?: ""), PrintAlign.CENTER),
-            booking.service?.let { PrintLine.Text(it, PrintAlign.CENTER) },
-            PrintLine.Separator(),
-            PrintLine.Text(context.getString(R.string.tokens_slip_wait), PrintAlign.CENTER),
-        )
-        return bluetooth.send(address, buildBytes(lines, settings, null), copies = 1)
+    suspend fun printToken(booking: BookingEntity, salonName: String): PrintResult {
+        if (!settingsStore.current().isConfigured) return PrintResult.Failure(PrinterError.NO_PRINTER_SELECTED)
+        return printTokenSlip(tokenSlip(booking, salonName))
     }
 
     /** Prints a short page that shows alignment, width and characters. */
     suspend fun printTest(overrideAddress: String? = null): PrintResult {
-        val settings = settingsStore.current()
-        val address = overrideAddress ?: settings.address ?: return PrintResult.Failure(PrinterError.NO_PRINTER_SELECTED)
+        val saved = settingsStore.current()
+        val settings = if (overrideAddress != null) saved.copy(connection = PrinterConnection.BLUETOOTH, address = overrideAddress) else saved
+        if (!settings.isConfigured) return PrintResult.Failure(PrinterError.NO_PRINTER_SELECTED)
         val width = settings.paper.chars
         val lines = listOf(
             PrintLine.Text(context.getString(R.string.printer_test_title), PrintAlign.CENTER, bold = true, large = true),
@@ -72,13 +108,17 @@ class ReceiptPrinter(
             PrintLine.Separator(),
             PrintLine.Columns(context.getString(R.string.printer_test_paper), if (settings.paper == PaperWidth.MM58) "58 mm" else "80 mm"),
             PrintLine.Columns(context.getString(R.string.printer_test_chars), width.toString()),
+            PrintLine.Columns(
+                context.getString(R.string.printer_test_connection),
+                if (settings.connection == PrinterConnection.LAN) "LAN ${settings.lanHost}:${settings.lanPort}" else "Bluetooth",
+            ),
             PrintLine.Text("1234567890".repeat(width / 10 + 1).take(width)),
             PrintLine.Text("ABCDEFGHIJKLMNOPQRSTUVWXYZ"),
             PrintLine.Separator('='),
             PrintLine.Text(context.getString(R.string.printer_test_ok), PrintAlign.CENTER, bold = true),
         )
         val bytes = withContext(Dispatchers.Default) { buildBytes(lines, settings, logoPath = null) }
-        return bluetooth.send(address, bytes, copies = 1)
+        return transmit(settings, bytes, copies = 1)
     }
 
     /** Image mode prints the styled receipt; text mode the classic printer-font layout. */

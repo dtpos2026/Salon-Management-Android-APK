@@ -85,7 +85,6 @@
     <string name="support_call">Call</string>
     <string name="support_email">Email</string>
     <string name="support_message">Assalam-o-Alaikum, I need help with my DT Salon account (%1$s).</string>
-    <string name="whatsapp_not_installed">WhatsApp is not installed on this phone.</string>
     <string name="action_sign_out">Sign out</string>
 
     <!-- Account screen -->

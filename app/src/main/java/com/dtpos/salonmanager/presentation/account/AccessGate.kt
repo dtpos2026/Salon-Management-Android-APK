@@ -1,5 +1,6 @@
 package com.dtpos.salonmanager.presentation.account
 
+import com.dtpos.salonmanager.presentation.common.showWhatsAppResult
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
@@ -264,7 +265,6 @@ private fun SupportRow(branding: Branding, reference: String) {
     val whatsapp = branding.whatsapp.ifBlank { branding.contactNumber }
     if (whatsapp.isBlank() && branding.contactNumber.isBlank() && branding.email.isBlank()) return
     val message = stringResource(R.string.support_message, reference)
-    val notInstalled = stringResource(R.string.whatsapp_not_installed)
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -272,9 +272,7 @@ private fun SupportRow(branding: Branding, reference: String) {
     ) {
         if (whatsapp.isNotBlank()) {
             GlassOutlinedButton(stringResource(R.string.support_whatsapp), icon = Icons.AutoMirrored.Filled.Chat, onClick = {
-                if (!ExternalApps.openWhatsAppChat(context, whatsapp, message)) {
-                    Toast.makeText(context, notInstalled, Toast.LENGTH_LONG).show()
-                }
+                context.showWhatsAppResult(ExternalApps.whatsAppText(context, whatsapp, message))
             })
         }
         if (branding.contactNumber.isNotBlank()) {

@@ -20,7 +20,7 @@
     <string name="dues_amount_received">Amount received</string>
     <string name="dues_paid_of">%1$s paid of %2$s</string>
     <string name="dues_paid_on">Paid %1$s</string>
-    <string name="dues_reminded_on">Reminded %1$s</string>
+    <string name="dues_reminded_on">Reminder opened %1$s</string>
     <string name="dues_added">Pending bill saved</string>
     <string name="dues_settled">Fully paid. Moved to Paid.</string>
     <string name="dues_payment_saved">Payment saved</string>
@@ -40,14 +40,14 @@ Thank you!</string>
     <string name="promo_audience_all">All customers</string>
     <string name="promo_audience_inactive">Not visited in 30 days</string>
     <string name="promo_audience_top">Top customers</string>
-    <string name="promo_how">%1$d customers with a phone number · %2$d sent. Each chat opens in WhatsApp with the message ready; tap send there.</string>
+    <string name="promo_how">%1$d customers with a phone number · %2$d opened. Each chat opens in WhatsApp with the message ready; press send there.</string>
     <string name="promo_recipients">Customers</string>
     <string name="promo_empty_title">No customers with a phone number</string>
     <string name="promo_empty_message">Add phone numbers to customers to send them offers.</string>
     <string name="promo_last_visit">Last visit %1$s</string>
     <string name="promo_send">Send</string>
     <string name="promo_send_again">Again</string>
-    <string name="promo_sent">Sent</string>
+    <string name="promo_sent">Opened in WhatsApp</string>
     <string name="promo_offer">Discount offer</string>
     <string name="promo_festival">Eid / festival</string>
     <string name="promo_new_service">New service</string>
@@ -123,9 +123,6 @@ Thank you!</string>
     <string name="tokens_cancel">Cancel</string>
     <string name="tokens_print">Print</string>
     <string name="tokens_printed">Token printed</string>
-    <string name="tokens_print_failed">Could not print. Check the printer in Settings &gt; Printer.</string>
-    <string name="tokens_issued">Token issued</string>
-    <string name="tokens_booked">Booking confirmed</string>
     <string name="tokens_name">Customer name</string>
     <string name="tokens_phone">WhatsApp / phone (optional)</string>
     <string name="tokens_service">Service (optional)</string>
@@ -138,4 +135,13 @@ Your booking is confirmed. Token #%2$d on %3$s at %4$s.
 Please come 5 minutes early. Thank you!</string>
     <string name="tokens_wa_turn">Assalam o Alaikum %1$s,
 Your turn is coming: token #%2$d at %3$s. Please come now. Thank you!</string>
+    <string name="whatsapp_fallback_opened">WhatsApp was not found, so another way to send was opened. Install WhatsApp to send directly.</string>
+    <string name="whatsapp_failed">Could not open WhatsApp or any app to send this. Install WhatsApp and try again.</string>
+    <string name="tokens_preview_title">Token #%1$d — print preview</string>
+    <string name="tokens_preview_hint">This is exactly what the printer will print.</string>
+    <string name="tokens_send_title">Send to customer</string>
+    <string name="tokens_send_wa_text">WhatsApp text</string>
+    <string name="tokens_send_wa_image">WhatsApp picture</string>
+    <string name="tokens_send_sms">SMS</string>
+    <string name="tokens_send_share">Share…</string>
 </resources>

@@ -19,6 +19,9 @@ enum class PaperWidth(val chars: Int, val dots: Int) {
  */
 enum class PrintMode { TEXT, IMAGE }
 
+/** Which printer prints: a Bluetooth printer (paired) or a network printer (IP and port). */
+enum class PrinterConnection { BLUETOOTH, LAN }
+
 data class PrinterSettings(
     val address: String? = null,
     val name: String? = null,
@@ -30,8 +33,15 @@ data class PrinterSettings(
     val feedLines: Int = 3,
     val cut: Boolean = true,
     val receiptStyle: ReceiptStyle = ReceiptStyle.CLASSIC,
+    val connection: PrinterConnection = PrinterConnection.BLUETOOTH,
+    val lanHost: String? = null,
+    val lanPort: Int = LanPrinterService.DEFAULT_PORT,
 ) {
-    val isConfigured: Boolean get() = !address.isNullOrBlank()
+    val isConfigured: Boolean
+        get() = when (connection) {
+            PrinterConnection.BLUETOOTH -> !address.isNullOrBlank()
+            PrinterConnection.LAN -> !lanHost.isNullOrBlank()
+        }
 }
 
 class PrinterSettingsStore(private val settings: SettingsRepository) {
@@ -59,6 +69,9 @@ class PrinterSettingsStore(private val settings: SettingsRepository) {
         settings.putInt(SettingKeys.PRINTER_FEED, value.feedLines.coerceIn(0, 8))
         settings.putBoolean(SettingKeys.PRINTER_CUT, value.cut)
         settings.putString(SettingKeys.PRINTER_STYLE, value.receiptStyle.name)
+        settings.putString(SettingKeys.PRINTER_CONNECTION, value.connection.name)
+        settings.putString(SettingKeys.PRINTER_LAN_HOST, value.lanHost?.trim()?.ifEmpty { null })
+        settings.putInt(SettingKeys.PRINTER_LAN_PORT, value.lanPort.coerceIn(1, 65535))
     }
 
     private fun parse(map: Map<String, String>) = PrinterSettings(
@@ -72,5 +85,8 @@ class PrinterSettingsStore(private val settings: SettingsRepository) {
         feedLines = map[SettingKeys.PRINTER_FEED]?.toIntOrNull()?.coerceIn(0, 8) ?: 3,
         cut = map[SettingKeys.PRINTER_CUT]?.toBooleanStrictOrNull() ?: true,
         receiptStyle = map[SettingKeys.PRINTER_STYLE]?.let { v -> ReceiptStyle.entries.firstOrNull { it.name == v } } ?: ReceiptStyle.CLASSIC,
+        connection = map[SettingKeys.PRINTER_CONNECTION]?.let { v -> PrinterConnection.entries.firstOrNull { it.name == v } } ?: PrinterConnection.BLUETOOTH,
+        lanHost = map[SettingKeys.PRINTER_LAN_HOST]?.takeIf { it.isNotBlank() },
+        lanPort = map[SettingKeys.PRINTER_LAN_PORT]?.toIntOrNull()?.takeIf { it in 1..65535 } ?: LanPrinterService.DEFAULT_PORT,
     )
 }
