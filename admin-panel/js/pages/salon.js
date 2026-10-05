@@ -2,7 +2,7 @@ import {
   getAccount, getNotes, saveNotes, updateAccount, effectiveStatus, PLANS, STATUS_LABELS, planExpiry,
   listInvoices, deleteAccount, ensureIds, approveDevice, dismissDeviceRequest,
   approvedDevices, deviceLimit, deviceName, removeDevice, setDeviceLimit,
-  salesStats, salesDays, salesSummary,
+  salesStats, salesDays, salesSummary, devicesOf, setDeviceBlocked,
 } from '../data.js';
 import {
   esc, fmtDate, fmtDateTime, inputDate, fromInputDate, money, relativeDays, toast, errorMessage,
@@ -27,6 +27,8 @@ export async function render(el, ctx) {
     salesStats(account.id).catch(() => null),
     salesDays(account.id, 31).catch(() => []),
   ]);
+  const reports = Object.fromEntries((await devicesOf(account.id).catch(() => [])).map((d) => [d.deviceId, d]));
+  const blockedIds = account.blockedDeviceIds || [];
   const sales = salesSummary(stats);
   const status = effectiveStatus(account);
   ctx.setTitle(account.salonName || 'Salon');
@@ -107,8 +109,11 @@ export async function render(el, ctx) {
           <label class="cell-sub" style="display:flex;gap:6px;align-items:center">Allowed
             <input id="max-devices" type="number" min="1" max="20" value="${limit}" style="width:64px">
             <button class="btn btn-ghost btn-sm" id="save-max">Save</button></label></div>
-        ${devices.length ? `<ul class="device-list">${devices.map((d) => `<li><span>📱 ${esc(deviceName(account, d))} <span class="cell-sub mono">${esc(String(d).slice(-8))}</span></span>
-          <button class="btn btn-ghost btn-sm" data-remove-device="${esc(d)}">Remove</button></li>`).join('')}</ul>`
+        ${devices.length ? `<ul class="device-list">${devices.map((d) => `<li><span>📱 ${esc(deviceName(account, d))} <span class="cell-sub mono">${esc(String(d).slice(-8))}</span>
+          ${reports[d] ? `<span class="cell-sub">· app ${esc(reports[d].appVersion || '?')} · seen ${fmtDateTime(reports[d].lastSeenAt)}</span>` : ''}
+          ${blockedIds.includes(d) ? '<span class="pill st-BLOCKED">Blocked</span>' : ''}</span>
+          <span><button class="btn btn-ghost btn-sm" data-block-device="${esc(d)}">${blockedIds.includes(d) ? 'Unblock' : 'Block'}</button>
+          <button class="btn btn-ghost btn-sm" data-remove-device="${esc(d)}">Remove</button></span></li>`).join('')}</ul>`
     : '<div class="empty">No phone approved. The next phone that signs in asks for approval.</div>'}
       </div>
     </div>
@@ -195,6 +200,18 @@ export async function render(el, ctx) {
   deviceAction('[data-act="replace-device"]', 'Move the account to this phone?',
     `Only ${account.pendingDeviceModel || 'the new phone'} will open ${account.salonName || 'this salon'}. The other phone(s) stop at their next check.`, 'Move',
     () => approveDevice(account, { replace: true }), 'Account moved to the new phone');
+  el.querySelectorAll('[data-block-device]').forEach((b) => b.addEventListener('click', async () => {
+    const id = b.dataset.blockDevice;
+    const blocked = blockedIds.includes(id);
+    const ok = await confirmDialog(
+      blocked ? 'Unblock this phone?' : 'Block this phone?',
+      blocked ? `${deviceName(account, id)} can open the app again at its next check.` : `${deviceName(account, id)} stops opening the app at its next online check. Its salon data is not deleted.`,
+      blocked ? 'Unblock' : 'Block',
+      !blocked,
+    );
+    if (!ok) return;
+    try { await setDeviceBlocked(account, id, !blocked); toast(blocked ? 'Phone unblocked' : 'Phone blocked', 'success'); reload(); } catch (e) { toast(errorMessage(e), 'error'); }
+  }));
   el.querySelectorAll('[data-remove-device]').forEach((b) => b.addEventListener('click', async () => {
     const id = b.dataset.removeDevice;
     if (!(await confirmDialog('Remove this phone?', `${deviceName(account, id)} will stop opening the app at its next check.`, 'Remove', true))) return;

@@ -65,6 +65,16 @@ await admin(async (db) => {
     expiresAt: Timestamp.fromMillis(now - 3 * DAY), createdAt: Timestamp.fromMillis(now - 90 * DAY),
   });
   await setDoc(doc(db, 'counters/customers'), { next: 2 });
+  // Phones as the app reports them (DeviceMonitor).
+  await setDoc(doc(db, 'devices/royal1__a-old-phone-1111'), {
+    uid: 'royal1', deviceId: 'a-old-phone-1111', model: 'Samsung A15', platform: 'android', osVersion: 'Android 14 (API 34)',
+    appVersion: '2.1.0', locationPermission: 'granted', lastSeenAt: Timestamp.fromMillis(now - 600000),
+    lat: 30.1575, lng: 72.6847, accuracyM: 40, locationAt: Timestamp.fromMillis(now - 600000),
+  });
+  await setDoc(doc(db, 'devices/royal1__a-new-phone-2222'), {
+    uid: 'royal1', deviceId: 'a-new-phone-2222', model: 'Infinix Hot 40', platform: 'android', osVersion: 'Android 13 (API 33)',
+    appVersion: '2.1.0', locationPermission: 'off', lastSeenAt: Timestamp.fromMillis(now - 3 * DAY),
+  });
   // Daily totals the app shares (numbers only).
   const key = (ms) => { const d = new Date(ms); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
   await setDoc(doc(db, 'stats/royal1'), {
@@ -160,6 +170,20 @@ try {
   assert.equal(await salesCard.locator('tbody tr').count(), 2);
   await salesCard.screenshot({ path: join(SHOTS, '1b-salon-sales.png') });
   step('salon page shows today / yesterday / month sales and the daily table');
+
+  await page.goto(`${base}/index.html#/phones`);
+  await page.locator('tr', { hasText: 'Infinix Hot 40' }).waitFor();
+  assert.equal(await page.locator('.leaflet-marker-icon').count(), 1);
+  await page.locator('tr', { hasText: 'Samsung A15' }).getByText('Active now').waitFor();
+  await page.locator('tr', { hasText: 'Infinix Hot 40' }).getByText('Not shared').waitFor();
+  await page.screenshot({ path: join(SHOTS, '1c-phones-map.png'), fullPage: true });
+  await page.locator('tr', { hasText: 'Infinix Hot 40' }).locator('[data-block]').click();
+  await page.click('.modal button[type=submit]');
+  await page.getByText('Phone blocked').waitFor();
+  const blockedNow = await admin(async (db) => (await getDoc(doc(db, 'accounts/royal1'))).data());
+  assert.deepEqual(blockedNow.blockedDeviceIds, ['a-new-phone-2222']);
+  await page.locator('tr', { hasText: 'Infinix Hot 40' }).getByText('Blocked').waitFor();
+  step('phones page: map marker for the shared location, last seen, block a phone');
 
   await page.goto(`${base}/index.html#/salons`);
   await page.fill('#q', 'roy');

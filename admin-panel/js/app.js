@@ -16,6 +16,7 @@ import * as settings from './pages/settings.js';
 import * as admins from './pages/admins.js';
 import * as reminders from './pages/reminders.js';
 import * as support from './pages/support.js';
+import * as phones from './pages/phones.js';
 
 const root = document.getElementById('app');
 
@@ -154,6 +155,7 @@ const NAV = [
   { key: 'salons', href: '#/salons', label: 'Salons', icon: ICONS.salons, badge: true },
   { key: 'invoices', href: '#/invoices', label: 'Invoices', icon: ICONS.invoices },
   { key: 'support', href: '#/support', label: 'Support', icon: ICONS.support },
+  { key: 'phones', href: '#/phones', label: 'Phones', icon: ICONS.phones },
   { key: 'reminders', href: '#/reminders', label: 'Reminders', icon: ICONS.reminders },
   { key: 'settings', href: '#/settings', label: 'Settings', icon: ICONS.settings },
   { key: 'admins', href: '#/admins', label: 'Admins', icon: ICONS.admins },
@@ -167,6 +169,7 @@ const ROUTES = [
   { re: /^#\/salon\/([^/?]+)/, nav: 'salons', page: salon },
   { re: /^#\/salons/, nav: 'salons', page: salons },
   { re: /^#\/support/, nav: 'support', page: support },
+  { re: /^#\/phones/, nav: 'phones', page: phones },
   { re: /^#\/reminders/, nav: 'reminders', page: reminders },
   { re: /^#\/settings/, nav: 'settings', page: settings },
   { re: /^#\/admins/, nav: 'admins', page: admins },

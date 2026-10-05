@@ -21,6 +21,9 @@ sealed interface AccessState {
     /** Approved, but the phone must reach the server once (offline grace used up, or first sign-in offline). */
     data class NeedsVerification(val account: CloudAccount?, val daysSinceVerified: Int?) : AccessState
 
+    /** The Super Admin blocked this phone (the salon data on it stays; unblocking opens it again). */
+    data class DeviceBlocked(val account: CloudAccount) : AccessState
+
     /** The account is approved for another phone; [requested] = this phone already asked the admin. */
     data class DeviceNotApproved(val account: CloudAccount, val requested: Boolean) : AccessState
 
@@ -51,6 +54,7 @@ object AccessPolicy {
      * @param deviceId this phone (see [DeviceIds]).
      */
     fun decide(account: CloudAccount, verifiedAtMillis: Long, nowMillis: Long, offlineGraceDays: Int, deviceId: String): AccessState {
+        if (account.blocks(deviceId)) return AccessState.DeviceBlocked(account)
         if (!account.approvedFor(deviceId)) {
             return AccessState.DeviceNotApproved(account, requested = account.pendingDeviceId == deviceId)
         }

@@ -5,7 +5,7 @@ import {
   initializeTestEnvironment, assertFails, assertSucceeds,
 } from '@firebase/rules-unit-testing';
 import {
-  doc, getDoc, setDoc, updateDoc, writeBatch, collection, getDocs, query, where, serverTimestamp, deleteDoc,
+  doc, getDoc, setDoc, updateDoc, writeBatch, collection, getDocs, query, where, serverTimestamp, deleteDoc, deleteField,
 } from 'firebase/firestore';
 
 let env;
@@ -193,4 +193,28 @@ test('clear old chat: a salon deletes only its own messages', async () => {
   await assertFails(deleteDoc(doc(salon(), 'support/other/messages/b')));
   await assertFails(updateDoc(doc(salon(), 'support/other/messages/b'), { text: 'changed' }));
   await assertSucceeds(deleteDoc(doc(admin(), 'support/other/messages/b')));
+});
+
+test('phone status: a salon reports only its own phones, numbers in range; only admins read', async () => {
+  const report = {
+    uid: 'salon1', deviceId: 'a-phone-1234', model: 'Samsung A15', platform: 'android', osVersion: 'Android 14 (API 34)',
+    appVersion: '2.1.0', locationPermission: 'granted', lastSeenAt: serverTimestamp(), lat: 30.16, lng: 72.68, accuracyM: 35, locationAt: serverTimestamp(),
+  };
+  await assertSucceeds(setDoc(doc(salon(), 'devices/salon1__a-phone-1234'), report, { merge: true }));
+  await assertSucceeds(setDoc(doc(salon(), 'devices/salon1__a-phone-1234'), { ...report, locationPermission: 'off', lat: deleteField(), lng: deleteField(), accuracyM: deleteField(), locationAt: deleteField() }, { merge: true }));
+  await assertFails(setDoc(doc(salon(), 'devices/other__a-phone-1234'), { ...report, uid: 'other' }));
+  await assertFails(setDoc(doc(salon(), 'devices/salon1__a-phone-9999'), report));
+  await assertFails(setDoc(doc(salon(), 'devices/salon1__a-phone-1234'), { ...report, lat: 120 }));
+  await assertFails(setDoc(doc(salon(), 'devices/salon1__a-phone-1234'), { ...report, ip: '1.2.3.4' }));
+  await assertFails(setDoc(doc(salon(), 'devices/salon1__a-phone-1234'), { ...report, locationPermission: 'maybe' }));
+  await assertFails(getDocs(collection(salon(), 'devices')));
+  await assertSucceeds(getDocs(collection(admin(), 'devices')));
+});
+
+test('only the admin blocks a phone', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'accounts/salon1'), { uid: 'salon1', status: 'APPROVED', email: 'salon1@gmail.com', deviceIds: ['a-phone-1234'], lastSeenAt: null });
+  });
+  await assertFails(updateDoc(doc(salon(), 'accounts/salon1'), { blockedDeviceIds: [] , lastSeenAt: serverTimestamp() }));
+  await assertSucceeds(updateDoc(doc(admin(), 'accounts/salon1'), { blockedDeviceIds: ['a-phone-1234'] }));
 });

@@ -172,7 +172,7 @@ class AccountManager(
      * Returns the account as it now is on the server.
      */
     private suspend fun requestDeviceIfNeeded(account: CloudAccount): CloudAccount {
-        if (account.approvedFor(deviceId) || account.pendingDeviceId == deviceId) return account
+        if (account.blocks(deviceId) || account.approvedFor(deviceId) || account.pendingDeviceId == deviceId) return account
         val sent = optional { backend.requestDevice(account.uid, deviceId, deviceModel()) } != null
         return if (sent) account.copy(pendingDeviceId = deviceId, pendingDeviceModel = deviceModel()) else account
     }

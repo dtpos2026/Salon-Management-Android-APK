@@ -141,4 +141,10 @@
     <string name="security_staff_pin_saved">Staff PIN mehfooz ho gaya</string>
     <string name="security_staff_pin_removed">Staff PIN hata diya</string>
     <string name="security_staff_pin_taken">Doosra PIN rakhein: malik ya doosre role jaisa na ho.</string>
+    <string name="device_blocked_title">Yeh phone block hai</string>
+    <string name="device_blocked_message">DT ne %1$s ke liye yeh phone block kiya hai. Is phone par aap ka data mehfooz hai aur yahin rahega. Unblock karwane ke liye DT support se rabta karein, phir Dobara check karein.</string>
+    <string name="account_privacy_title">DT kya dekh sakta hai</string>
+    <string name="account_sales_shared">Billing ke liye DT sirf rozana total dekhta hai: sale ki raqam, customers aur services ki tadaad, aur cash / online / udhaar. Customer ke naam, phone number aur raseedein isi phone par rehti hain. DT is phone ka model aur app version bhi dekhta hai.</string>
+    <string name="account_share_location">Is phone ki location share karein</string>
+    <string name="account_share_location_sub">Shuru mein band. On karne par DT apne naqshe par is phone ki andazan location dekhta hai (madad aur dukaan ki tasdeeq ke liye). Kabhi bhi band karein.</string>
 </resources>

@@ -141,4 +141,10 @@
     <string name="security_staff_pin_saved">Staff PIN saved</string>
     <string name="security_staff_pin_removed">Staff PIN removed</string>
     <string name="security_staff_pin_taken">Use a different PIN: it must not match the owner or the other role.</string>
+    <string name="device_blocked_title">This phone is blocked</string>
+    <string name="device_blocked_message">DT has blocked this phone for %1$s. Your salon data on this phone is safe and stays here. Contact DT support to unblock it, then tap Check again.</string>
+    <string name="account_privacy_title">What DT can see</string>
+    <string name="account_sales_shared">For billing, DT sees your daily totals only: sales amount, number of customers and services, and cash / online / udhaar. Customer names, phone numbers and receipts stay on this phone. DT also sees this phone\'s model and app version.</string>
+    <string name="account_share_location">Share this phone\'s location</string>
+    <string name="account_share_location_sub">Off by default. When on, DT sees the approximate location of this phone on its map (to help and verify your shop). Turn off any time.</string>
 </resources>

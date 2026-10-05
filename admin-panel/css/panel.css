@@ -319,3 +319,8 @@ table.list tr.row-link:hover td { background: #faf8fd; }
 .reply-box { display: flex; gap: 8px; align-items: flex-end; }
 .reply-box textarea { flex: 1; min-height: 56px; border-radius: 14px; border: 1px solid rgba(0,0,0,.15); padding: 10px 12px; font: inherit; }
 @media (max-width: 820px) { .support-grid { grid-template-columns: 1fr; } }
+
+/* Phones map (Leaflet) */
+.phone-map { height: 420px; border-radius: 14px; overflow: hidden; margin: 6px 0 10px; background: #eef0f3; }
+.phone-map .empty { padding-top: 160px; }
+@media (max-width: 700px) { .phone-map { height: 300px; } }

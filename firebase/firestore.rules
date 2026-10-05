@@ -157,6 +157,33 @@ service cloud.firestore {
       }
     }
 
+    // Phone status for the Super Admin's phone list and map: model, versions, last seen and,
+    // only when the owner allows it, the approximate location. No salon data.
+    function coordinate(data, key, limit) {
+      return !(key in data) || (data[key] is number && data[key] >= -limit && data[key] <= limit);
+    }
+
+    match /devices/{id} {
+      allow get, list: if isAdmin();
+      allow create, update: if signedIn()
+        && id == request.auth.uid + '__' + request.resource.data.deviceId
+        && request.resource.data.keys().hasOnly([
+          'uid', 'deviceId', 'model', 'platform', 'osVersion', 'appVersion', 'locationPermission',
+          'lastSeenAt', 'lat', 'lng', 'accuracyM', 'locationAt'])
+        && request.resource.data.uid == request.auth.uid
+        && deviceIdOk(request.resource.data.deviceId)
+        && request.resource.data.lastSeenAt == request.time
+        && optionalText(request.resource.data, 'model', 120)
+        && optionalText(request.resource.data, 'platform', 20)
+        && optionalText(request.resource.data, 'osVersion', 40)
+        && optionalText(request.resource.data, 'appVersion', 40)
+        && request.resource.data.locationPermission in ['off', 'granted', 'denied']
+        && coordinate(request.resource.data, 'lat', 90)
+        && coordinate(request.resource.data, 'lng', 180)
+        && coordinate(request.resource.data, 'accuracyM', 1000000);
+      allow delete: if isAdmin();
+    }
+
     // AI settings (config/ai) are readable by signed-in salons so the app can show the switch.
     // The Claude API key never lives here: it is a Cloud Functions secret.
     // AI usage counters are written only by Cloud Functions (admin SDK).

@@ -11,7 +11,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
@@ -26,8 +29,9 @@ import kotlinx.coroutines.withContext
 @Composable
 fun ServicePhoto(path: String?, modifier: Modifier = Modifier, maxSize: Int = 360) {
     val store = LocalAppContainer.current.serviceImageStore
-    val image by produceState<ImageBitmap?>(null, path, maxSize) {
-        value = path?.let { withContext(Dispatchers.IO) { store.loadBitmap(it, maxSize)?.asImageBitmap() } }
+    var image by remember(path, maxSize) { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(path, maxSize) {
+        image = if (path == null) null else withContext(Dispatchers.IO) { store.loadBitmap(path, maxSize)?.asImageBitmap() }
     }
     Box(modifier.background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
         val bitmap = image

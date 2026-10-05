@@ -158,6 +158,11 @@ class AppContainer(
         com.dtpos.salonmanager.services.account.SalesSync(app, { database }, businessId, accountManager, appScope, BuildConfig.VERSION_NAME)
     }
 
+    /** Phone status for the Super Admin's phone list and map (see DeviceMonitor). */
+    val deviceMonitor by lazy {
+        com.dtpos.salonmanager.services.account.DeviceMonitor(app, accountManager, uiPreferences.shareLocation, appScope, BuildConfig.VERSION_NAME)
+    }
+
     suspend fun initialize() {
         try {
             accountManager.start()
@@ -166,8 +171,9 @@ class AppContainer(
         }
         try {
             salesSync.start()
+            deviceMonitor.start()
         } catch (e: Exception) {
-            // Sharing totals is best effort; it never blocks the salon.
+            // Sharing totals and phone status is best effort; it never blocks the salon.
         }
         try {
             businessRepository.ensureInitialized()

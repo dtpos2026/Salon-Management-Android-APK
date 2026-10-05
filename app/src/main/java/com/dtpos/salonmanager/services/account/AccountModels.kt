@@ -43,7 +43,11 @@ data class CloudAccount(
     /** Another phone asking the admin for approval. */
     val pendingDeviceId: String? = null,
     val pendingDeviceModel: String? = null,
+    /** Phones the Super Admin blocked. Checked on the server copy; salon data on the phone is kept. */
+    val blockedDeviceIds: List<String> = emptyList(),
 ) {
+    fun blocks(device: String): Boolean = device in blockedDeviceIds
+
     fun approvedFor(device: String): Boolean = when {
         deviceIds.isNotEmpty() -> device in deviceIds
         else -> deviceId == null || deviceId == device
@@ -126,6 +130,7 @@ object AccountParser {
         deviceIds = (data["deviceIds"] as? Iterable<*>)?.mapNotNull { (it as? String)?.takeIf(String::isNotBlank) }.orEmpty(),
         pendingDeviceId = data.str("pendingDeviceId"),
         pendingDeviceModel = data.str("pendingDeviceModel"),
+        blockedDeviceIds = (data["blockedDeviceIds"] as? Iterable<*>)?.mapNotNull { (it as? String)?.takeIf(String::isNotBlank) }.orEmpty(),
     )
 
     fun branding(data: Map<String, Any?>): Branding = Branding(

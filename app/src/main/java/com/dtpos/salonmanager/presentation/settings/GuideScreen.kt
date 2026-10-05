@@ -26,7 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -86,8 +86,9 @@ object Guide {
 fun GuideScreen(onBack: () -> Unit, onSupport: () -> Unit) {
     val context = LocalContext.current
     val language = LocalAppContainer.current.uiPreferences.language.tag
-    val topics by produceState(emptyList<GuideTopic>(), language) {
-        value = withContext(Dispatchers.IO) { Guide.load(context, language) }
+    var topics by remember(language) { mutableStateOf(emptyList<GuideTopic>()) }
+    LaunchedEffect(language) {
+        topics = withContext(Dispatchers.IO) { Guide.load(context, language) }
     }
     var query by rememberSaveable { mutableStateOf("") }
     var open by rememberSaveable { mutableStateOf(-1) }

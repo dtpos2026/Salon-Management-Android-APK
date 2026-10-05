@@ -92,6 +92,7 @@ class AccountCache(context: Context) {
         put("pendingAmount", pendingAmount); put("messageToUser", messageToUser)
         put("deviceId", deviceId); put("deviceModel", deviceModel); put("deviceIds", org.json.JSONArray(deviceIds))
         put("pendingDeviceId", pendingDeviceId); put("pendingDeviceModel", pendingDeviceModel)
+        put("blockedDeviceIds", org.json.JSONArray(blockedDeviceIds))
     }
 
     private fun Branding.toJson() = JSONObject().apply {

@@ -141,4 +141,10 @@
     <string name="security_staff_pin_saved">اسٹاف PIN محفوظ ہو گیا</string>
     <string name="security_staff_pin_removed">اسٹاف PIN ہٹا دیا</string>
     <string name="security_staff_pin_taken">دوسرا PIN رکھیں: مالک یا دوسرے رول جیسا نہ ہو۔</string>
+    <string name="device_blocked_title">یہ فون بلاک ہے</string>
+    <string name="device_blocked_message">DT نے %1$s کے لیے یہ فون بلاک کیا ہے۔ اس فون پر آپ کا ڈیٹا محفوظ ہے اور یہیں رہے گا۔ ان بلاک کروانے کے لیے DT سپورٹ سے رابطہ کریں، پھر دوبارہ چیک کریں۔</string>
+    <string name="account_privacy_title">DT کیا دیکھ سکتا ہے</string>
+    <string name="account_sales_shared">بلنگ کے لیے DT صرف روزانہ ٹوٹل دیکھتا ہے: سیل کی رقم، کسٹمرز اور سروسز کی تعداد، اور کیش / آن لائن / اُدھار۔ کسٹمر کے نام، فون نمبر اور رسیدیں اسی فون پر رہتی ہیں۔ DT اس فون کا ماڈل اور ایپ ورژن بھی دیکھتا ہے۔</string>
+    <string name="account_share_location">اس فون کی لوکیشن شیئر کریں</string>
+    <string name="account_share_location_sub">شروع میں بند۔ آن کرنے پر DT اپنے نقشے پر اس فون کی اندازاً لوکیشن دیکھتا ہے (مدد اور دکان کی تصدیق کے لیے)۔ کبھی بھی بند کریں۔</string>
 </resources>

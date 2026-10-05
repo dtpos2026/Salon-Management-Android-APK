@@ -537,3 +537,30 @@ export async function salesDays(uid, n = 31) {
   return snap.docs.map((d) => d.data());
 }
 
+// ---- Phones (status reported by the app, see DeviceMonitor) ------------------------------
+
+/** Every phone that reported itself: model, versions, last seen and (when shared) location. */
+export async function listDevices() {
+  const snap = await getDocs(collection(db(), 'devices'));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+/** Accounts by uid (missing ones are left out). */
+export async function listAccountsByIds(ids) {
+  const out = {};
+  await Promise.all(ids.map(async (id) => { const a = await getAccount(id).catch(() => null); if (a) out[id] = a; }));
+  return out;
+}
+
+export async function devicesOf(uid) {
+  const snap = await getDocs(query(collection(db(), 'devices'), where('uid', '==', uid)));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+/** Blocks or unblocks one phone of an account. The app checks this list on the server copy. */
+export async function setDeviceBlocked(account, deviceId, blocked) {
+  const current = new Set(account.blockedDeviceIds || []);
+  if (blocked) current.add(deviceId); else current.delete(deviceId);
+  await updateDoc(doc(db(), 'accounts', account.id), { blockedDeviceIds: [...current], updatedAt: serverTimestamp() });
+}
+

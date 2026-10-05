@@ -178,6 +178,7 @@ fun AccessGate(content: @Composable () -> Unit) {
             is AccessState.Restricted -> StatusScreen(vm, s.account, s.status)
             is AccessState.NeedsVerification -> VerificationScreen(vm, s)
             is AccessState.DeviceNotApproved -> DeviceApprovalScreen(vm, s)
+            is AccessState.DeviceBlocked -> DeviceBlockedScreen(vm, s)
             is AccessState.WrongDevice -> WrongDeviceScreen(vm, s)
             is AccessState.UpdateRequired -> UpdateRequiredScreen(vm, s.config)
             is AccessState.Allowed -> content()
@@ -606,6 +607,22 @@ private fun DeviceApprovalScreen(vm: AccessViewModel, state: AccessState.DeviceN
             model,
             branding.appName,
         ),
+        account = state.account,
+    ) {
+        CheckAgainButton(vm)
+        Spacer(Modifier.height(4.dp))
+        SignOutButton(vm)
+    }
+}
+
+@Composable
+private fun DeviceBlockedScreen(vm: AccessViewModel, state: AccessState.DeviceBlocked) {
+    val branding by vm.branding.collectAsStateWithLifecycle()
+    StatusPage(
+        vm = vm,
+        icon = Icons.Filled.PhonelinkLock,
+        title = stringResource(R.string.device_blocked_title),
+        message = stringResource(R.string.device_blocked_message, branding.appName),
         account = state.account,
     ) {
         CheckAgainButton(vm)
