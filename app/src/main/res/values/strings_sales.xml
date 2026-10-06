@@ -94,5 +94,4 @@
     <string name="receipt_image_saved">Saved to Gallery: %1$s</string>
     <string name="receipt_image_failed">Could not create the receipt image. Please try again.</string>
     <string name="receipt_permission_denied">Storage permission is needed to save the receipt in the gallery.</string>
-    <string name="receipt_whatsapp_message">Assalam-o-Alaikum %1$s, your payment has been received successfully. Receipt %2$s, total %3$s. Thank you! – %4$s</string>
 </resources>

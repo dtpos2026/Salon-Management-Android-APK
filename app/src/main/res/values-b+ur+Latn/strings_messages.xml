@@ -28,9 +28,6 @@
     <string name="dues_error_amount">Sahi raqam likhein</string>
     <string name="dues_delete_title">Udhaar delete karein?</string>
     <string name="dues_delete_message">%1$s ka udhaar hata diya jayega.</string>
-    <string name="dues_reminder_message">Assalam o Alaikum %1$s,
-Yaad dehani: %3$s par aap ka %2$s baqi hai. Barah-e-karam sahulat se ada kar dein.
-Shukriya!</string>
     <string name="promo_title">WhatsApp promotions</string>
     <string name="promo_template">Paigham ki qisam</string>
     <string name="promo_message">Paigham</string>

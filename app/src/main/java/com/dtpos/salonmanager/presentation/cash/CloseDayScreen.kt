@@ -189,7 +189,7 @@ fun CloseDayScreen(onBack: () -> Unit) {
     val shareTitle = stringResource(R.string.close_share)
     LaunchedEffect(shareRequest) {
         if (shareRequest > 0) {
-            vm.shareText()?.let { context.showWhatsAppResult(ExternalApps.whatsAppText(context, null, it, shareTitle)) }
+            vm.shareText()?.let { context.showWhatsAppResult(ExternalApps.whatsAppText(context, null, it, shareTitle), it) }
         }
     }
 

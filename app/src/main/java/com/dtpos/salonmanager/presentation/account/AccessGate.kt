@@ -281,7 +281,7 @@ private fun SupportRow(branding: Branding, reference: String) {
     ) {
         if (whatsapp.isNotBlank()) {
             GlassOutlinedButton(stringResource(R.string.support_whatsapp), icon = Icons.AutoMirrored.Filled.Chat, onClick = {
-                context.showWhatsAppResult(ExternalApps.whatsAppText(context, whatsapp, message))
+                context.showWhatsAppResult(ExternalApps.whatsAppText(context, whatsapp, message), message)
             })
         }
         if (branding.contactNumber.isNotBlank()) {

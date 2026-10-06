@@ -155,4 +155,19 @@
     <string name="location_turn_on">Turn on location</string>
     <string name="location_privacy_note">Only this phone\'s location, model and app version are shared with DT (Digital Target). Customer names, phone numbers and receipts stay on this phone.</string>
     <string name="account_location_shared">This phone\'s location is shared with DT while the app is in use (required to open the app).</string>
+    <string name="share_greeting_name">Assalam o Alaikum %1$s,</string>
+    <string name="share_greeting">Assalam o Alaikum,</string>
+    <string name="share_receipt_label">Receipt</string>
+    <string name="share_discount">Discount</string>
+    <string name="share_total">Total</string>
+    <string name="share_paid">Paid</string>
+    <string name="share_balance">Udhaar (balance)</string>
+    <string name="share_thanks">Thank you for visiting!</string>
+    <string name="share_cancelled">This receipt was cancelled.</string>
+    <string name="share_due_intro">A friendly reminder from %1$s about your pending bill.</string>
+    <string name="share_note">Note</string>
+    <string name="share_bill">Bill</string>
+    <string name="share_due_balance">Balance due</string>
+    <string name="share_due_closing">Please clear it at your convenience. Thank you!</string>
+    <string name="whatsapp_copied">No app could open to send this. The message is copied: open WhatsApp and paste it.</string>
 </resources>

@@ -89,5 +89,4 @@
     <string name="receipt_image_saved">Gallery mein save: %1$s</string>
     <string name="receipt_image_failed">Receipt ki tasveer nahi ban saki. Dobara koshish karein.</string>
     <string name="receipt_permission_denied">Receipt gallery mein save karne ke liye storage ki ijazat chahiye.</string>
-    <string name="receipt_whatsapp_message">Assalam-o-Alaikum %1$s, aap ki payment kamyabi se wasool ho gayi hai. Receipt %2$s, total %3$s. Shukriya! – %4$s</string>
 </resources>

@@ -196,14 +196,24 @@ export function printElement(el, kind) {
   setTimeout(done, 60000);
 }
 
+/** WhatsApp text for an invoice: date, period, every line, total, paid, balance and the verify link. */
 export function invoiceMessage(inv, billing) {
-  const status = inv.balance > 0 ? `Balance due: ${money(inv.balance)}` : 'Paid in full. Thank you!';
-  return [
+  const lines = [
     'Assalam-o-Alaikum,',
-    `${billing.companyName || 'DT Salon Management'} invoice ${inv.number} for ${inv.salonName}.`,
-    `Total: ${money(inv.total)}. ${status}`,
-    inv.verifyToken ? `Verify: ${verifyUrl(inv.verifyToken)}` : '',
-  ].filter(Boolean).join('\n');
+    `${billing.companyName || 'DT Salon Management'} invoice ${inv.number}${inv.salonName ? ` for ${inv.salonName}` : ''}.`,
+    `Date: ${fmtDate(inv.issuedAt)}${period(inv) ? ` · Period: ${period(inv)}` : ''}`,
+    '',
+  ];
+  (inv.items || []).filter((it) => String(it.description || '').trim()).forEach((it) => {
+    const qty = Number(it.qty) || 0;
+    lines.push(`• ${it.description}${qty > 1 ? ` x${qty}` : ''}: ${money(qty * (Number(it.rate) || 0))}`);
+  });
+  if (Number(inv.discount) > 0) lines.push(`Discount: -${money(inv.discount)}`);
+  lines.push(`Total: ${money(inv.total)}`);
+  if (Number(inv.paid) > 0) lines.push(`Paid: ${money(inv.paid)}`);
+  lines.push(inv.balance > 0 ? `Balance due: ${money(inv.balance)}` : 'Paid in full. Thank you!');
+  if (inv.verifyToken) lines.push('', `Verify: ${verifyUrl(inv.verifyToken)}`);
+  return lines.join('\n');
 }
 
 /** Shares the image (phones: WhatsApp/any app); otherwise downloads it and opens WhatsApp chat. */

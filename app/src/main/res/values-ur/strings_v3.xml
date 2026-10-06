@@ -155,4 +155,19 @@
     <string name="location_turn_on">لوکیشن آن کریں</string>
     <string name="location_privacy_note">DT (Digital Target) کو صرف اس فون کی لوکیشن، ماڈل اور ایپ ورژن جاتا ہے۔ کسٹمر کے نام، فون نمبر اور رسیدیں اسی فون پر رہتی ہیں۔</string>
     <string name="account_location_shared">ایپ استعمال کرتے وقت اس فون کی لوکیشن DT کو جاتی ہے (ایپ کھولنے کے لیے ضروری)۔</string>
+    <string name="share_greeting_name">السلام علیکم %1$s،</string>
+    <string name="share_greeting">السلام علیکم،</string>
+    <string name="share_receipt_label">رسید</string>
+    <string name="share_discount">رعایت</string>
+    <string name="share_total">کل رقم</string>
+    <string name="share_paid">ادا شدہ</string>
+    <string name="share_balance">اُدھار (باقی)</string>
+    <string name="share_thanks">تشریف لانے کا شکریہ!</string>
+    <string name="share_cancelled">یہ رسید منسوخ کر دی گئی ہے۔</string>
+    <string name="share_due_intro">%1$s کی طرف سے آپ کے باقی بل کی یاد دہانی۔</string>
+    <string name="share_note">نوٹ</string>
+    <string name="share_bill">بل</string>
+    <string name="share_due_balance">باقی رقم</string>
+    <string name="share_due_closing">براہ کرم سہولت سے ادا کر دیں۔ شکریہ!</string>
+    <string name="whatsapp_copied">بھیجنے کے لیے کوئی ایپ نہیں کھلی۔ پیغام کاپی ہو گیا ہے: واٹس ایپ کھولیں اور پیسٹ کریں۔</string>
 </resources>

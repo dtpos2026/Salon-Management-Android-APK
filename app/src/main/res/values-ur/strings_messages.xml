@@ -28,9 +28,6 @@
     <string name="dues_error_amount">درست رقم لکھیں</string>
     <string name="dues_delete_title">ادھار حذف کریں؟</string>
     <string name="dues_delete_message">%1$s کا ادھار ہٹا دیا جائے گا۔</string>
-    <string name="dues_reminder_message">السلام علیکم %1$s،
-یاد دہانی: %3$s پر آپ کا %2$s باقی ہے۔ براہ کرم سہولت سے ادا کر دیں۔
-شکریہ!</string>
     <string name="promo_title">واٹس ایپ پروموشن</string>
     <string name="promo_template">پیغام کی قسم</string>
     <string name="promo_message">پیغام</string>

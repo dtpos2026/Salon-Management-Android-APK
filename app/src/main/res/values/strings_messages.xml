@@ -28,9 +28,6 @@
     <string name="dues_error_amount">Enter a valid amount</string>
     <string name="dues_delete_title">Delete pending bill?</string>
     <string name="dues_delete_message">The pending bill of %1$s will be removed.</string>
-    <string name="dues_reminder_message">Assalam o Alaikum %1$s,
-This is a friendly reminder that %2$s is pending at %3$s. Please clear it at your convenience.
-Thank you!</string>
     <string name="promo_title">WhatsApp promotions</string>
     <string name="promo_template">Message type</string>
     <string name="promo_message">Message</string>

@@ -189,7 +189,7 @@ fun AccountScreen(onBack: () -> Unit) {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     if (whatsapp.isNotBlank()) {
                         OutlinedButton(onClick = {
-                            context.showWhatsAppResult(ExternalApps.whatsAppText(context, whatsapp, message))
+                            context.showWhatsAppResult(ExternalApps.whatsAppText(context, whatsapp, message), message)
                         }, modifier = Modifier.weight(1f)) {
                             Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(6.dp))

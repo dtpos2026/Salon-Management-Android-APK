@@ -210,7 +210,7 @@ fun StaffDetailScreen(staffId: Long, onBack: () -> Unit, onEdit: () -> Unit) {
     val shareSlip: (StaffPaymentEntity) -> Unit = { p ->
         scope.launch {
             vm.slipText(p)?.let { text ->
-                context.showWhatsAppResult(ExternalApps.whatsAppText(context, state.staff?.phone, text, shareTitle))
+                context.showWhatsAppResult(ExternalApps.whatsAppText(context, state.staff?.phone, text, shareTitle), text)
             }
         }
     }

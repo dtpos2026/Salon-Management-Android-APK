@@ -1,6 +1,10 @@
 package com.dtpos.salonmanager.presentation.settings
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.ColorFilter
@@ -29,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import com.dtpos.salonmanager.BuildConfig
 import com.dtpos.salonmanager.R
 import com.dtpos.salonmanager.data.database.SalonDatabase
+import com.dtpos.salonmanager.presentation.components.BrandMonogram
 import com.dtpos.salonmanager.presentation.components.ContentCard
 import com.dtpos.salonmanager.presentation.components.LabeledValueRow
 import com.dtpos.salonmanager.presentation.components.SalonTopBar
@@ -41,11 +46,15 @@ fun AboutScreen(onBack: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Image(
-                painterResource(R.drawable.dt_logo_full),
-                contentDescription = null,
-                modifier = Modifier.size(128.dp).clip(RoundedCornerShape(28.dp)),
-            )
+            Box(
+                Modifier
+                    .size(128.dp)
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(Brush.linearGradient(listOf(Color(0xFF2A0757), Color(0xFF5A1EB0)))),
+                contentAlignment = Alignment.Center,
+            ) {
+                BrandMonogram(width = 96.dp)
+            }
             Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineSmall)
             Text(stringResource(R.string.about_tagline), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(4.dp))

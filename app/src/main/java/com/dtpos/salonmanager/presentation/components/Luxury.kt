@@ -177,7 +177,7 @@ fun BrandMonogram(modifier: Modifier = Modifier, width: Dp = 168.dp, shine: Floa
     )
 }
 
-/** "DT SALON — MANAGER" wordmark as in the brand artwork. [reveal] 0..1 opens the letter spacing. */
+/** "DT SALON / MANAGER" wordmark, plain text only. [reveal] 0..1 opens the letter spacing. */
 @Composable
 fun BrandWordmark(modifier: Modifier = Modifier, reveal: Float = 1f, compact: Boolean = false) {
     val accent = SalonTheme.glass.accent
@@ -189,20 +189,13 @@ fun BrandWordmark(modifier: Modifier = Modifier, reveal: Float = 1f, compact: Bo
             fontWeight = FontWeight.Black,
             letterSpacing = 1.sp,
         )
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            val lineWidth = (if (compact) 26 else 38).dp * reveal
-            Box(Modifier.width(lineWidth).height(2.dp).background(accent.copy(alpha = 0.8f)))
-            Spacer(Modifier.width(10.dp))
-            Text(
-                "MANAGER",
-                color = accent,
-                fontSize = if (compact) 14.sp else 18.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = (2 + 8 * reveal).sp,
-            )
-            Spacer(Modifier.width(10.dp))
-            Box(Modifier.width(lineWidth).height(2.dp).background(accent.copy(alpha = 0.8f)))
-        }
+        Text(
+            "MANAGER",
+            color = accent,
+            fontSize = if (compact) 14.sp else 18.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = (2 + 8 * reveal).sp,
+        )
     }
 }
 
@@ -327,11 +320,5 @@ fun GlassTextField(
 /** Small "By Digital Target" footer. */
 @Composable
 fun PoweredByFooter(text: String, modifier: Modifier = Modifier) {
-    Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-        Box(Modifier.width(18.dp).height(1.dp).background(Glass.TextMuted))
-        Spacer(Modifier.width(8.dp))
-        Text(text, color = Glass.TextMuted, fontSize = 12.sp, letterSpacing = 1.sp, fontWeight = FontWeight.Medium)
-        Spacer(Modifier.width(8.dp))
-        Box(Modifier.width(18.dp).height(1.dp).background(Glass.TextMuted))
-    }
+    Text(text, modifier = modifier, color = Glass.TextMuted, fontSize = 12.sp, letterSpacing = 1.sp, fontWeight = FontWeight.Medium)
 }

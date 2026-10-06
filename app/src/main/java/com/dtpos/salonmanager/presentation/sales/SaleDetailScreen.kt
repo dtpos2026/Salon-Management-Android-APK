@@ -1,5 +1,6 @@
 package com.dtpos.salonmanager.presentation.sales
 
+import com.dtpos.salonmanager.presentation.common.receiptShareText
 import com.dtpos.salonmanager.presentation.common.showWhatsAppResult
 import androidx.compose.foundation.Image
 import android.widget.Toast
@@ -13,7 +14,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.layout.ContentScale
-import com.dtpos.salonmanager.presentation.common.LocalMoney
+import com.dtpos.salonmanager.core.util.CurrencyFormatter
 import com.dtpos.salonmanager.services.export.ExternalApps
 import com.dtpos.salonmanager.services.export.ReceiptImageFormat
 import com.dtpos.salonmanager.services.export.SaveResult
@@ -266,6 +267,7 @@ fun SaleDetailScreen(
                     context.showWhatsAppResult(
                         if (uri == null) ExternalApps.whatsAppText(context, action.phone, action.message, shareImageTitle)
                         else ExternalApps.whatsAppImage(context, uri, "image/png", action.phone, action.message, shareImageTitle),
+                        action.message,
                     )
                 }
                 is SaleDetailViewModel.ImageAction.RequestPermission -> {
@@ -348,13 +350,7 @@ fun SaleDetailScreen(
                     Text(stringResource(if (isNewSale) R.string.print_receipt else R.string.print_reprint))
                 }
             }
-            val whatsappMessage = stringResource(
-                R.string.receipt_whatsapp_message,
-                data.customerName?.takeIf { it.isNotBlank() } ?: "",
-                data.receiptNumber,
-                LocalMoney.current.format(data.totalMinor),
-                data.businessName,
-            ).replace("  ", " ")
+            val whatsappMessage = remember(data) { context.receiptShareText(data, CurrencyFormatter(data.currency)) }
             ReceiptImageActions(
                 exporting = exporting,
                 onPng = { vm.saveImage(ReceiptImageFormat.PNG) },

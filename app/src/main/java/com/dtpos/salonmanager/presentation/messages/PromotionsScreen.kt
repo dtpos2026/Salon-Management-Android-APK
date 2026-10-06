@@ -175,7 +175,7 @@ fun PromotionsScreen(onBack: () -> Unit) {
                                 val text = if (greetByName) context.getString(R.string.promo_greeting, row.customer.name) + "\n" + message else message
                                 val result = ExternalApps.whatsAppText(context, row.customer.phone, text)
                                 if (result != WhatsAppResult.FAILED) sent.add(row.customer.id)
-                                context.showWhatsAppResult(result)
+                                context.showWhatsAppResult(result, text)
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = if (done) MaterialTheme.colorScheme.surfaceVariant else WhatsAppGreen, contentColor = if (done) MaterialTheme.colorScheme.onSurfaceVariant else Color.White),
                         ) {

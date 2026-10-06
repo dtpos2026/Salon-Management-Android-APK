@@ -364,7 +364,7 @@ private fun TokenPreviewDialog(
                 Text(stringResource(R.string.tokens_send_title), style = MaterialTheme.typography.labelLarge)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(
-                        onClick = { context.showWhatsAppResult(ExternalApps.whatsAppText(context, b.customerPhone, message, chooser)) },
+                        onClick = { context.showWhatsAppResult(ExternalApps.whatsAppText(context, b.customerPhone, message, chooser), message) },
                         modifier = Modifier.weight(1f),
                     ) { Text(stringResource(R.string.tokens_send_wa_text), color = WhatsAppGreen) }
                     OutlinedButton(
@@ -372,21 +372,21 @@ private fun TokenPreviewDialog(
                             val uri = pictureUri()
                             val result = if (uri != null) ExternalApps.whatsAppImage(context, uri, "image/png", b.customerPhone, message, chooser)
                             else ExternalApps.whatsAppText(context, b.customerPhone, message, chooser)
-                            context.showWhatsAppResult(result)
+                            context.showWhatsAppResult(result, message)
                         },
                         modifier = Modifier.weight(1f),
                     ) { Text(stringResource(R.string.tokens_send_wa_image), color = WhatsAppGreen) }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(
-                        onClick = { if (!ExternalApps.sms(context, b.customerPhone, message)) context.showWhatsAppResult(com.dtpos.salonmanager.services.export.WhatsAppResult.FAILED) },
+                        onClick = { if (!ExternalApps.sms(context, b.customerPhone, message)) context.showWhatsAppResult(com.dtpos.salonmanager.services.export.WhatsAppResult.FAILED, message) },
                         modifier = Modifier.weight(1f),
                     ) { Text(stringResource(R.string.tokens_send_sms)) }
                     OutlinedButton(
                         onClick = {
                             val uri = pictureUri()
                             val ok = if (uri != null) ExternalApps.shareImage(context, uri, "image/png", message, chooser) else ExternalApps.shareText(context, message, chooser)
-                            if (!ok) context.showWhatsAppResult(com.dtpos.salonmanager.services.export.WhatsAppResult.FAILED)
+                            if (!ok) context.showWhatsAppResult(com.dtpos.salonmanager.services.export.WhatsAppResult.FAILED, message)
                         },
                         modifier = Modifier.weight(1f),
                     ) { Text(stringResource(R.string.tokens_send_share)) }

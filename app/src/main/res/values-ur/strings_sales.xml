@@ -89,5 +89,4 @@
     <string name="receipt_image_saved">گیلری میں محفوظ: %1$s</string>
     <string name="receipt_image_failed">رسید کی تصویر نہیں بن سکی۔ دوبارہ کوشش کریں۔</string>
     <string name="receipt_permission_denied">رسید گیلری میں محفوظ کرنے کے لیے اسٹوریج کی اجازت درکار ہے۔</string>
-    <string name="receipt_whatsapp_message">السلام علیکم %1$s، آپ کی ادائیگی کامیابی سے وصول ہو گئی ہے۔ رسید %2$s، کل رقم %3$s۔ شکریہ! – %4$s</string>
 </resources>

@@ -1,6 +1,7 @@
 package com.dtpos.salonmanager.presentation.messages
 
 import com.dtpos.salonmanager.services.export.WhatsAppResult
+import com.dtpos.salonmanager.presentation.common.dueReminderText
 import com.dtpos.salonmanager.presentation.common.showWhatsAppResult
 import android.widget.Toast
 import androidx.compose.foundation.clickable
@@ -192,14 +193,14 @@ fun DuesScreen(onBack: () -> Unit) {
                     due = due,
                     format = money::format,
                     onRemind = {
-                        val text = context.getString(R.string.dues_reminder_message, due.customerName, money.format(due.balanceMinor), salon)
+                        val text = context.dueReminderText(due, salon, money)
                         val result = ExternalApps.whatsAppText(context, due.customerPhone, text)
                         if (result != WhatsAppResult.FAILED) vm.reminded(due)
-                        context.showWhatsAppResult(result)
+                        context.showWhatsAppResult(result, text)
                     },
                     onSms = {
-                        val text = context.getString(R.string.dues_reminder_message, due.customerName, money.format(due.balanceMinor), salon)
-                        if (ExternalApps.sms(context, due.customerPhone, text)) vm.reminded(due) else context.showWhatsAppResult(WhatsAppResult.FAILED)
+                        val text = context.dueReminderText(due, salon, money)
+                        if (ExternalApps.sms(context, due.customerPhone, text)) vm.reminded(due) else context.showWhatsAppResult(WhatsAppResult.FAILED, text)
                     },
                     onPay = { paying = due },
                     onDelete = { deleting = due },

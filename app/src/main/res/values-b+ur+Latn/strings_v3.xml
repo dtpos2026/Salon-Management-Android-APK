@@ -155,4 +155,19 @@
     <string name="location_turn_on">Location on karein</string>
     <string name="location_privacy_note">DT (Digital Target) ko sirf is phone ki location, model aur app version jata hai. Customer ke naam, phone number aur raseedein isi phone par rehti hain.</string>
     <string name="account_location_shared">App istemal karte waqt is phone ki location DT ko jati hai (app kholne ke liye zaroori).</string>
+    <string name="share_greeting_name">Assalam o Alaikum %1$s,</string>
+    <string name="share_greeting">Assalam o Alaikum,</string>
+    <string name="share_receipt_label">Raseed</string>
+    <string name="share_discount">Riayat</string>
+    <string name="share_total">Kul raqam</string>
+    <string name="share_paid">Ada shuda</string>
+    <string name="share_balance">Udhaar (baqi)</string>
+    <string name="share_thanks">Tashreef laane ka shukriya!</string>
+    <string name="share_cancelled">Yeh raseed mansookh kar di gayi hai.</string>
+    <string name="share_due_intro">%1$s ki taraf se aap ke baqi bill ki yaad dehani.</string>
+    <string name="share_note">Note</string>
+    <string name="share_bill">Bill</string>
+    <string name="share_due_balance">Baqi raqam</string>
+    <string name="share_due_closing">Meharbani kar ke sahulat se ada kar dein. Shukriya!</string>
+    <string name="whatsapp_copied">Bhejne ke liye koi app nahi khuli. Message copy ho gaya hai: WhatsApp kholein aur paste karein.</string>
 </resources>

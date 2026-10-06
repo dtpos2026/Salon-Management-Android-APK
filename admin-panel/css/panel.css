@@ -52,8 +52,7 @@ input, select, textarea, button { font: inherit; color: inherit; }
 }
 .brand-mark { width: 150px; margin: 0 auto 14px; display: block; filter: drop-shadow(0 10px 22px rgba(0,0,0,.35)); }
 .wordmark { font-weight: 900; font-size: 30px; letter-spacing: .02em; }
-.wordmark-sub { display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--lilac); font-weight: 700; letter-spacing: .42em; font-size: 13px; margin-top: 2px; }
-.wordmark-sub::before, .wordmark-sub::after { content: ''; width: 34px; height: 2px; background: currentColor; opacity: .8; }
+.wordmark-sub { color: var(--lilac); font-weight: 700; letter-spacing: .42em; font-size: 13px; margin-top: 2px; padding-left: .42em; }
 .glass-card h2 { margin-top: 22px; font-size: 22px; }
 .glass-card p { color: rgba(255,255,255,.75); line-height: 1.55; }
 .btn-google { width: 100%; height: 50px; border-radius: 25px; border: 0; background: #fff; color: #1f1f1f; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; margin-top: 18px; font-size: 15px; }
