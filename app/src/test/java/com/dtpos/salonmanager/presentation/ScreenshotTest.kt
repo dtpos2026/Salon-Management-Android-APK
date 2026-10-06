@@ -28,6 +28,7 @@ import com.dtpos.salonmanager.services.printer.ReceiptImageRenderer
 import com.dtpos.salonmanager.services.printer.ReceiptStyle
 import com.dtpos.salonmanager.services.printer.ReceiptLabels
 import kotlinx.coroutines.runBlocking
+import androidx.compose.ui.test.onNodeWithText
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -67,6 +68,12 @@ class ScreenshotTest {
         app.deleteDatabase("salon.db")
         container = AppContainer(app, backend)
         IntroState.shown = true
+        // The salon app opens only with location allowed and on (LocationGate).
+        org.robolectric.Shadows.shadowOf(app).grantPermissions(
+            android.Manifest.permission.ACCESS_FINE_LOCATION,
+            android.Manifest.permission.ACCESS_COARSE_LOCATION,
+        )
+        org.robolectric.Shadows.shadowOf(app.getSystemService(android.location.LocationManager::class.java)).setLocationEnabled(true)
     }
 
     @After
@@ -183,6 +190,17 @@ class ScreenshotTest {
             compose.waitForIdle()
         }
         capture(name)
+    }
+
+    @Test
+    fun locationRequiredBeforeTheApp() {
+        org.robolectric.Shadows.shadowOf(app).denyPermissions(
+            android.Manifest.permission.ACCESS_FINE_LOCATION,
+            android.Manifest.permission.ACCESS_COARSE_LOCATION,
+        )
+        dashboard(ColorTheme.ROYAL_PURPLE, dark = false, name = "16-location-required")
+        compose.onNodeWithText("Allow location").assertExists()
+        compose.onNodeWithText("Today").assertDoesNotExist()
     }
 
     @Test

@@ -85,6 +85,7 @@
 - Aap ka account DT approve karta hai. Naya phone Super Admin se ijazat maangta hai.
 - App offline chalti hai; hafte mein kam az kam ek dafa internet zaroori hai.
 - Rozana sale ka total (sirf raqam aur customers ki tadaad) billing ke liye DT ko jata hai. Customer ke naam, phone aur raseedein aap ke phone par rehti hain.
+- App sirf location ki ijazat aur location on hone par khulti hai. Phone ki location, model aur app version dukaan ki tasdeeq ke liye DT ko jate hain.
 
 ## Madad aur support
 - Madad aur support: DT se chat. AI helper foran aap ki zubaan mein jawab de sakta hai; insaan bhi jawab deta hai.

@@ -8,7 +8,7 @@ import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { initializeTestEnvironment } from '@firebase/rules-unit-testing';
-import { doc, setDoc, getDoc, getDocs, collection, Timestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, getDocs, deleteDoc, collection, Timestamp } from 'firebase/firestore';
 import { chromium } from 'playwright';
 
 const PANEL = fileURLToPath(new URL('../../admin-panel/', import.meta.url));
@@ -134,6 +134,15 @@ try {
   await page.screenshot({ path: join(SHOTS, '1-dashboard.png'), fullPage: true });
   step('admin dashboard shows the right counts and today\'s sales of all salons');
 
+  // A salon signs up while the dashboard is open: counts and the badge follow without reloading.
+  await admin((db) => setDoc(doc(db, 'accounts/live1'), { uid: 'live1', email: 'live@gmail.com', salonName: 'Live Salon', status: 'PENDING', createdAt: Timestamp.now() }));
+  await page.locator('.stat', { hasText: 'Waiting for approval' }).locator('.value', { hasText: /^2$/ }).waitFor();
+  await page.locator('#pending-badge', { hasText: /^2$/ }).waitFor();
+  await page.getByText('Live Salon').waitFor();
+  await admin((db) => deleteDoc(doc(db, 'accounts/live1')));
+  await page.locator('.stat', { hasText: 'Waiting for approval' }).locator('.value', { hasText: /^1$/ }).waitFor();
+  step('live: a new sign-up shows on the open dashboard and the badge without reloading');
+
   await page.click('[data-approve="pending1"]');
   await page.selectOption('select[name=plan]', 'MONTHLY');
   await page.fill('input[name=monthlyFee]', '2000');
@@ -167,15 +176,26 @@ try {
   await salesCard.getByText('Rs 12,500').first().waitFor();
   await salesCard.getByText('Rs 9,900').first().waitFor();
   await salesCard.getByText('Rs 45,000').waitFor();
+  await salesCard.locator('tbody tr').nth(1).waitFor();
   assert.equal(await salesCard.locator('tbody tr').count(), 2);
   await salesCard.screenshot({ path: join(SHOTS, '1b-salon-sales.png') });
   step('salon page shows today / yesterday / month sales and the daily table');
 
+  // A third phone asks while the salon page is open: the request shows without reloading.
+  await admin((db) => setDoc(doc(db, 'accounts/royal1'), { pendingDeviceId: 'a-third-phone-3333', pendingDeviceModel: 'Tecno Spark 20' }, { merge: true }));
+  await page.locator('#device-request', { hasText: 'Tecno Spark 20' }).waitFor();
+  await page.click('[data-act="dismiss-device"]');
+  await page.getByText('Request ignored').waitFor();
+  await page.locator('#device-request').waitFor({ state: 'detached' });
+  step('live: a new phone request appears on the open salon page; Ignore removes it');
+
   await page.goto(`${base}/index.html#/phones`);
   await page.locator('tr', { hasText: 'Infinix Hot 40' }).waitFor();
+  // The map library loads after the list is shown.
+  await page.locator('.leaflet-marker-icon').first().waitFor();
   assert.equal(await page.locator('.leaflet-marker-icon').count(), 1);
   await page.locator('tr', { hasText: 'Samsung A15' }).getByText('Active now').waitFor();
-  await page.locator('tr', { hasText: 'Infinix Hot 40' }).getByText('Not shared').waitFor();
+  await page.locator('tr', { hasText: 'Infinix Hot 40' }).getByText('Location switched off').waitFor();
   await page.screenshot({ path: join(SHOTS, '1c-phones-map.png'), fullPage: true });
   await page.locator('tr', { hasText: 'Infinix Hot 40' }).locator('[data-block]').click();
   await page.click('.modal button[type=submit]');
@@ -274,7 +294,12 @@ try {
   await page.fill('#reply textarea', 'Please turn the printer off and on, then press Test print.');
   await page.click('#reply button[type=submit]');
   await page.locator('.bubble.from-admin', { hasText: 'Test print' }).waitFor();
-  const thread = await admin(async (db) => (await getDoc(doc(db, 'support/royal1'))).data());
+  // The bubble shows at once (local write); the server copy follows a moment later.
+  let thread;
+  for (let i = 0; i < 50 && thread?.lastFrom !== 'admin'; i += 1) {
+    if (i) await page.waitForTimeout(200);
+    thread = await admin(async (db) => (await getDoc(doc(db, 'support/royal1'))).data());
+  }
   assert.equal(thread.lastFrom, 'admin');
   assert.equal(thread.unreadForUser, true);
   assert.equal(thread.unreadForAdmin, false);
@@ -304,6 +329,19 @@ try {
   await mobile.getByText('Royal Cuts').first().waitFor();
   await mobile.screenshot({ path: join(SHOTS, '3-salons-mobile.png'), fullPage: true });
   step('mobile layout renders');
+  await mobile.close();
+
+  await page.goto(`${base}/index.html#/dashboard`);
+  await page.reload();
+  await page.locator('.stat', { hasText: 'Total salons' }).locator('.value').waitFor();
+  assert.equal(await page.getByText('Checking admin access').count(), 0);
+  step('returning admin: a reload opens the panel straight away (admin check in the background)');
+
+  await Promise.all([page.waitForEvent('load'), page.click('#sign-out')]);
+  await page.locator('#signin').waitFor();
+  const leftovers = await page.evaluate(() => Object.keys(localStorage).filter((k) => k === 'dt-admin-verified' || k.startsWith('dt-admin-synced-')));
+  assert.deepEqual(leftovers, []);
+  step('sign out returns to the login and forgets this browser\'s cached admin data');
 
   // Network failures of third-party fonts are not app errors; our own files are checked below.
   const unexpected = consoleErrors.filter((e) => !/^Failed to load resource/.test(e));

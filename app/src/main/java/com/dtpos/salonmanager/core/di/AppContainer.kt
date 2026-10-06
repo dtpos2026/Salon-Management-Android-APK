@@ -160,7 +160,7 @@ class AppContainer(
 
     /** Phone status for the Super Admin's phone list and map (see DeviceMonitor). */
     val deviceMonitor by lazy {
-        com.dtpos.salonmanager.services.account.DeviceMonitor(app, accountManager, uiPreferences.shareLocation, appScope, BuildConfig.VERSION_NAME)
+        com.dtpos.salonmanager.services.account.DeviceMonitor(app, accountManager, appScope, BuildConfig.VERSION_NAME)
     }
 
     suspend fun initialize() {

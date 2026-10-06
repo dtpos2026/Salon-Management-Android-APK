@@ -1,9 +1,7 @@
 package com.dtpos.salonmanager.services.account
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
@@ -16,7 +14,7 @@ import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -29,19 +27,24 @@ import kotlin.coroutines.resume
 
 /**
  * Tells the Super Admin which phones use an account: model, Android version, app version, when
- * it was last seen, and (only when the owner turned on "Share this phone's location") the
- * phone's approximate location. No salon data. Written to devices/{uid}__{deviceId} every
+ * it was last seen and the phone's location (the app opens only with location allowed, see
+ * LocationGate). No salon data. Written to devices/{uid}__{deviceId} at once and then every
  * [INTERVAL_MS] while the app is open; Firestore sends it when online. The IP address is not
  * collected: the app has no server of its own that could see it.
  */
 class DeviceMonitor(
     private val app: Context,
     private val accountManager: AccountManager,
-    private val shareLocation: Flow<Boolean>,
     private val scope: CoroutineScope,
     private val versionName: String,
 ) {
     @Volatile private var started = false
+    private val kicks = MutableStateFlow(0)
+
+    /** Reports right away (e.g. just after location was allowed). */
+    fun reportNow() {
+        kicks.value = kicks.value + 1
+    }
 
     private val configured: Boolean
         get() = try { FirebaseApp.getApps(app).isNotEmpty() } catch (e: Exception) { false }
@@ -58,11 +61,11 @@ class DeviceMonitor(
             }
         }.distinctUntilChanged()
         scope.launch {
-            combine(uid, shareLocation.distinctUntilChanged()) { u, share -> u to share }.collectLatest { (u, share) ->
+            combine(uid, kicks) { u, _ -> u }.collectLatest { u ->
                 if (u == null) return@collectLatest
                 while (true) {
                     try {
-                        report(u, share)
+                        report(u)
                     } catch (e: Exception) {
                         // Best effort; never disturbs the salon.
                     }
@@ -72,12 +75,12 @@ class DeviceMonitor(
         }
     }
 
-    private suspend fun report(uid: String, share: Boolean) {
+    private suspend fun report(uid: String) {
         val deviceId = accountManager.deviceId
         val permission = when {
-            !share -> "off"
-            hasPermission() -> "granted"
-            else -> "denied"
+            !LocationAccess.hasPermission(app) -> "denied"
+            !LocationAccess.servicesOn(app) -> "off"
+            else -> "granted"
         }
         val location = if (permission == "granted") currentLocation() else null
         val data = mutableMapOf<String, Any?>(
@@ -95,58 +98,63 @@ class DeviceMonitor(
             data["lng"] = location.longitude
             data["accuracyM"] = location.accuracy.toDouble()
             data["locationAt"] = FieldValue.serverTimestamp()
-        } else if (!share) {
-            // Sharing turned off: remove the last location from the admin's map.
-            data["lat"] = FieldValue.delete()
-            data["lng"] = FieldValue.delete()
-            data["accuracyM"] = FieldValue.delete()
-            data["locationAt"] = FieldValue.delete()
         }
         FirebaseFirestore.getInstance().collection(COLLECTION).document(docId(uid, deviceId)).set(data, SetOptions.merge())
     }
 
-    private fun hasPermission(): Boolean =
-        app.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-            app.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-
-    /** A fresh approximate fix (network first), falling back to the last known one. Real readings only. */
+    /**
+     * A fresh fix from the best enabled provider (network, fused, GPS), falling back to the most
+     * recent known location. Real readings only; null when the phone cannot get any.
+     */
     @SuppressLint("MissingPermission")
     private suspend fun currentLocation(): Location? {
         val manager = app.getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: return null
-        val providers = try { manager.getProviders(true) } catch (e: Exception) { emptyList() }
-        val provider = listOf(LocationManager.NETWORK_PROVIDER, LocationManager.GPS_PROVIDER, LocationManager.PASSIVE_PROVIDER)
-            .firstOrNull { it in providers }
-        val fresh = provider?.let { p ->
-            withTimeoutOrNull(FIX_TIMEOUT_MS) {
-                suspendCancellableCoroutine<Location?> { cont ->
-                    try {
-                        if (Build.VERSION.SDK_INT >= 30) {
-                            val main = Executor { it.run() }
-                            manager.getCurrentLocation(p, null, main) { location -> if (cont.isActive) cont.resume(location) }
-                        } else {
-                            val listener = object : LocationListener {
-                                override fun onLocationChanged(location: Location) {
-                                    if (cont.isActive) cont.resume(location)
-                                }
-                            }
-                            @Suppress("DEPRECATION")
-                            manager.requestSingleUpdate(p, listener, Looper.getMainLooper())
-                            cont.invokeOnCancellation { manager.removeUpdates(listener) }
-                        }
-                    } catch (e: Exception) {
+        val enabled = try { manager.getProviders(true) } catch (e: Exception) { emptyList() }
+        val order = listOf(LocationManager.NETWORK_PROVIDER, FUSED, LocationManager.GPS_PROVIDER).filter { it in enabled }
+        for (provider in order) {
+            val fix = withTimeoutOrNull(if (provider == LocationManager.GPS_PROVIDER) GPS_TIMEOUT_MS else FIX_TIMEOUT_MS) { freshFix(manager, provider) }
+            if (fix != null) return fix
+        }
+        return enabled.mapNotNull { p -> try { manager.getLastKnownLocation(p) } catch (e: Exception) { null } }.maxByOrNull { it.time }
+    }
+
+    @SuppressLint("MissingPermission")
+    private suspend fun freshFix(manager: LocationManager, provider: String): Location? = suspendCancellableCoroutine { cont ->
+        try {
+            if (Build.VERSION.SDK_INT >= 30) {
+                val signal = android.os.CancellationSignal()
+                cont.invokeOnCancellation { signal.cancel() }
+                manager.getCurrentLocation(provider, signal, Executor { it.run() }) { location -> if (cont.isActive) cont.resume(location) }
+            } else {
+                val listener = object : LocationListener {
+                    override fun onLocationChanged(location: Location) {
+                        if (cont.isActive) cont.resume(location)
+                    }
+
+                    @Deprecated("Deprecated in Java")
+                    override fun onStatusChanged(provider: String?, status: Int, extras: android.os.Bundle?) {}
+
+                    override fun onProviderEnabled(provider: String) {}
+
+                    override fun onProviderDisabled(provider: String) {
                         if (cont.isActive) cont.resume(null)
                     }
                 }
+                @Suppress("DEPRECATION")
+                manager.requestSingleUpdate(provider, listener, Looper.getMainLooper())
+                cont.invokeOnCancellation { manager.removeUpdates(listener) }
             }
+        } catch (e: Exception) {
+            if (cont.isActive) cont.resume(null)
         }
-        if (fresh != null) return fresh
-        return providers.mapNotNull { p -> try { manager.getLastKnownLocation(p) } catch (e: Exception) { null } }.maxByOrNull { it.time }
     }
 
     companion object {
         const val COLLECTION = "devices"
         private const val INTERVAL_MS = 30 * 60 * 1000L
-        private const val FIX_TIMEOUT_MS = 15_000L
+        private const val FIX_TIMEOUT_MS = 10_000L
+        private const val GPS_TIMEOUT_MS = 20_000L
+        private const val FUSED = "fused"
 
         fun docId(uid: String, deviceId: String) = "${uid}__$deviceId"
     }

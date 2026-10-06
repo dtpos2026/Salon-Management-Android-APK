@@ -27,15 +27,19 @@
     <uses-permission
         android:name="android.permission.BLUETOOTH_ADMIN"
         android:maxSdkVersion="30" />
-    <!-- Required by Android 8 - 11 to discover nearby (unpaired) Bluetooth devices -->
-    <uses-permission
-        android:name="android.permission.ACCESS_FINE_LOCATION"
-        android:maxSdkVersion="30" />
     <!--
-        Approximate location: Android 8 - 11 need it for Bluetooth discovery; on every version it
-        is used only when the owner turns on "Share this phone's location" (Settings > Account).
+        Location: required to open the app (the shop's location is part of the account check and
+        shown to DT on the Super Admin map). Android 8 - 11 also need it for Bluetooth discovery.
+        Only while the app is in use; no background location.
     -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-feature
+        android:name="android.hardware.location"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.location.gps"
+        android:required="false" />
 
     <!-- Bluetooth: Android 12+ runtime permissions -->
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />

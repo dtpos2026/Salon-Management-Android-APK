@@ -1,7 +1,12 @@
 // Renders subscription invoices in two designs - A4 (office / PDF) and a receipt strip
 // (WhatsApp friendly) - and exports them as PNG, print/PDF or a share.
 /* global qrcode, html2canvas */
-import { esc, fmtDate, money, whatsappNumber, toDate } from './util.js';
+import { esc, fmtDate, money, whatsappNumber, toDate, loadScript } from './util.js';
+
+/** The QR code library, loaded only when an invoice is opened. Call before rendering. */
+export function loadInvoiceLibraries() {
+  return loadScript('vendor/qrcode.js');
+}
 
 const DEFAULT_LOGO = 'assets/digital-target.png';
 
@@ -156,6 +161,7 @@ export function renderReceipt(inv, billing) {
 }
 
 export async function elementToBlob(el) {
+  await loadScript('vendor/html2canvas.min.js');
   const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false });
   return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
 }

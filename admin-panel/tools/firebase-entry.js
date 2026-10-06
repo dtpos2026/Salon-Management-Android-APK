@@ -5,7 +5,8 @@ export {
   signInWithEmailAndPassword, sendPasswordResetEmail,
 } from 'firebase/auth';
 export {
-  getFirestore, connectFirestoreEmulator, doc, getDoc, setDoc, updateDoc, deleteDoc,
+  getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, terminate, clearIndexedDbPersistence,
+  connectFirestoreEmulator, doc, getDoc, setDoc, updateDoc, deleteDoc,
   collection, query, where, orderBy, limit, startAfter, getDocs, getCountFromServer,
   runTransaction, serverTimestamp, Timestamp, writeBatch, deleteField, onSnapshot, addDoc,
 } from 'firebase/firestore';

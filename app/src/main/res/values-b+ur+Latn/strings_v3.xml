@@ -145,6 +145,14 @@
     <string name="device_blocked_message">DT ne %1$s ke liye yeh phone block kiya hai. Is phone par aap ka data mehfooz hai aur yahin rahega. Unblock karwane ke liye DT support se rabta karein, phir Dobara check karein.</string>
     <string name="account_privacy_title">DT kya dekh sakta hai</string>
     <string name="account_sales_shared">Billing ke liye DT sirf rozana total dekhta hai: sale ki raqam, customers aur services ki tadaad, aur cash / online / udhaar. Customer ke naam, phone number aur raseedein isi phone par rehti hain. DT is phone ka model aur app version bhi dekhta hai.</string>
-    <string name="account_share_location">Is phone ki location share karein</string>
-    <string name="account_share_location_sub">Shuru mein band. On karne par DT apne naqshe par is phone ki andazan location dekhta hai (madad aur dukaan ki tasdeeq ke liye). Kabhi bhi band karein.</string>
+    <string name="location_required_title">Jari rakhne ke liye location ki ijazat dein</string>
+    <string name="location_required_message">DT Salon ko khulne ke liye is phone ki location chahiye. Is se aap ki dukaan ki tasdeeq hoti hai aur account mehfooz rehta hai.</string>
+    <string name="location_denied_message">Location ki ijazat nahi di gayi. App settings kholein, Permissions &gt; Location mein \"Allow\" chunein, phir wapas aayein.</string>
+    <string name="location_off_title">Location on karein</string>
+    <string name="location_off_message">Is phone par location band hai. DT Salon kholne ke liye ise on karein.</string>
+    <string name="location_allow">Location ki ijazat dein</string>
+    <string name="location_open_settings">App settings kholein</string>
+    <string name="location_turn_on">Location on karein</string>
+    <string name="location_privacy_note">DT (Digital Target) ko sirf is phone ki location, model aur app version jata hai. Customer ke naam, phone number aur raseedein isi phone par rehti hain.</string>
+    <string name="account_location_shared">App istemal karte waqt is phone ki location DT ko jati hai (app kholne ke liye zaroori).</string>
 </resources>

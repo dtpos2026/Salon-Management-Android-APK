@@ -10,14 +10,33 @@
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <!-- The font loads without holding up the page (system font until it arrives). -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" media="print" onload="this.media='all'">
   <link rel="stylesheet" href="css/panel.css">
+  <!-- All panel code is fetched in parallel (not one import level after another). Map and
+       invoice-image libraries load only on the pages that use them. -->
+  <link rel="modulepreload" href="js/app.js">
+  <link rel="modulepreload" href="vendor/firebase.js">
+  <link rel="modulepreload" href="js/fb.js">
+  <link rel="modulepreload" href="js/data.js">
+  <link rel="modulepreload" href="js/store.js">
+  <link rel="modulepreload" href="js/util.js">
+  <link rel="modulepreload" href="js/icons.js">
+  <link rel="modulepreload" href="js/actions.js">
+  <link rel="modulepreload" href="js/invoice-render.js">
+  <link rel="modulepreload" href="js/pages/dashboard.js">
+  <link rel="modulepreload" href="js/pages/salons.js">
+  <link rel="modulepreload" href="js/pages/salon.js">
+  <link rel="modulepreload" href="js/pages/invoices.js">
+  <link rel="modulepreload" href="js/pages/invoice-edit.js">
+  <link rel="modulepreload" href="js/pages/invoice-view.js">
+  <link rel="modulepreload" href="js/pages/settings.js">
+  <link rel="modulepreload" href="js/pages/admins.js">
+  <link rel="modulepreload" href="js/pages/reminders.js">
+  <link rel="modulepreload" href="js/pages/support.js">
+  <link rel="modulepreload" href="js/pages/phones.js">
   <!-- Firebase web config (created at deploy time, git-ignored). Missing file = setup screen. -->
   <script src="firebase-config.js" onerror="void 0"></script>
-  <script src="vendor/qrcode.js"></script>
-  <script src="vendor/html2canvas.min.js"></script>
-  <script src="vendor/leaflet/leaflet.js"></script>
 </head>
 <body>
   <div id="app"></div>

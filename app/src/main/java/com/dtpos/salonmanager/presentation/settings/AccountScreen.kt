@@ -206,34 +206,18 @@ fun AccountScreen(onBack: () -> Unit) {
                 }
             }
             ContentCard {
-                val prefs = com.dtpos.salonmanager.presentation.common.LocalAppContainer.current.uiPreferences
-                val sharing by prefs.shareLocation.collectAsStateWithLifecycle()
-                val permission = androidx.activity.compose.rememberLauncherForActivityResult(
-                    androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
-                ) { granted -> prefs.setShareLocation(granted) }
                 Text(stringResource(R.string.account_privacy_title), style = MaterialTheme.typography.titleSmall)
                 Text(
                     stringResource(R.string.account_sales_shared),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Spacer(Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(stringResource(R.string.account_share_location), style = MaterialTheme.typography.bodyLarge)
-                        Text(
-                            stringResource(R.string.account_share_location_sub),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    androidx.compose.material3.Switch(
-                        checked = sharing,
-                        onCheckedChange = { on ->
-                            if (on) permission.launch(android.Manifest.permission.ACCESS_COARSE_LOCATION) else prefs.setShareLocation(false)
-                        },
-                    )
-                }
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    stringResource(R.string.account_location_shared),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             OutlinedButton(
                 onClick = { confirmSignOut = true },

@@ -2,8 +2,9 @@
 import {
   onAuthStateChanged, signOut, signInWithEmailAndPassword, sendPasswordResetEmail,
 } from '../vendor/firebase.js';
-import { firebase, initFirebase, parseConfigText, saveConfigInBrowser, forgetBrowserConfig, usingEmulators } from './fb.js';
+import { firebase, initFirebase, parseConfigText, saveConfigInBrowser, forgetBrowserConfig, usingEmulators, clearLocalData } from './fb.js';
 import { isAdmin, dashboardCounts, ownerClaimed, claimFirstAdmin, ensureOwnerRecorded } from './data.js';
+import { accountsStore, startStores, stopStores, forgetCachedCollections } from './store.js';
 import { esc, $, $$, toast, copyText, errorMessage } from './util.js';
 import { ICONS } from './icons.js';
 import * as dashboard from './pages/dashboard.js';
@@ -177,6 +178,34 @@ const ROUTES = [
 ];
 
 let currentUser = null;
+let badgeWatch = null;
+
+const ADMIN_KEY = 'dt-admin-verified';
+
+/** Admin access already confirmed for this login in this browser (checked again in the background). */
+function knownAdmin(uid) {
+  try { return localStorage.getItem(ADMIN_KEY) === uid; } catch (e) { return false; }
+}
+
+function rememberAdmin(uid) {
+  try {
+    if (uid) localStorage.setItem(ADMIN_KEY, uid); else localStorage.removeItem(ADMIN_KEY);
+  } catch (e) { /* ignore */ }
+}
+
+let signingOut = false;
+
+/** Signs out and removes the salons' data cached in this browser. */
+async function signOutEverywhere() {
+  signingOut = true;
+  renderLoading('Signing out…');
+  rememberAdmin(null);
+  stopStores();
+  await signOut(firebase().auth);
+  await clearLocalData();
+  forgetCachedCollections();
+  location.reload();
+}
 
 function renderShell(user) {
   root.innerHTML = `
@@ -200,7 +229,10 @@ function renderShell(user) {
         <div class="content" id="content"></div>
       </div>
     </div>`;
-  $('#sign-out').onclick = () => signOut(firebase().auth);
+  $('#sign-out').onclick = (e) => {
+    e.currentTarget.disabled = true;
+    signOutEverywhere();
+  };
   $('#menu').onclick = () => $('.shell').classList.toggle('nav-open');
   $('#forget-cfg')?.addEventListener('click', (e) => {
     e.preventDefault();
@@ -209,6 +241,9 @@ function renderShell(user) {
   });
   $$('.nav a').forEach((a) => a.addEventListener('click', () => $('.shell').classList.remove('nav-open')));
   refreshBadge();
+  // The pending badge follows new sign-ups live.
+  if (badgeWatch) badgeWatch();
+  badgeWatch = accountsStore.subscribe(refreshBadge);
   route();
 }
 
@@ -227,12 +262,16 @@ export async function refreshBadge() {
 }
 
 let routeToken = 0;
+let cleanups = [];
 
 async function route() {
   const content = $('#content');
   if (!content) return;
   const token = ++routeToken;
   const alive = () => token === routeToken;
+  // Stop the previous page's live updates (and its map).
+  cleanups.forEach((fn) => { try { fn(); } catch (e) { /* ignore */ } });
+  cleanups = [];
   const hash = location.hash || '#/dashboard';
   const entry = ROUTES.find((r) => r.re.test(hash)) || ROUTES[ROUTES.length - 1];
   const match = hash.match(entry.re);
@@ -253,6 +292,13 @@ async function route() {
     setActions: (html) => { const box = $('#page-actions'); if (alive()) box.innerHTML = html; return box; },
     go: (h) => { location.hash = h; },
     refreshBadge,
+    /** Runs [fn] when the admin leaves this page. */
+    onLeave: (fn) => { if (alive()) cleanups.push(fn); else fn(); },
+    /** Calls [fn] when the live data of [stores] changes while this page is open. */
+    live: (stores, fn) => stores.forEach((store) => {
+      const off = store.subscribe(() => { if (alive()) fn(); });
+      if (alive()) cleanups.push(off); else off();
+    }),
   };
   try {
     await entry.page.render(pageEl, ctx);
@@ -265,19 +311,44 @@ async function route() {
 
 window.addEventListener('hashchange', route);
 
+function openPanel(user) {
+  currentUser = user;
+  startStores();
+  renderShell(user);
+}
+
 async function start(user) {
+  if (knownAdmin(user.uid)) {
+    // Returning admin: open at once and confirm access in the background. Firestore rules
+    // protect the data either way; if access was removed the panel closes.
+    openPanel(user);
+    isAdmin(user.uid).then((ok) => {
+      if (ok) { ensureOwnerRecorded(user); return; }
+      rememberAdmin(null);
+      stopStores();
+      currentUser = null;
+      start(user);
+    }).catch(() => { /* offline: keep the cached view */ });
+    return;
+  }
   renderLoading('Checking admin access…');
+  // Start loading the data together with the check; for a non-admin the rules refuse it.
+  startStores();
   try {
     if (await isAdmin(user.uid)) {
-      currentUser = user;
+      rememberAdmin(user.uid);
       ensureOwnerRecorded(user);
-      renderShell(user);
-    } else if (!(await ownerClaimed())) {
+      openPanel(user);
+      return;
+    }
+    stopStores();
+    if (!(await ownerClaimed())) {
       renderClaim(user);
     } else {
       renderNotAdmin(user);
     }
   } catch (e) {
+    stopStores();
     glass(`${brand}<h2>Cannot reach Firebase</h2><p>${esc(errorMessage(e))}</p><button class="btn btn-primary" id="retry">Retry</button>`);
     $('#retry').onclick = () => start(user);
   }
@@ -294,7 +365,8 @@ async function boot() {
   onAuthStateChanged(services.auth, (user) => {
     if (!user) {
       currentUser = null;
-      renderLogin();
+      stopStores();
+      if (!signingOut) renderLogin();
     } else if (!currentUser || currentUser.uid !== user.uid) {
       start(user);
     }

@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "test": "firebase emulators:exec --only firestore --project demo-dt-salon \"node --test test/rules.test.js\"",
-    "test:panel": "firebase emulators:exec --only auth,firestore --project demo-dt-salon \"node test/panel.e2e.mjs\""
+    "test:panel": "firebase emulators:exec --only auth,firestore --project demo-dt-salon \"node test/panel.e2e.mjs\"",
+    "perf:panel": "firebase emulators:exec --only auth,firestore --project demo-dt-salon \"node test/panel.perf.mjs\""
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "4.0.1",

@@ -2,14 +2,14 @@ import { getInvoice, getConfig, getAccount, deleteInvoice } from '../data.js';
 import { esc, toast, errorMessage, confirmDialog } from '../util.js';
 import {
   renderA4, renderReceipt, elementToBlob, downloadBlob, printElement, shareInvoice, openWhatsApp,
-  invoiceMessage, invoiceFileName,
+  invoiceMessage, invoiceFileName, loadInvoiceLibraries,
 } from '../invoice-render.js';
 import { paymentDialog } from '../actions.js';
 
 const DESIGN_KEY = 'dt-admin-invoice-design';
 
 export async function render(el, ctx) {
-  const [inv, billing] = await Promise.all([getInvoice(ctx.id), getConfig('billing')]);
+  const [inv, billing] = await Promise.all([getInvoice(ctx.id), getConfig('billing'), loadInvoiceLibraries()]);
   if (!inv) { ctx.setTitle('Invoice'); el.innerHTML = '<div class="card empty">Invoice not found.</div>'; return; }
   ctx.setTitle(inv.number);
   let design = localStorage.getItem(DESIGN_KEY) || 'a4';

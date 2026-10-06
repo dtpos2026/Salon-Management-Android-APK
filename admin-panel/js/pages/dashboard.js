@@ -1,23 +1,37 @@
 import { dashboardCounts, recentPending, expiringSoon, revenueSummary, listInvoices, effectiveStatus, salesStatsMap, salesSummary } from '../data.js';
-import { esc, fmtDate, money, relativeDays, errorMessage } from '../util.js';
+import { esc, fmtDate, money, relativeDays } from '../util.js';
 import { approveDialog, statusPill } from '../actions.js';
+import { accountsStore, statsStore } from '../store.js';
 
 function stat(label, value, hint, href, tint, hero = false) {
   return `<a class="stat ${hero ? 'hero' : ''}" href="${href}" style="--tint:${tint}">
     <div class="label">${esc(label)}</div><div class="value">${esc(value)}</div>${hint ? `<div class="hint">${esc(hint)}</div>` : ''}</a>`;
 }
 
+const waiting = '<span class="spinner"></span>Loading invoices…';
+
 export async function render(el, ctx) {
   ctx.setTitle('Dashboard');
   ctx.setActions('<a class="btn btn-primary" href="#/invoice/new">+ New invoice</a>');
-  const [counts, pending, renewals, revenue, latest, stats] = await Promise.all([
-    dashboardCounts(),
-    recentPending(6),
-    expiringSoon(6),
-    revenueSummary().catch(() => null),
-    listInvoices({ pageSize: 5 }).catch(() => ({ items: [] })),
-    salesStatsMap().catch(() => ({})),
-  ]);
+  // Salon numbers come from the live copy (instant); invoice money totals load beside them.
+  const invoiceData = { revenue: undefined, latest: undefined };
+  let data = null;
+  const load = async () => {
+    const [counts, pending, renewals, stats] = await Promise.all([
+      dashboardCounts(), recentPending(6), expiringSoon(6), salesStatsMap().catch(() => ({})),
+    ]);
+    data = { counts, pending, renewals, stats };
+  };
+  const draw = () => { if (data && ctx.alive()) paint(el, ctx, data, invoiceData, () => { load().then(draw); }); };
+  revenueSummary().catch(() => null).then((r) => { invoiceData.revenue = r; draw(); });
+  listInvoices({ pageSize: 5 }).catch(() => ({ items: [] })).then((l) => { invoiceData.latest = l; draw(); });
+  await load();
+  draw();
+  ctx.live([accountsStore, statsStore], () => load().then(draw).catch(() => null));
+}
+
+function paint(el, ctx, { counts, pending, renewals, stats }, invoiceData, reload) {
+  const { revenue, latest } = invoiceData;
   const totals = Object.values(stats).map((s) => salesSummary(s)).reduce((acc, s) => ({
     today: acc.today + s.today, customers: acc.customers + s.todayCustomers, month: acc.month + s.month,
   }), { today: 0, customers: 0, month: 0 });
@@ -34,9 +48,9 @@ export async function render(el, ctx) {
       ${stat('Expiring in 7 days', counts.expiringSoon, '', '#/salons?filter=SOON', 'rgba(233,201,135,.35)')}
       ${stat('Suspended', counts.SUSPENDED, '', '#/salons?filter=SUSPENDED', 'rgba(90,63,138,.14)')}
       ${stat('Blocked', counts.BLOCKED, `${counts.REJECTED} rejected`, '#/salons?filter=BLOCKED', 'rgba(198,40,40,.12)')}
-      ${revenue ? stat('Collected this month', money(revenue.collectedThisMonth), `Invoiced ${money(revenue.invoicedThisMonth)}`, '#/invoices', 'rgba(30,138,74,.12)') : ''}
+      ${revenue === undefined ? stat('Collected this month', '…', 'Loading invoices', '#/invoices', 'rgba(30,138,74,.12)') : revenue ? stat('Collected this month', money(revenue.collectedThisMonth), `Invoiced ${money(revenue.invoicedThisMonth)}`, '#/invoices', 'rgba(30,138,74,.12)') : ''}
       ${stat("All salons' sales today", money(totals.today), `${totals.customers} customers · month ${money(totals.month)}`, '#/salons', 'rgba(30,138,74,.12)')}
-      ${revenue ? stat('Outstanding', money(revenue.outstanding), `${revenue.unpaidCount} unpaid invoices`, '#/invoices?filter=UNPAID', 'rgba(198,40,40,.12)') : ''}
+      ${revenue === undefined ? stat('Outstanding', '…', 'Loading invoices', '#/invoices?filter=UNPAID', 'rgba(198,40,40,.12)') : revenue ? stat('Outstanding', money(revenue.outstanding), `${revenue.unpaidCount} unpaid invoices`, '#/invoices?filter=UNPAID', 'rgba(198,40,40,.12)') : ''}
     </div>
     <div class="grid grid-2">
       <div class="card">
@@ -70,7 +84,7 @@ export async function render(el, ctx) {
     </div>
     <div class="card" style="margin-top:16px">
       <div class="card-head"><h2>Latest invoices</h2><div class="spacer"></div><a href="#/invoices">All invoices</a></div>
-      ${latest.items.length ? `<table class="list"><thead><tr><th>Invoice</th><th>Salon</th><th>Date</th><th>Total</th><th>Balance</th><th>Status</th></tr></thead><tbody>${latest.items.map((i) => `
+      ${latest === undefined ? `<div class="empty">${waiting}</div>` : latest.items.length ? `<table class="list"><thead><tr><th>Invoice</th><th>Salon</th><th>Date</th><th>Total</th><th>Balance</th><th>Status</th></tr></thead><tbody>${latest.items.map((i) => `
         <tr class="row-link" data-href="#/invoice/${encodeURIComponent(i.id)}">
           <td data-label="Invoice" class="cell-title">${esc(i.number)}</td>
           <td data-label="Salon">${esc(i.salonName || '')}</td>
@@ -85,7 +99,7 @@ export async function render(el, ctx) {
     const account = pending.find((a) => a.id === btn.dataset.approve);
     if (await approveDialog(account)) {
       ctx.refreshBadge();
-      render(el, ctx).catch((e) => { el.innerHTML = `<div class="card">${esc(errorMessage(e))}</div>`; });
+      reload();
     }
   }));
 }

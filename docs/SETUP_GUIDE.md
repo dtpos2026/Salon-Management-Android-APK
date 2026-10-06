@@ -29,7 +29,8 @@ Salon owner ka phone (DT Salon app)            Aap (Super Admin panel, browser)
 - Online sirf yeh hai: login, account ka status (pending/approved/...), kaunsa phone approved hai,
   licence ki expiry, aap ke invoices, support chat, **rozana sale ka total** (sirf raqam, customers
   aur services ki tadaad, cash / online / udhaar — billing ke liye) aur **phone ki halat** (model,
-  Android aur app version, last seen; location sirf jab salon khud "Share this phone's location" on kare).
+  Android aur app version, last seen aur **location** — app location ki ijazat aur location on kiye
+  baghair nahi khulti).
 - Approved phone **internet ke baghair** chalta rehta hai. Har **7 din** (haftawar; admin panel se badal
   sakte hain) mein ek dafa internet se account check hona zaroori hai. Internet ho to suspend/approve
   foran (real time) lagta hai.
@@ -233,8 +234,9 @@ Is ke liye chahiye:
 ### Phones (Panel → Phones)
 - Har phone: salon, model, Android version, app version, **last seen** (Active now / Today / X days ago),
   location ki halat.
-- **Map** (OpenStreetMap): sirf un phones ki andazan location jin ke malik ne app mein
-  Settings → Account → **Share this phone's location** on kiya ho. IP address collect nahi hota.
+- **Map** (OpenStreetMap): har phone ki location (network ya GPS, accuracy ke saath). App 2.1.1 se
+  location ki ijazat ke baghair nahi khulti aur online hone par location bhejti hai. IP address
+  collect nahi hota.
 - **Block / Unblock**: block kiya hua phone agli online check par app nahi khol sakta ("This phone is
   blocked"); us phone ka data **delete nahi** hota. Unblock karte hi phir chalne lagta hai. Salon ke page
   par har phone ke saath bhi Block button hai.

@@ -1,6 +1,7 @@
 import { listAccounts, searchAccounts, effectiveStatus, PLANS, salesStatsMap, salesSummary } from '../data.js';
 import { esc, fmtDate, relativeDays, debounce, money, errorMessage } from '../util.js';
 import { statusPill } from '../actions.js';
+import { accountsStore, statsStore } from '../store.js';
 
 const FILTERS = [
   ['ALL', 'All'], ['PENDING', 'Pending'], ['DEVICE', 'New phone requests'], ['APPROVED', 'Approved'], ['PAYMENT_PENDING', 'Payment pending'],
@@ -44,17 +45,20 @@ export async function render(el, ctx) {
   const more = el.querySelector('#more');
 
   stats = await salesStatsMap().catch(() => ({}));
+  let query = '';
 
   const bindRows = () => rows.querySelectorAll('[data-href]').forEach((r) => { r.onclick = () => ctx.go(r.dataset.href); });
 
-  async function load(reset) {
-    if (reset) { rows.innerHTML = ''; last = null; }
+  async function load(reset, pageSize = accountsStore.isReady ? 50 : 20) {
+    if (reset) last = null;
     stateEl.className = 'loading';
     stateEl.innerHTML = '<div class="spinner"></div>Loading…';
     more.classList.add('hidden');
     try {
-      const page = await listAccounts({ filter, after: last });
+      const page = await listAccounts({ filter, after: last, pageSize });
       last = page.last;
+      // Replace the rows only when the new ones are ready, so the list never flashes empty.
+      if (reset) rows.innerHTML = '';
       rows.insertAdjacentHTML('beforeend', page.items.map(row).join(''));
       bindRows();
       stateEl.className = rows.children.length ? 'hidden' : 'empty';
@@ -66,34 +70,46 @@ export async function render(el, ctx) {
     }
   }
 
-  const search = debounce(async (text) => {
+  async function find(text) {
+    query = text;
     if (!text.trim()) { load(true); return; }
-    rows.innerHTML = '';
     stateEl.className = 'loading';
     stateEl.innerHTML = '<div class="spinner"></div>Searching…';
     more.classList.add('hidden');
     try {
       const items = await searchAccounts(text);
+      if (text !== query) return;
       rows.innerHTML = items.map(row).join('');
       bindRows();
       stateEl.className = items.length ? 'hidden' : 'empty';
-      stateEl.textContent = items.length ? '' : 'Nothing found. Search uses the start of the salon/owner name, or the exact email, phone or ID.';
+      stateEl.textContent = items.length ? '' : accountsStore.isReady
+        ? 'Nothing found. Try part of the salon or owner name, the email, phone or an ID.'
+        : 'Nothing found. Search uses the start of the salon/owner name, or the exact email, phone or ID.';
     } catch (e) {
       stateEl.className = 'empty';
       stateEl.textContent = errorMessage(e);
     }
-  }, 350);
+  }
+  // The live copy answers at once; without it each search asks the server, so wait for typing to pause.
+  const search = debounce(find, 350);
 
-  el.querySelector('#q').addEventListener('input', (e) => search(e.target.value));
+  el.querySelector('#q').addEventListener('input', (e) => (accountsStore.isReady ? find(e.target.value) : search(e.target.value)));
   el.querySelector('#chips').addEventListener('click', (e) => {
     const f = e.target.closest('[data-f]')?.dataset.f;
     if (!f) return;
     filter = f;
     el.querySelectorAll('.chip').forEach((c) => c.classList.toggle('active', c.dataset.f === f));
     el.querySelector('#q').value = '';
+    query = '';
     history.replaceState(null, '', `#/salons${f === 'ALL' ? '' : `?filter=${f}`}`);
     load(true);
   });
   more.onclick = () => load(false);
   await load(true);
+  // Keep the open list current while salons sign up or change (same filter, same length).
+  ctx.live([accountsStore, statsStore], async () => {
+    stats = await salesStatsMap().catch(() => stats);
+    if (query.trim()) find(query);
+    else load(true, Math.max(50, rows.children.length));
+  });
 }

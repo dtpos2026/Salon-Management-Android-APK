@@ -9,25 +9,65 @@ import {
   confirmDialog, copyText, whatsappNumber, toDate,
 } from '../util.js';
 import { approveDialog, statusDialog, statusPill } from '../actions.js';
+import { accountsStore } from '../store.js';
 
 function initials(name) {
   return String(name || '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() || '').join('') || '?';
 }
 
+const loadingHtml = '<div class="loading"><div class="spinner"></div>Loading…</div>';
+
+function daysHtml(days) {
+  if (!days.length) return '<div class="empty">No daily totals yet.</div>';
+  return `<table class="list"><thead><tr><th>Date</th><th>Sales</th><th>Customers</th><th>Cash</th><th>Online</th><th>Udhaar</th></tr></thead><tbody>${days.map((d) => `
+    <tr>
+      <td data-label="Date" class="cell-title">${esc(d.date)}</td>
+      <td data-label="Sales">${money((d.salesMinor || 0) / 100)}</td>
+      <td data-label="Customers">${esc(d.customers ?? 0)}</td>
+      <td data-label="Cash">${money((d.cashMinor || 0) / 100)}</td>
+      <td data-label="Online">${money((d.onlineMinor || 0) / 100)}</td>
+      <td data-label="Udhaar">${money((d.creditMinor || 0) / 100)}</td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+function invoicesHtml(invoices) {
+  if (!invoices.items.length) return '<div class="empty">No invoices for this salon yet.</div>';
+  return `<table class="list"><thead><tr><th>Invoice</th><th>Date</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th></tr></thead><tbody>${invoices.items.map((i) => `
+    <tr class="row-link" data-href="#/invoice/${encodeURIComponent(i.id)}">
+      <td data-label="Invoice" class="cell-title">${esc(i.number)}</td>
+      <td data-label="Date">${fmtDate(i.issuedAt)}</td>
+      <td data-label="Total">${money(i.total)}</td>
+      <td data-label="Paid">${money(i.paid)}</td>
+      <td data-label="Balance">${money(i.balance)}</td>
+      <td data-label="Status"><span class="pill st-${esc(i.status)}">${esc(i.status)}</span></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
 export async function render(el, ctx) {
-  const account = await getAccount(ctx.id);
+  // The server-only parts (daily table, invoices, notes) are asked for at once and filled in
+  // when they arrive; the rest comes from the live copy and shows straight away.
+  // Fetched once per visit; redraws of this page reuse them (no flicker, no extra reads).
+  if (el.salonData?.id !== ctx.id) {
+    el.salonData = {
+      id: ctx.id,
+      notes: getNotes(ctx.id),
+      invoices: listInvoices({ accountUid: ctx.id, pageSize: 10 }).catch(() => ({ items: [] })),
+      days: salesDays(ctx.id, 31).catch(() => []),
+    };
+    el.salonData.notes.catch(() => null);
+  }
+  const later = el.salonData;
+  const [account, stats, phoneReports] = await Promise.all([
+    getAccount(ctx.id, { cached: true }),
+    salesStats(ctx.id).catch(() => null),
+    devicesOf(ctx.id).catch(() => []),
+  ]);
   if (!account) {
     ctx.setTitle('Salon');
     el.innerHTML = '<div class="card empty">This salon account does not exist (it may have been deleted).</div>';
     return;
   }
-  const [notes, invoices, stats, days] = await Promise.all([
-    getNotes(account.id),
-    listInvoices({ accountUid: account.id, pageSize: 10 }).catch(() => ({ items: [] })),
-    salesStats(account.id).catch(() => null),
-    salesDays(account.id, 31).catch(() => []),
-  ]);
-  const reports = Object.fromEntries((await devicesOf(account.id).catch(() => [])).map((d) => [d.deviceId, d]));
+  const reports = Object.fromEntries(phoneReports.map((d) => [d.deviceId, d]));
   const blockedIds = account.blockedDeviceIds || [];
   const sales = salesSummary(stats);
   const status = effectiveStatus(account);
@@ -111,6 +151,7 @@ export async function render(el, ctx) {
             <button class="btn btn-ghost btn-sm" id="save-max">Save</button></label></div>
         ${devices.length ? `<ul class="device-list">${devices.map((d) => `<li><span>📱 ${esc(deviceName(account, d))} <span class="cell-sub mono">${esc(String(d).slice(-8))}</span>
           ${reports[d] ? `<span class="cell-sub">· app ${esc(reports[d].appVersion || '?')} · seen ${fmtDateTime(reports[d].lastSeenAt)}</span>` : ''}
+          ${typeof reports[d]?.lat === 'number' ? `<a class="cell-sub" target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat=${reports[d].lat}&mlon=${reports[d].lng}#map=17/${reports[d].lat}/${reports[d].lng}">📍 ${reports[d].lat.toFixed(4)}, ${reports[d].lng.toFixed(4)}</a>` : ''}
           ${blockedIds.includes(d) ? '<span class="pill st-BLOCKED">Blocked</span>' : ''}</span>
           <span><button class="btn btn-ghost btn-sm" data-block-device="${esc(d)}">${blockedIds.includes(d) ? 'Unblock' : 'Block'}</button>
           <button class="btn btn-ghost btn-sm" data-remove-device="${esc(d)}">Remove</button></span></li>`).join('')}</ul>`
@@ -125,15 +166,7 @@ export async function render(el, ctx) {
         <div class="stat"><div class="label">Yesterday</div><div class="value">${money(sales.yesterday)}</div><div class="hint">${sales.yesterdayCustomers} customers</div></div>
         <div class="stat"><div class="label">This month</div><div class="value">${money(sales.month)}</div><div class="hint">${sales.monthCustomers} customers</div></div>
       </div>
-      ${days.length ? `<table class="list"><thead><tr><th>Date</th><th>Sales</th><th>Customers</th><th>Cash</th><th>Online</th><th>Udhaar</th></tr></thead><tbody>${days.map((d) => `
-        <tr>
-          <td data-label="Date" class="cell-title">${esc(d.date)}</td>
-          <td data-label="Sales">${money((d.salesMinor || 0) / 100)}</td>
-          <td data-label="Customers">${esc(d.customers ?? 0)}</td>
-          <td data-label="Cash">${money((d.cashMinor || 0) / 100)}</td>
-          <td data-label="Online">${money((d.onlineMinor || 0) / 100)}</td>
-          <td data-label="Udhaar">${money((d.creditMinor || 0) / 100)}</td>
-        </tr>`).join('')}</tbody></table>` : '<div class="empty">No daily totals yet.</div>'}
+      <div id="sales-days">${loadingHtml}</div>
       <div class="help">Only totals are shared (amount, number of customers and services, cash / online / udhaar). Customer names, phone numbers and receipts stay on the salon's phone.</div>
     </div>
 
@@ -151,22 +184,14 @@ export async function render(el, ctx) {
       </form>
       <form class="card" id="notes">
         <div class="card-head"><h2>Private notes</h2><div class="spacer"></div><span class="cell-sub">Only admins see these</span></div>
-        <div class="field"><textarea name="notes" style="min-height:150px" placeholder="Payment habits, agreements, contact person…">${esc(notes)}</textarea></div>
-        <div class="actions" style="margin-top:14px"><button class="btn btn-primary" type="submit">Save notes</button></div>
+        <div class="field"><textarea name="notes" style="min-height:150px" placeholder="Loading…" disabled></textarea></div>
+        <div class="actions" style="margin-top:14px"><button class="btn btn-primary" type="submit" disabled>Save notes</button></div>
       </form>
     </div>
 
     <div class="card" style="margin-top:16px">
       <div class="card-head"><h2>Invoices</h2><div class="spacer"></div><a class="btn btn-ghost btn-sm" href="#/invoice/new?uid=${encodeURIComponent(account.id)}">+ New invoice</a></div>
-      ${invoices.items.length ? `<table class="list"><thead><tr><th>Invoice</th><th>Date</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th></tr></thead><tbody>${invoices.items.map((i) => `
-        <tr class="row-link" data-href="#/invoice/${encodeURIComponent(i.id)}">
-          <td data-label="Invoice" class="cell-title">${esc(i.number)}</td>
-          <td data-label="Date">${fmtDate(i.issuedAt)}</td>
-          <td data-label="Total">${money(i.total)}</td>
-          <td data-label="Paid">${money(i.paid)}</td>
-          <td data-label="Balance">${money(i.balance)}</td>
-          <td data-label="Status"><span class="pill st-${esc(i.status)}">${esc(i.status)}</span></td>
-        </tr>`).join('')}</tbody></table>` : '<div class="empty">No invoices for this salon yet.</div>'}
+      <div id="salon-invoices">${loadingHtml}</div>
     </div>
 
     <div class="card" style="margin-top:16px">
@@ -176,6 +201,36 @@ export async function render(el, ctx) {
     </div>`;
 
   const reload = () => render(el, ctx).catch((e) => toast(errorMessage(e), 'error'));
+  // Live: when the account changes (the server confirms the cached copy, a new phone asks,
+  // another admin edits) the page is redrawn, unless the admin is typing in one of its forms.
+  let typing = false;
+  el.oninput = () => { typing = true; };
+  const shown = JSON.stringify(account);
+  const watch = accountsStore.subscribe(() => {
+    if (!ctx.alive() || !el.isConnected) { watch(); return; }
+    const fresh = accountsStore.get(account.id);
+    if (!typing && fresh && JSON.stringify(fresh) !== shown) { watch(); reload(); }
+  });
+  ctx.onLeave(watch);
+  const fill = (selector, html) => {
+    const box = el.querySelector(selector);
+    if (!ctx.alive() || !box) return null;
+    box.innerHTML = html;
+    return box;
+  };
+  later.days.then((days) => fill('#sales-days', daysHtml(days)));
+  later.invoices.then((invoices) => {
+    const box = fill('#salon-invoices', invoicesHtml(invoices));
+    box?.querySelectorAll('[data-href]').forEach((r) => r.addEventListener('click', () => ctx.go(r.dataset.href)));
+  });
+  later.notes.then((notes) => {
+    const area = el.querySelector('#notes textarea');
+    if (!ctx.alive() || !area) return;
+    area.value = notes;
+    area.placeholder = 'Payment habits, agreements, contact person…';
+    area.disabled = false;
+    el.querySelector('#notes button[type=submit]').disabled = false;
+  }, (e) => { const area = el.querySelector('#notes textarea'); if (area) area.placeholder = errorMessage(e); });
 
   el.querySelectorAll('[data-href]').forEach((r) => r.addEventListener('click', () => ctx.go(r.dataset.href)));
   el.querySelector('[data-act="approve"]')?.addEventListener('click', async () => {
@@ -283,7 +338,9 @@ export async function render(el, ctx) {
   el.querySelector('#notes').addEventListener('submit', async (e) => {
     e.preventDefault();
     try {
-      await saveNotes(account.id, String(new FormData(e.target).get('notes') || ''));
+      const text = String(new FormData(e.target).get('notes') || '');
+      await saveNotes(account.id, text);
+      later.notes = Promise.resolve(text);
       toast('Notes saved', 'success');
     } catch (err) { toast(errorMessage(err), 'error'); }
   });

@@ -46,6 +46,7 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material.icons.filled.HourglassTop
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PhoneAndroid
@@ -112,6 +113,8 @@ import com.dtpos.salonmanager.services.account.AccountRegistration
 import com.dtpos.salonmanager.services.account.AccountStatus
 import com.dtpos.salonmanager.services.account.Branding
 import com.dtpos.salonmanager.services.account.CloudAccount
+import com.dtpos.salonmanager.services.account.LocationAccess
+import com.dtpos.salonmanager.services.account.LocationStatus
 import com.dtpos.salonmanager.services.account.RemoteAppConfig
 import com.dtpos.salonmanager.services.account.SignedInUser
 import com.dtpos.salonmanager.services.backup.AppRestarter
@@ -181,7 +184,7 @@ fun AccessGate(content: @Composable () -> Unit) {
             is AccessState.DeviceBlocked -> DeviceBlockedScreen(vm, s)
             is AccessState.WrongDevice -> WrongDeviceScreen(vm, s)
             is AccessState.UpdateRequired -> UpdateRequiredScreen(vm, s.config)
-            is AccessState.Allowed -> content()
+            is AccessState.Allowed -> LocationGate(content)
         }
     }
 }
@@ -612,6 +615,98 @@ private fun DeviceApprovalScreen(vm: AccessViewModel, state: AccessState.DeviceN
         CheckAgainButton(vm)
         Spacer(Modifier.height(4.dp))
         SignOutButton(vm)
+    }
+}
+
+/**
+ * The salon app opens only with location allowed and switched on. The shop's location is part
+ * of the account check (DT sees it on the Super Admin map). Re-checked whenever the app resumes,
+ * so allowing it in Android settings or switching location on opens the app at once.
+ */
+@Composable
+private fun LocationGate(content: @Composable () -> Unit) {
+    val context = LocalContext.current
+    val container = LocalAppContainer.current
+    var status by remember { mutableStateOf(LocationAccess.status(context)) }
+    var deniedForever by rememberSaveable { mutableStateOf(false) }
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                val next = LocationAccess.status(context)
+                if (next == LocationStatus.READY && status != LocationStatus.READY) container.deviceMonitor.reportNow()
+                status = next
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    val launcher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions(),
+    ) { result ->
+        status = LocationAccess.status(context)
+        if (result.values.any { it }) {
+            container.deviceMonitor.reportNow()
+        } else {
+            // Denied with "don't ask again" (or twice on Android 11+): only Settings can allow it now.
+            val activity = context.findActivity()
+            deniedForever = activity != null && LocationAccess.PERMISSIONS.none { activity.shouldShowRequestPermissionRationale(it) }
+        }
+    }
+    if (status == LocationStatus.READY) {
+        content()
+        return
+    }
+    SystemBarIcons(lightBackground = false)
+    GlassPage {
+        Spacer(Modifier.height(32.dp))
+        StatusIcon(Icons.Filled.LocationOn)
+        Spacer(Modifier.height(20.dp))
+        Text(
+            stringResource(if (status == LocationStatus.SERVICES_OFF) R.string.location_off_title else R.string.location_required_title),
+            color = Glass.TextPrimary,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(10.dp))
+        Text(
+            stringResource(
+                when {
+                    status == LocationStatus.SERVICES_OFF -> R.string.location_off_message
+                    deniedForever -> R.string.location_denied_message
+                    else -> R.string.location_required_message
+                },
+            ),
+            color = Glass.TextSecondary,
+            fontSize = 15.sp,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(24.dp))
+        when {
+            status == LocationStatus.SERVICES_OFF -> GlassPrimaryButton(
+                stringResource(R.string.location_turn_on),
+                onClick = { ExternalApps.openLocationSettings(context) },
+                icon = Icons.Filled.LocationOn,
+            )
+            deniedForever -> GlassPrimaryButton(
+                stringResource(R.string.location_open_settings),
+                onClick = { ExternalApps.openAppSettings(context) },
+                icon = Icons.Filled.LocationOn,
+            )
+            else -> GlassPrimaryButton(
+                stringResource(R.string.location_allow),
+                onClick = { launcher.launch(LocationAccess.PERMISSIONS) },
+                icon = Icons.Filled.LocationOn,
+            )
+        }
+        Spacer(Modifier.height(14.dp))
+        Text(
+            stringResource(R.string.location_privacy_note),
+            color = Glass.TextSecondary,
+            fontSize = 12.sp,
+            textAlign = TextAlign.Center,
+        )
     }
 }
 

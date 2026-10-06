@@ -1,10 +1,12 @@
 // Firebase initialisation. The web config comes from firebase-config.js (deployment) or, if
 // that file is missing, from a one-time "paste your config" screen saved in this browser.
 import {
-  initializeApp, getAuth, connectAuthEmulator, getFirestore, connectFirestoreEmulator,
+  initializeApp, getAuth, connectAuthEmulator, getFirestore, initializeFirestore, persistentLocalCache,
+  persistentMultipleTabManager, connectFirestoreEmulator, terminate, clearIndexedDbPersistence,
 } from '../vendor/firebase.js';
 
 const STORAGE_KEY = 'dt-admin-firebase-config';
+const HOSTING_KEY = 'dt-admin-hosting-config';
 
 export function loadConfig() {
   if (window.DT_FIREBASE_CONFIG && window.DT_FIREBASE_CONFIG.projectId &&
@@ -44,15 +46,43 @@ export const usingEmulators = Boolean(window.DT_USE_EMULATORS);
 
 let services = null;
 
-/** On Firebase Hosting the project's web config is served automatically. */
-async function hostingConfig() {
+async function fetchHostingConfig() {
   try {
     const res = await fetch('/__/firebase/init.json', { cache: 'no-store' });
     if (!res.ok) return null;
     const config = await res.json();
-    return config && config.apiKey && config.projectId ? { config, source: 'hosting' } : null;
+    if (!config || !config.apiKey || !config.projectId) return null;
+    try { localStorage.setItem(HOSTING_KEY, JSON.stringify(config)); } catch (e) { /* ignore */ }
+    return config;
   } catch (e) {
     return null;
+  }
+}
+
+/**
+ * On Firebase Hosting the project's web config is served automatically. It is kept in this
+ * browser so the next visit does not wait for it; a fresh copy is fetched in the background.
+ */
+async function hostingConfig() {
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(HOSTING_KEY) || 'null'); } catch (e) { /* ignore */ }
+  if (saved && saved.apiKey && saved.projectId) {
+    fetchHostingConfig();
+    return { config: saved, source: 'hosting' };
+  }
+  const config = await fetchHostingConfig();
+  return config ? { config, source: 'hosting' } : null;
+}
+
+/**
+ * Firestore with a cache in this browser: pages open with the last known data at once and
+ * only changes come over the network. Browsers without IndexedDB use memory instead.
+ */
+function openFirestore(app) {
+  try {
+    return initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+  } catch (e) {
+    return getFirestore(app);
   }
 }
 
@@ -63,13 +93,22 @@ export async function initFirebase() {
   if (!loaded) return null;
   const app = initializeApp(loaded.config);
   const auth = getAuth(app);
-  const db = getFirestore(app);
+  const db = openFirestore(app);
   if (usingEmulators) {
     connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
     connectFirestoreEmulator(db, '127.0.0.1', 8080);
   }
   services = { app, auth, db, projectId: loaded.config.projectId, source: loaded.source };
   return services;
+}
+
+/** Removes the salons' data cached in this browser (on sign-out, e.g. on a shared computer). */
+export async function clearLocalData() {
+  if (!services) return;
+  try {
+    await terminate(services.db);
+    await clearIndexedDbPersistence(services.db);
+  } catch (e) { /* the next sign-in simply reloads everything */ }
 }
 
 /** The initialised services (after initFirebase() resolved). */

@@ -96,6 +96,16 @@ object ExternalApps {
         return start(context, intent) || shareText(context, message, "SMS")
     }
 
+    /** Android's location on/off screen. */
+    fun openLocationSettings(context: Context): Boolean =
+        start(context, Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS)) || openAppSettings(context)
+
+    /** This app's page in Android settings (permissions). */
+    fun openAppSettings(context: Context): Boolean = start(
+        context,
+        Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null)),
+    )
+
     fun dial(context: Context, phone: String): Boolean =
         start(context, Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + phone.filter { it.isDigit() || it == '+' })))
 

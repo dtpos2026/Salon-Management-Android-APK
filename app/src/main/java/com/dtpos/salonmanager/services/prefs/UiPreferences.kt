@@ -54,15 +54,6 @@ class UiPreferences(context: Context) {
         _fast.value = enabled
     }
 
-    /** Owner's choice to show this phone's approximate location to DT (off by default). */
-    private val _shareLocation = MutableStateFlow(prefs.getBoolean(KEY_SHARE_LOCATION, false))
-    val shareLocation: StateFlow<Boolean> = _shareLocation.asStateFlow()
-
-    fun setShareLocation(enabled: Boolean) {
-        prefs.edit().putBoolean(KEY_SHARE_LOCATION, enabled).apply()
-        _shareLocation.value = enabled
-    }
-
     private val _ai = MutableStateFlow(prefs.getBoolean(KEY_AI, false))
     val aiAssistant: StateFlow<Boolean> = _ai.asStateFlow()
 
@@ -107,7 +98,6 @@ class UiPreferences(context: Context) {
         private const val KEY_NOTICE = "noticeSeen"
         private const val KEY_AI = "aiAssistant"
         private const val KEY_FAST = "fastMode"
-        private const val KEY_SHARE_LOCATION = "shareLocation"
 
         private fun prefsOf(context: Context): SharedPreferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 

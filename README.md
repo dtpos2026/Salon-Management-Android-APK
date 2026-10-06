@@ -36,7 +36,7 @@ Salon phone (DT Salon app)                    You (Super Admin panel in a browse
 - **Services with photos**, bold name / bold price on receipts, restaurant-style **Menu**. Two new receipt designs: **Mono** and **Mono table**.
 - **Staff payment slips**, **Owner** role, **manager / assistant PINs** with role-based access.
 - **In-app A–Z Guide** (English, Urdu, Roman Urdu), **Fast mode**, **Clear chat**.
-- **Super Admin**: each salon's daily sales and customers (totals only), **Phones** page with OpenStreetMap map (only phones whose owner shares location), last seen, and server-side **Block / Unblock** of a phone.
+- **Super Admin**: each salon's daily sales and customers (totals only), **Phones** page with OpenStreetMap map (the app opens only with location allowed and reports it), last seen, and server-side **Block / Unblock** of a phone.
 - WhatsApp hand-off rebuilt with fallbacks; the app never claims a message was sent.
 
 Database version 3 (new table and columns only; existing data is kept). Deploy the updated rules with the same commands: `npm install`, `npm run build`, `npx firebase-tools login`, `npx firebase-tools deploy`.
@@ -84,7 +84,7 @@ Languages: English, Urdu (اردو, right-to-left) and Roman Urdu – all 816 st
 * AndroidX Biometric, Core SplashScreen, Activity Result APIs (Storage Access Framework, Photo Picker)
 * Android Bluetooth Classic (RFCOMM/SPP) + own ESC/POS encoder, `PdfDocument` for PDFs
 * Firebase Auth (email/password) + Firestore (accounts only)
-* Super Admin panel: plain HTML/CSS/JavaScript modules + Firebase JS SDK (bundled), no build step
+* Super Admin panel: plain HTML/CSS/JavaScript modules + Firebase JS SDK (bundled), no build step; live Firestore listeners with a browser cache (instant re-open, live updates), map and invoice-image libraries loaded on demand. `npm run perf:panel` in `firebase/` measures page speed on a throttled connection
 * No analytics, ads or DI frameworks
 
 `minSdk 26` (Android 8.0), `targetSdk/compileSdk 35`. Pure Kotlin/Java code, so it runs on

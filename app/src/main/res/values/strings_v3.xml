@@ -145,6 +145,14 @@
     <string name="device_blocked_message">DT has blocked this phone for %1$s. Your salon data on this phone is safe and stays here. Contact DT support to unblock it, then tap Check again.</string>
     <string name="account_privacy_title">What DT can see</string>
     <string name="account_sales_shared">For billing, DT sees your daily totals only: sales amount, number of customers and services, and cash / online / udhaar. Customer names, phone numbers and receipts stay on this phone. DT also sees this phone\'s model and app version.</string>
-    <string name="account_share_location">Share this phone\'s location</string>
-    <string name="account_share_location_sub">Off by default. When on, DT sees the approximate location of this phone on its map (to help and verify your shop). Turn off any time.</string>
+    <string name="location_required_title">Allow location to continue</string>
+    <string name="location_required_message">DT Salon needs this phone\'s location to open. It is used to verify your shop and keep your account secure.</string>
+    <string name="location_denied_message">Location was denied. Open the app settings, tap Permissions &gt; Location and choose \"Allow\", then come back.</string>
+    <string name="location_off_title">Turn on location</string>
+    <string name="location_off_message">Location is switched off on this phone. Turn it on to open DT Salon.</string>
+    <string name="location_allow">Allow location</string>
+    <string name="location_open_settings">Open app settings</string>
+    <string name="location_turn_on">Turn on location</string>
+    <string name="location_privacy_note">Only this phone\'s location, model and app version are shared with DT (Digital Target). Customer names, phone numbers and receipts stay on this phone.</string>
+    <string name="account_location_shared">This phone\'s location is shared with DT while the app is in use (required to open the app).</string>
 </resources>

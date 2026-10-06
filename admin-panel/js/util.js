@@ -216,3 +216,34 @@ export function errorMessage(error) {
   }
   return error?.message || String(error);
 }
+
+const loaded = new Map();
+
+/** Loads a classic script once (heavy libraries load only on the pages that need them). */
+export function loadScript(src) {
+  if (!loaded.has(src)) {
+    loaded.set(src, new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = () => resolve();
+      s.onerror = () => { loaded.delete(src); reject(new Error(`Could not load ${src}. Check the internet connection and try again.`)); };
+      document.head.appendChild(s);
+    }));
+  }
+  return loaded.get(src);
+}
+
+/** Adds a stylesheet once. */
+export function loadStyle(href) {
+  if (!loaded.has(href)) {
+    loaded.set(href, new Promise((resolve) => {
+      const l = document.createElement('link');
+      l.rel = 'stylesheet';
+      l.href = href;
+      l.onload = () => resolve();
+      l.onerror = () => { loaded.delete(href); resolve(); };
+      document.head.appendChild(l);
+    }));
+  }
+  return loaded.get(href);
+}

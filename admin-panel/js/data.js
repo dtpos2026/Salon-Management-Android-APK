@@ -5,6 +5,7 @@ import {
   getDocs, getCountFromServer, runTransaction, serverTimestamp, Timestamp, deleteField, writeBatch,
 } from '../vendor/firebase.js';
 import { firebase } from './fb.js';
+import { accountsStore, statsStore, devicesStore } from './store.js';
 import { randomCode, addMonths, addDays, endOfDay, toDate, whatsappNumber } from './util.js';
 
 const db = () => firebase().db;
@@ -100,46 +101,114 @@ export async function removeAdmin(uid) {
 
 // ------------------------------------------------------------------ accounts
 
-export async function dashboardCounts() {
+// Most account reads use the live copy (store.js) once it is ready and fall back to one-off
+// queries when it is not available.
+
+const time = (value) => toDate(value)?.getTime() ?? null;
+const hasDeviceRequest = (a) => typeof a.pendingDeviceId === 'string' && a.pendingDeviceId > '';
+
+function finishCounts(result) {
+  // Approved accounts whose licence date has passed are effectively expired.
+  result.active = result.APPROVED - result.lapsed;
+  result.expiredTotal = result.EXPIRED + result.lapsed;
+  return result;
+}
+
+/** The dashboard numbers from a list of accounts (same rules as the count queries below). */
+export function countAccounts(list, now = new Date()) {
+  const nowMs = now.getTime();
+  const soonMs = addDays(now, 7).getTime();
+  const result = { total: list.length, lapsed: 0, expiringSoon: 0, deviceRequests: 0 };
+  STATUSES.forEach((s) => { result[s] = 0; });
+  list.forEach((a) => {
+    if (STATUSES.includes(a.status)) result[a.status] += 1;
+    const ends = time(a.expiresAt);
+    if (a.status === 'APPROVED' && ends !== null) {
+      if (ends < nowMs) result.lapsed += 1;
+      else if (ends <= soonMs) result.expiringSoon += 1;
+    }
+    if (hasDeviceRequest(a)) result.deviceRequests += 1;
+  });
+  return finishCounts(result);
+}
+
+async function countsFromServer() {
   const accounts = collection(db(), 'accounts');
   const now = Timestamp.fromDate(new Date());
   const soon = Timestamp.fromDate(addDays(new Date(), 7));
   const count = async (q) => (await getCountFromServer(q)).data().count;
-  const [total, ...byStatus] = await Promise.all([
+  const [total, lapsed, expiringSoonCount, deviceRequests, ...byStatus] = await Promise.all([
     count(accounts),
-    ...STATUSES.map((s) => count(query(accounts, where('status', '==', s)))),
-  ]);
-  const [lapsed, expiringSoon] = await Promise.all([
     count(query(accounts, where('status', '==', 'APPROVED'), where('expiresAt', '<', now))),
     count(query(accounts, where('status', '==', 'APPROVED'), where('expiresAt', '>=', now), where('expiresAt', '<=', soon))),
+    count(query(accounts, where('pendingDeviceId', '>', ''))).catch(() => 0),
+    ...STATUSES.map((s) => count(query(accounts, where('status', '==', s)))),
   ]);
-  const deviceRequests = await count(query(accounts, where('pendingDeviceId', '>', ''))).catch(() => 0);
-  const result = { total, lapsed, expiringSoon, deviceRequests };
+  const result = { total, lapsed, expiringSoon: expiringSoonCount, deviceRequests };
   STATUSES.forEach((s, i) => { result[s] = byStatus[i]; });
-  // Approved accounts whose licence date has passed are effectively expired.
-  result.active = result.APPROVED - lapsed;
-  result.expiredTotal = result.EXPIRED + lapsed;
-  return result;
+  return finishCounts(result);
 }
 
+export async function dashboardCounts() {
+  if (await accountsStore.ready()) return countAccounts(accountsStore.list());
+  return countsFromServer();
+}
+
+const newestFirst = (a, b) => (time(b.createdAt) ?? -Infinity) - (time(a.createdAt) ?? -Infinity);
+const endsFirst = (a, b) => (time(a.expiresAt) ?? Infinity) - (time(b.expiresAt) ?? Infinity);
+
 export async function recentPending(n = 6) {
+  if (await accountsStore.ready()) {
+    return accountsStore.list().filter((a) => a.status === 'PENDING').sort(newestFirst).slice(0, n);
+  }
   const snap = await getDocs(query(collection(db(), 'accounts'), where('status', '==', 'PENDING'), orderBy('createdAt', 'desc'), limit(n)));
   return snap.docs.map(fromSnap);
 }
 
 export async function expiringSoon(n = 6) {
-  const now = Timestamp.fromDate(addDays(new Date(), -30));
-  const soon = Timestamp.fromDate(addDays(new Date(), 7));
+  const from = addDays(new Date(), -30);
+  const soon = addDays(new Date(), 7);
+  if (await accountsStore.ready()) {
+    return accountsStore.list().filter((a) => {
+      const ends = time(a.expiresAt);
+      return a.status === 'APPROVED' && ends !== null && ends >= from.getTime() && ends <= soon.getTime();
+    }).sort(endsFirst).slice(0, n);
+  }
   const snap = await getDocs(query(collection(db(), 'accounts'), where('status', '==', 'APPROVED'),
-    where('expiresAt', '>=', now), where('expiresAt', '<=', soon), orderBy('expiresAt', 'asc'), limit(n)));
+    where('expiresAt', '>=', Timestamp.fromDate(from)), where('expiresAt', '<=', Timestamp.fromDate(soon)), orderBy('expiresAt', 'asc'), limit(n)));
   return snap.docs.map(fromSnap);
+}
+
+/** The accounts of one list filter, in the list's order, from the live copy. */
+function filterAccounts(list, filter) {
+  const now = Date.now();
+  const soon = addDays(new Date(), 7).getTime();
+  const approvedEnding = (a, test) => a.status === 'APPROVED' && time(a.expiresAt) !== null && test(time(a.expiresAt));
+  switch (filter) {
+    case 'DEVICE':
+      return list.filter(hasDeviceRequest).sort((a, b) => a.pendingDeviceId.localeCompare(b.pendingDeviceId));
+    case 'LAPSED':
+      return list.filter((a) => approvedEnding(a, (t) => t < now)).sort(endsFirst);
+    case 'SOON':
+      return list.filter((a) => approvedEnding(a, (t) => t >= now && t <= soon)).sort(endsFirst);
+    case 'ALL':
+      return list.sort(newestFirst);
+    default:
+      return list.filter((a) => a.status === filter).sort(newestFirst);
+  }
 }
 
 /**
  * One page of accounts. filter: ALL | a status | LAPSED (approved but past expiry) | SOON |
- * DEVICE (a new phone asks for approval).
+ * DEVICE (a new phone asks for approval). [after] is the previous page's [last].
  */
 export async function listAccounts({ filter = 'ALL', after = null, pageSize = 20 } = {}) {
+  if (await accountsStore.ready()) {
+    const all = filterAccounts(accountsStore.list(), filter);
+    const start = typeof after === 'number' ? after : 0;
+    const items = all.slice(start, start + pageSize);
+    return { items, last: start + items.length, more: start + items.length < all.length };
+  }
   const accounts = collection(db(), 'accounts');
   const parts = [];
   if (filter === 'DEVICE') {
@@ -159,10 +228,25 @@ export async function listAccounts({ filter = 'ALL', after = null, pageSize = 20
   return { items: snap.docs.map(fromSnap), last: snap.docs[snap.docs.length - 1] || null, more: snap.docs.length === pageSize };
 }
 
-/** Exact match on email / IDs / phone, prefix match on salon and owner name. */
+/** Any part of the salon / owner name, city, email, phone, IDs or UID (live copy). */
+function searchLive(q) {
+  const lower = q.toLowerCase();
+  const digits = q.replace(/\D/g, '');
+  const phone = whatsappNumber(q);
+  const fields = ['salonName', 'ownerName', 'city', 'email', 'customerId', 'licenseId', 'businessId', 'id'];
+  return accountsStore.list().filter((a) => fields.some((f) => String(a[f] || '').toLowerCase().includes(lower)) ||
+    (digits.length >= 4 && (String(a.phoneDigits || '').includes(digits) || String(a.phone || '').replace(/\D/g, '').includes(digits))) ||
+    (phone && a.phoneDigits === phone)).sort(newestFirst).slice(0, 50);
+}
+
+/**
+ * Any part of the name, email, phone or ID from the live copy; without it exact match on
+ * email / IDs / phone and prefix match on salon and owner name.
+ */
 export async function searchAccounts(text) {
   const q = text.trim();
   if (!q) return [];
+  if (await accountsStore.ready()) return searchLive(q);
   const accounts = collection(db(), 'accounts');
   const lower = q.toLowerCase();
   const queries = [
@@ -185,7 +269,13 @@ export async function searchAccounts(text) {
   return [...seen.values()];
 }
 
-export async function getAccount(uid) {
+/**
+ * One account. From the live copy once the server confirmed it (so actions never work on an
+ * old cached copy); otherwise read from the server. With [cached] a copy from this browser's
+ * cache is fine too (the caller redraws when the live copy changes).
+ */
+export async function getAccount(uid, { cached = false } = {}) {
+  if (accountsStore.isReady && (accountsStore.synced || cached) && accountsStore.get(uid)) return accountsStore.get(uid);
   return fromSnap(await getDoc(doc(db(), 'accounts', uid)));
 }
 
@@ -387,6 +477,7 @@ export async function createInvoice(data, billing, adminUid) {
     tx.set(doc(db(), 'invoiceVerify', token), verifyRecord(invoice, billing?.companyName));
     return ref.id;
   });
+  invoicesChanged();
   return id;
 }
 
@@ -403,6 +494,7 @@ export async function updateInvoice(id, data, billing) {
   if ('periodFrom' in data) patch.periodFrom = data.periodFrom ? Timestamp.fromDate(toDate(data.periodFrom)) : null;
   if ('periodTo' in data) patch.periodTo = data.periodTo ? Timestamp.fromDate(toDate(data.periodTo)) : null;
   await updateDoc(doc(db(), 'invoices', id), patch);
+  invoicesChanged();
   if (current.verifyToken) {
     await setDoc(doc(db(), 'invoiceVerify', current.verifyToken), verifyRecord({ ...merged, ...patch, issuedAt: patch.issuedAt || current.issuedAt }, billing?.companyName));
   }
@@ -410,6 +502,7 @@ export async function updateInvoice(id, data, billing) {
 
 export async function deleteInvoice(invoice) {
   await deleteDoc(doc(db(), 'invoices', invoice.id));
+  invoicesChanged();
   if (invoice.verifyToken) await deleteDoc(doc(db(), 'invoiceVerify', invoice.verifyToken)).catch(() => null);
 }
 
@@ -441,7 +534,22 @@ export async function recordPayment(invoice, { amount, method, extend, billing }
   await updateAccount(account.id, patch);
 }
 
+let revenueCache = null;
+
+/** Invoices changed: the dashboard reloads its money totals next time. */
+function invoicesChanged() {
+  revenueCache = null;
+}
+
+/** This month's money totals; kept for a minute so going back to the dashboard is instant. */
 export async function revenueSummary() {
+  if (revenueCache && Date.now() - revenueCache.at < 60000) return revenueCache.value;
+  const value = await loadRevenueSummary();
+  revenueCache = { at: Date.now(), value };
+  return value;
+}
+
+async function loadRevenueSummary() {
   const start = new Date();
   start.setDate(1);
   start.setHours(0, 0, 0, 0);
@@ -520,6 +628,7 @@ export function salesSummary(stats, now = new Date()) {
 
 /** Every salon's latest shared totals, by account uid. */
 export async function salesStatsMap() {
+  if (await statsStore.ready()) return Object.fromEntries(statsStore.list().map((s) => [s.id, s]));
   const snap = await getDocs(collection(db(), 'stats'));
   const map = {};
   snap.forEach((d) => { map[d.id] = d.data(); });
@@ -527,6 +636,7 @@ export async function salesStatsMap() {
 }
 
 export async function salesStats(uid) {
+  if (await statsStore.ready()) return statsStore.get(uid);
   const snap = await getDoc(doc(db(), 'stats', uid));
   return snap.exists() ? snap.data() : null;
 }
@@ -539,8 +649,9 @@ export async function salesDays(uid, n = 31) {
 
 // ---- Phones (status reported by the app, see DeviceMonitor) ------------------------------
 
-/** Every phone that reported itself: model, versions, last seen and (when shared) location. */
+/** Every phone that reported itself: model, versions, last seen and location. */
 export async function listDevices() {
+  if (await devicesStore.ready()) return devicesStore.list();
   const snap = await getDocs(collection(db(), 'devices'));
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
@@ -548,11 +659,16 @@ export async function listDevices() {
 /** Accounts by uid (missing ones are left out). */
 export async function listAccountsByIds(ids) {
   const out = {};
+  if (await accountsStore.ready()) {
+    ids.forEach((id) => { const a = accountsStore.get(id); if (a) out[id] = a; });
+    return out;
+  }
   await Promise.all(ids.map(async (id) => { const a = await getAccount(id).catch(() => null); if (a) out[id] = a; }));
   return out;
 }
 
 export async function devicesOf(uid) {
+  if (await devicesStore.ready()) return devicesStore.list().filter((d) => d.uid === uid);
   const snap = await getDocs(query(collection(db(), 'devices'), where('uid', '==', uid)));
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }

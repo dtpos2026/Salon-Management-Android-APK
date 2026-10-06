@@ -85,6 +85,7 @@
 - Your account is approved by DT. A new phone asks the Super Admin for approval.
 - The app works offline; it must go online at least once a week.
 - Daily sales totals (amount and number of customers only) are shared with DT for billing. Customer names, phones and receipts stay on your phone.
+- The app opens only with location allowed and turned on. The phone's location, model and app version are shared with DT to verify the shop.
 
 ## Help and support
 - Help and support: chat with DT. The AI helper can answer at once in your language; a person replies too.
