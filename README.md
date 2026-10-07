@@ -150,8 +150,9 @@ next to the production build without touching its data.
 
 ### Ready-made APKs from GitHub Actions
 Every push runs `.github/workflows/android.yml`, which runs all tests, builds the debug and
-release APKs, uploads them as artifacts (**Actions → run → Artifacts → `SalonManager-debug-apk`**)
-and installs + launches the app on Android 8.0 and Android 14 emulators.
+release APKs, uploads the release APK (**Actions → run → Artifacts → `SalonManager-release-apk`**)
+and installs + launches it on Android 8.0, 11 and 14 emulators. To save storage the debug APK and
+reports are not kept (reports only when something fails).
 
 ### Release APK and signing
 A release build is minified (R8) and must be signed before installing:

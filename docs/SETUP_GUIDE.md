@@ -108,8 +108,8 @@ secret mein aur password ko `DT_SIGNING_PASSWORD` mein daal dein. (Android Studi
 1. Secrets add karne ke baad **Actions → Android CI → Run workflow** → branch
    `claude/adoring-feynman-iae1sx` → **Run workflow**.
 2. Run green hone par usi run ke neeche **Artifacts** se:
-   - signing key secrets diye hain to **SalonManager-release-apk** (tez, signed) lein;
-   - warna **SalonManager-debug-apk** lein.
+   - **SalonManager-release-apk** lein (tez, optimized). Storage bachane ke liye debug APK ab
+     upload nahi hoti.
 3. Zip kholein, andar `.apk` hogi. Phone mein install karein ("unknown sources" ki ijazat dein).
 
 > Login screen par "App setup incomplete" aaye to APK `GOOGLE_SERVICES_JSON` secret ke baghair bani

@@ -29,8 +29,8 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       REPO: ${{ github.repository }}
       KEEP_CACHES: 2
-      KEEP_RUNS: 3
-      KEEP_WORKFLOW_RUNS: 10
+      KEEP_RUNS: 2
+      KEEP_WORKFLOW_RUNS: 6
     steps:
       - name: Storage before
         run: |

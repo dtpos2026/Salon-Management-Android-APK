@@ -130,9 +130,9 @@
     <string name="backup_saved">بیک اپ محفوظ ہو گیا</string>
     <string name="backup_password_title">بیک اپ پر پاس ورڈ لگائیں؟</string>
     <string name="backup_password_message">اختیاری۔ پاس ورڈ لگانے سے بیک اپ خفیہ ہو جاتا ہے اور اس کے بغیر نہیں کھلتا۔ پاس ورڈ نہ چاہیں تو خالی چھوڑ دیں۔</string>
-    <string name="backup_restore_title">ریسٹور</string>
-    <string name="backup_restore_hint">اس فون کا ڈیٹا بیک اپ فائل سے بدلیں۔ پہلے موجودہ ڈیٹا کا حفاظتی بیک اپ بنتا ہے۔</string>
-    <string name="backup_restore_file">فائل سے ریسٹور کریں</string>
+    <string name="backup_restore_title">بیک اپ امپورٹ (ریسٹور)</string>
+    <string name="backup_restore_hint">بیک اپ فائل چنیں (فون، گوگل ڈرائیو یا واٹس ایپ سے) تاکہ سیلون کا سارا ڈیٹا اس فون پر واپس آ جائے۔ پہلے موجودہ ڈیٹا کا حفاظتی بیک اپ بنتا ہے۔</string>
+    <string name="backup_restore_file">بیک اپ فائل امپورٹ کریں</string>
     <string name="backup_local_title">اس فون پر خودکار بیک اپ</string>
     <string name="backup_local_hint">روزانہ ایک بار اور ہر ریسٹور سے پہلے خود بیک اپ بنتا ہے (آخری 10 محفوظ)۔</string>
     <string name="backup_encrypted_title">پاس ورڈ والا بیک اپ</string>

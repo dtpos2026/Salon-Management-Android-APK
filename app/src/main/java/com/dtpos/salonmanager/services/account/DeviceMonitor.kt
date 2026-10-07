@@ -28,8 +28,8 @@ import kotlin.coroutines.resume
 /**
  * Tells the Super Admin which phones use an account: model, Android version, app version, when
  * it was last seen and the phone's location (the app opens only with location allowed, see
- * LocationGate). No salon data. Written to devices/{uid}__{deviceId} at once and then every
- * [INTERVAL_MS] while the app is open; Firestore sends it when online. The IP address is not
+ * LocationGate). No salon data. Written to devices/{uid}__{deviceId} at once, when the app comes
+ * back to the front and every [INTERVAL_MS] while the app is open; Firestore sends it when online. The IP address is not
  * collected: the app has no server of its own that could see it.
  */
 class DeviceMonitor(
@@ -39,10 +39,12 @@ class DeviceMonitor(
     private val versionName: String,
 ) {
     @Volatile private var started = false
+    @Volatile private var lastReportAt = 0L
     private val kicks = MutableStateFlow(0)
 
-    /** Reports right away (e.g. just after location was allowed). */
+    /** Reports right away (location just allowed, app opened again), at most once a minute. */
     fun reportNow() {
+        if (System.currentTimeMillis() - lastReportAt < MIN_GAP_MS) return
         kicks.value = kicks.value + 1
     }
 
@@ -65,6 +67,7 @@ class DeviceMonitor(
                 if (u == null) return@collectLatest
                 while (true) {
                     try {
+                        lastReportAt = System.currentTimeMillis()
                         report(u)
                     } catch (e: Exception) {
                         // Best effort; never disturbs the salon.
@@ -151,7 +154,9 @@ class DeviceMonitor(
 
     companion object {
         const val COLLECTION = "devices"
-        private const val INTERVAL_MS = 30 * 60 * 1000L
+        /** Live map: every 5 minutes while the app is open (a network fix uses little battery). */
+        private const val INTERVAL_MS = 5 * 60 * 1000L
+        private const val MIN_GAP_MS = 60 * 1000L
         private const val FIX_TIMEOUT_MS = 10_000L
         private const val GPS_TIMEOUT_MS = 20_000L
         private const val FUSED = "fused"

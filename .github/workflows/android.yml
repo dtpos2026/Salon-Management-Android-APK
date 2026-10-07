@@ -70,7 +70,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          retention-days: 7
+          retention-days: 1
           name: app-screens
           path: app/build/screenshots/
 
@@ -107,32 +107,18 @@ jobs:
           [ -n "$report" ] && grep -E ': (Error|Fatal): ' "$report" | sed 's/^/::warning::lint /' || true
           exit $status
 
-      - name: Upload debug APK
-        uses: actions/upload-artifact@v4
-        with:
-          retention-days: 7
-          name: SalonManager-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
-
       - name: Upload release APK (optimized; signed with the release key when its secrets are set)
         uses: actions/upload-artifact@v4
         with:
-          retention-days: 7
+          retention-days: 14
           name: SalonManager-release-apk
           path: app/build/outputs/apk/release/*.apk
 
-      - name: Upload exported Room schema
+      - name: Upload test and lint reports (only when something failed)
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
-          retention-days: 7
-          name: room-schema
-          path: app/schemas/
-
-      - name: Upload test and lint reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          retention-days: 7
+          retention-days: 3
           name: reports
           path: |
             app/build/reports/
@@ -211,10 +197,10 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: bash .github/scripts/device-smoke-test.sh
 
-      - name: Upload device test reports
-        if: always()
+      - name: Upload device test reports (only when something failed)
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
-          retention-days: 7
+          retention-days: 3
           name: device-reports-api-${{ matrix.api }}
           path: app/build/reports/androidTests/

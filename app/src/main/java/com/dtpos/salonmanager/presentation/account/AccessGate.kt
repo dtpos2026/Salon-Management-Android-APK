@@ -634,7 +634,8 @@ private fun LocationGate(content: @Composable () -> Unit) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
                 val next = LocationAccess.status(context)
-                if (next == LocationStatus.READY && status != LocationStatus.READY) container.deviceMonitor.reportNow()
+                // Each time the app comes to the front the map gets a fresh position (throttled).
+                if (next == LocationStatus.READY) container.deviceMonitor.reportNow()
                 status = next
             }
         }

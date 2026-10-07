@@ -25,45 +25,36 @@ object ExternalApps {
 
     fun whatsAppPackage(context: Context): String? = WHATSAPP_PACKAGES.firstOrNull { isInstalled(context, it) }
 
+    private fun clickToChat(digits: String, message: String): Uri =
+        Uri.parse("https://api.whatsapp.com/send?phone=$digits&text=" + Uri.encode(message))
+
     /**
-     * Opens a WhatsApp chat with [message] typed in (the owner presses send). Tries, in order:
-     * WhatsApp's own whatsapp://send link, WhatsApp's text share, the api.whatsapp.com page in a
-     * browser, then the Android share sheet. Never reports "sent": only what was opened.
+     * Opens WhatsApp with [message] typed in (the owner presses send). With a number: WhatsApp's
+     * official click-to-chat link opened in the WhatsApp app, so the customer's chat opens.
+     * Without a number: WhatsApp's own Send screen to pick the chat. Without WhatsApp: the link
+     * in a browser, then the Android share sheet. Never reports "sent": only what was opened.
      */
     fun whatsAppText(context: Context, phone: String?, message: String, chooserTitle: String = "WhatsApp"): WhatsAppResult {
         val digits = PhoneNumbers.toWhatsApp(phone)
         val pkg = whatsAppPackage(context)
         if (pkg != null) {
-            val query = (digits?.let { "phone=$it&" } ?: "") + "text=" + Uri.encode(message)
-            if (start(context, Intent(Intent.ACTION_VIEW, Uri.parse("whatsapp://send?$query")).setPackage(pkg))) return WhatsAppResult.WHATSAPP
-            val send = Intent(Intent.ACTION_SEND).apply {
-                type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT, message)
-                digits?.let { putExtra("jid", "$it@s.whatsapp.net") }
-                setPackage(pkg)
-            }
+            if (digits != null && start(context, Intent(Intent.ACTION_VIEW, clickToChat(digits, message)).setPackage(pkg))) return WhatsAppResult.WHATSAPP
+            val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, message).setPackage(pkg)
             if (start(context, send)) return WhatsAppResult.WHATSAPP
         }
-        if (digits != null) {
-            val web = Uri.parse("https://api.whatsapp.com/send?phone=$digits&text=" + Uri.encode(message))
-            if (start(context, Intent(Intent.ACTION_VIEW, web))) return WhatsAppResult.OTHER_APP
-        }
+        if (digits != null && start(context, Intent(Intent.ACTION_VIEW, clickToChat(digits, message)))) return WhatsAppResult.OTHER_APP
         return if (shareText(context, message, chooserTitle)) WhatsAppResult.OTHER_APP else WhatsAppResult.FAILED
     }
 
     /**
-     * Shares an image (receipt, token) to WhatsApp, straight into [phone]'s chat when WhatsApp
-     * knows the number; without WhatsApp the Android share sheet opens with the same picture.
+     * Sends an image (receipt, token) with [message] as caption through WhatsApp's own Send
+     * screen, where the owner taps the customer's chat (WhatsApp lets apps attach a picture this
+     * way only). Without WhatsApp the Android share sheet opens with the same picture.
      */
+    @Suppress("UNUSED_PARAMETER")
     fun whatsAppImage(context: Context, image: Uri, mimeType: String, phone: String?, message: String, chooserTitle: String = "WhatsApp"): WhatsAppResult {
         val pkg = whatsAppPackage(context)
-        if (pkg != null) {
-            val intent = imageIntent(image, mimeType, message).apply {
-                PhoneNumbers.toWhatsApp(phone)?.let { putExtra("jid", "$it@s.whatsapp.net") }
-                setPackage(pkg)
-            }
-            if (start(context, intent)) return WhatsAppResult.WHATSAPP
-        }
+        if (pkg != null && start(context, imageIntent(image, mimeType, message).setPackage(pkg))) return WhatsAppResult.WHATSAPP
         val chooser = Intent.createChooser(imageIntent(image, mimeType, message), chooserTitle)
         return if (start(context, chooser)) WhatsAppResult.OTHER_APP else WhatsAppResult.FAILED
     }

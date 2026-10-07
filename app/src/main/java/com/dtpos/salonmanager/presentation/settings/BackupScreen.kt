@@ -274,7 +274,7 @@ fun BackupScreen(onBack: () -> Unit) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(12.dp))
-                    OutlinedButton(
+                    Button(
                         onClick = { restoreLauncher.launch(arrayOf("*/*")) },
                         enabled = !state.busy,
                         modifier = Modifier.fillMaxWidth(),

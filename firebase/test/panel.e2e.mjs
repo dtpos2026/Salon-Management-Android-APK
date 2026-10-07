@@ -75,6 +75,12 @@ await admin(async (db) => {
     uid: 'royal1', deviceId: 'a-new-phone-2222', model: 'Infinix Hot 40', platform: 'android', osVersion: 'Android 13 (API 33)',
     appVersion: '2.1.0', locationPermission: 'off', lastSeenAt: Timestamp.fromMillis(now - 3 * DAY),
   });
+  // A phone of a salon that was deleted earlier: hidden on the Phones page and the map.
+  await setDoc(doc(db, 'devices/gone1__a-old-gone-9999'), {
+    uid: 'gone1', deviceId: 'a-old-gone-9999', model: 'Oppo A5', platform: 'android', osVersion: 'Android 12 (API 31)',
+    appVersion: '2.0.0', locationPermission: 'granted', lastSeenAt: Timestamp.fromMillis(now - 9 * DAY),
+    lat: 31.52, lng: 74.35, accuracyM: 30, locationAt: Timestamp.fromMillis(now - 9 * DAY),
+  });
   // Daily totals the app shares (numbers only).
   const key = (ms) => { const d = new Date(ms); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
   await setDoc(doc(db, 'stats/royal1'), {
@@ -204,6 +210,19 @@ try {
   assert.deepEqual(blockedNow.blockedDeviceIds, ['a-new-phone-2222']);
   await page.locator('tr', { hasText: 'Infinix Hot 40' }).getByText('Blocked').waitFor();
   step('phones page: map marker for the shared location, last seen, block a phone');
+
+  assert.equal(await page.locator('tr', { hasText: 'Oppo A5' }).count(), 0);
+  await page.getByText('1 phone report(s) of deleted salons are hidden').waitFor();
+  await page.click('#clear-orphans');
+  await page.click('.modal button[type=submit]');
+  await page.getByText('Old phone reports deleted').waitFor();
+  assert.equal((await admin(async (db) => getDoc(doc(db, 'devices/gone1__a-old-gone-9999')))).exists(), false);
+  await page.locator('tr', { hasText: 'Infinix Hot 40' }).locator('[data-delete]').click();
+  await page.click('.modal button[type=submit]');
+  await page.getByText('Phone report deleted').waitFor();
+  await page.locator('tr', { hasText: 'Infinix Hot 40' }).waitFor({ state: 'detached' });
+  assert.equal((await admin(async (db) => getDoc(doc(db, 'devices/royal1__a-new-phone-2222')))).exists(), false);
+  step('phones page: only registered salons; old reports of deleted salons and a single phone can be deleted');
 
   await page.goto(`${base}/index.html#/salons`);
   await page.fill('#q', 'roy');

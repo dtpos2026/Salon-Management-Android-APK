@@ -130,9 +130,9 @@
     <string name="backup_saved">Backup save ho gaya</string>
     <string name="backup_password_title">Backup par password lagayein?</string>
     <string name="backup_password_message">Ikhtiyari. Password lagane se backup khufia ho jata hai aur us ke baghair nahi khulta. Password na chahein to khali chhor dein.</string>
-    <string name="backup_restore_title">Restore</string>
-    <string name="backup_restore_hint">Is phone ka data backup file se badlein. Pehle mojooda data ka safety backup banta hai.</string>
-    <string name="backup_restore_file">File se restore karein</string>
+    <string name="backup_restore_title">Backup import (restore)</string>
+    <string name="backup_restore_hint">Backup file chunein (phone, Google Drive ya WhatsApp se) taake salon ka sara data is phone par wapas aa jaye. Pehle mojooda data ka safety backup banta hai.</string>
+    <string name="backup_restore_file">Backup file import karein</string>
     <string name="backup_local_title">Is phone par automatic backup</string>
     <string name="backup_local_hint">Rozana ek dafa aur har restore se pehle khud backup banta hai (aakhri 10 mehfooz).</string>
     <string name="backup_encrypted_title">Password wala backup</string>

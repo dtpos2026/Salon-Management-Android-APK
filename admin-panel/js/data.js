@@ -376,7 +376,7 @@ export async function approveDevice(account, { replace = false } = {}) {
   });
 }
 
-/** Removes an approved phone; it stops opening the app at its next check. */
+/** Removes an approved phone; it stops opening the app at its next check. Its map report goes too. */
 export async function removeDevice(account, id) {
   const remaining = approvedDevices(account).filter((d) => d !== id);
   const names = { ...(account.deviceNames || {}) };
@@ -387,6 +387,7 @@ export async function removeDevice(account, id) {
     deviceNames: names,
     updatedAt: serverTimestamp(),
   });
+  await deleteDeviceReport(`${account.id}__${id}`).catch(() => null);
 }
 
 export async function setDeviceLimit(account, max) {
@@ -403,9 +404,15 @@ export async function dismissDeviceRequest(account) {
   });
 }
 
+/** Deletes the online account with its notes, shared sales totals and phone reports (map). */
 export async function deleteAccount(uid) {
+  const phones = await devicesOf(uid).catch(() => []);
   await deleteDoc(doc(db(), 'accounts', uid));
-  await deleteDoc(doc(db(), 'adminNotes', uid)).catch(() => null);
+  await Promise.all([
+    deleteDoc(doc(db(), 'adminNotes', uid)).catch(() => null),
+    deleteDoc(doc(db(), 'stats', uid)).catch(() => null),
+    ...phones.map((d) => deleteDeviceReport(d.id).catch(() => null)),
+  ]);
 }
 
 // ------------------------------------------------------------------ invoices
@@ -671,6 +678,14 @@ export async function devicesOf(uid) {
   if (await devicesStore.ready()) return devicesStore.list().filter((d) => d.uid === uid);
   const snap = await getDocs(query(collection(db(), 'devices'), where('uid', '==', uid)));
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+/**
+ * Deletes a phone's report (model, last seen, location) from the Phones page and map. A phone
+ * that is still approved and in use reports itself again at its next check.
+ */
+export async function deleteDeviceReport(id) {
+  await deleteDoc(doc(db(), 'devices', id));
 }
 
 /** Blocks or unblocks one phone of an account. The app checks this list on the server copy. */

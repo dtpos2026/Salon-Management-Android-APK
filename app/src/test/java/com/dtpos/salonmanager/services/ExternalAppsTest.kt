@@ -54,19 +54,30 @@ class ExternalAppsTest {
 
     @Test
     fun `WhatsApp opens the customer's chat with the whole message typed in`() {
-        installApp("com.whatsapp", viewFilter("whatsapp"))
+        installApp("com.whatsapp", viewFilter("https"))
         val result = ExternalApps.whatsAppText(app, "0300-1234567", message)
         assertEquals(WhatsAppResult.WHATSAPP, result)
         val intent = shadowOf(app).nextStartedActivity
         assertEquals("com.whatsapp", intent.`package`)
-        assertEquals("whatsapp", intent.data?.scheme)
+        assertEquals(Intent.ACTION_VIEW, intent.action)
+        assertEquals("api.whatsapp.com", intent.data?.host)
         assertEquals("923001234567", intent.data?.getQueryParameter("phone"))
         assertEquals(message, intent.data?.getQueryParameter("text"))
     }
 
     @Test
+    fun `WhatsApp without a customer number opens its own Send screen with the message`() {
+        installApp("com.whatsapp", IntentFilter(Intent.ACTION_SEND).apply { addDataType("text/plain") })
+        assertEquals(WhatsAppResult.WHATSAPP, ExternalApps.whatsAppText(app, null, message))
+        val intent = shadowOf(app).nextStartedActivity
+        assertEquals(Intent.ACTION_SEND, intent.action)
+        assertEquals("com.whatsapp", intent.`package`)
+        assertEquals(message, intent.getStringExtra(Intent.EXTRA_TEXT))
+    }
+
+    @Test
     fun `WhatsApp Business is used when it is the only WhatsApp`() {
-        installApp("com.whatsapp.w4b", viewFilter("whatsapp"))
+        installApp("com.whatsapp.w4b", viewFilter("https"))
         assertEquals(WhatsAppResult.WHATSAPP, ExternalApps.whatsAppText(app, "03001234567", message))
         assertEquals("com.whatsapp.w4b", shadowOf(app).nextStartedActivity.`package`)
     }
@@ -105,7 +116,7 @@ class ExternalAppsTest {
     }
 
     @Test
-    fun `receipt picture goes to the customer's WhatsApp chat with the message as caption`() {
+    fun `receipt picture opens WhatsApp's Send screen with the message as caption`() {
         installApp("com.whatsapp", IntentFilter(Intent.ACTION_SEND).apply { addDataType("image/*") })
         val picture = Uri.parse("content://com.dtpos.salonmanager.files/receipts/SAL-000123.png")
         val result = ExternalApps.whatsAppImage(app, picture, "image/png", "03001234567", message)
@@ -117,7 +128,7 @@ class ExternalAppsTest {
         @Suppress("DEPRECATION")
         assertEquals(picture, intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))
         assertEquals(message, intent.getStringExtra(Intent.EXTRA_TEXT))
-        assertEquals("923001234567@s.whatsapp.net", intent.getStringExtra("jid"))
+        assertEquals(null, intent.getStringExtra("jid"))
         assertTrue((intent.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION) != 0)
     }
 
