@@ -39,8 +39,11 @@ jobs:
       - name: Delete all but the newest caches
         run: |
           gh api "repos/$REPO/actions/caches?per_page=1" --jq '"Caches API total_count: \(.total_count)"'
-          ids=$(gh cache list --repo "$REPO" --limit 1000 --sort last_accessed_at --order desc --json id --jq '.[].id')
-          echo "Found $(echo "$ids" | grep -c . || true) caches; keeping the newest $KEEP_CACHES."
+          # The debug signing key (dt-debug-keystore-*) is tiny and is never deleted: without it
+          # the next APK would not install over the previous one.
+          ids=$(gh cache list --repo "$REPO" --limit 1000 --sort last_accessed_at --order desc --json id,key \
+            --jq '.[] | select(.key | startswith("dt-debug-keystore") | not) | .id')
+          echo "Found $(echo "$ids" | grep -c . || true) caches (besides the signing key); keeping the newest $KEEP_CACHES."
           echo "$ids" | tail -n +$((KEEP_CACHES + 1)) | while read -r id; do
             [ -n "$id" ] || continue
             gh cache delete "$id" --repo "$REPO" && echo "deleted cache $id"

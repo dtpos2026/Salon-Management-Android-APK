@@ -53,6 +53,11 @@ import java.util.concurrent.TimeUnit
 @Config(sdk = [34], application = Application::class, qualifiers = "w392dp-h850dp-hdpi")
 class ScreenshotTest {
 
+    companion object {
+        const val SMALL_PHONE = "w320dp-h568dp-mdpi"
+        const val TABLET = "w800dp-h1280dp-mdpi"
+    }
+
     @get:Rule
     val compose = createAndroidComposeRule<ComponentActivity>()
 
@@ -329,6 +334,75 @@ class ScreenshotTest {
             compose.waitForIdle()
         }
         capture("14-close-day")
+    }
+
+    /** Salon with today's queue (a walk-in and a booking) and a hand-written udhaar. */
+    private fun seedSalonWithQueue() {
+        seedSalon()
+        runBlocking {
+            container.settingsRepository.putBoolean(com.dtpos.salonmanager.data.repository.SettingKeys.TOKENS_ENABLED, true)
+            val today = com.dtpos.salonmanager.core.util.DateTimeUtils.today()
+            container.bookingRepository.issue(today, "Ali Raza", "03001234567", "Hair cut")
+            container.bookingRepository.issue(today, "Bilal Ahmed", null, "Beard styling", timeMinutes = 17 * 60 + 30)
+            container.dueRepository.add(null, "Usman Ali", "03001112233", 150_000, "Facial last week")
+        }
+    }
+
+    /** Renders one real screen with data and saves it; any crash while composing fails the test. */
+    private fun screen(name: String, content: @androidx.compose.runtime.Composable () -> Unit) {
+        seedSalonWithQueue()
+        compose.setContent {
+            SalonTheme(darkTheme = false, colorTheme = ColorTheme.ROYAL_PURPLE) {
+                CompositionLocalProvider(LocalAppContainer provides container) { content() }
+            }
+        }
+        repeat(5) {
+            Thread.sleep(400)
+            compose.waitForIdle()
+        }
+        capture(name)
+    }
+
+    // Small phones (4.7", 320 dp wide) and tablets: the main screens must fit and work.
+
+    @Test
+    @Config(qualifiers = SMALL_PHONE)
+    fun smallPhoneDashboard() = dashboard(ColorTheme.ROYAL_PURPLE, dark = false, name = "20-small-dashboard")
+
+    @Test
+    @Config(qualifiers = SMALL_PHONE)
+    fun smallPhoneNewSale() = screen("21-small-new-sale") {
+        com.dtpos.salonmanager.presentation.sales.PosScreen(initialCustomerId = null, onBack = {}, onSaleCompleted = {})
+    }
+
+    @Test
+    @Config(qualifiers = SMALL_PHONE)
+    fun smallPhoneReceipt() = screen("22-small-receipt") {
+        com.dtpos.salonmanager.presentation.sales.SaleDetailScreen(saleId = 1, isNewSale = false, onBack = {}, onNewSale = {}, onOpenCustomer = {})
+    }
+
+    @Test
+    @Config(qualifiers = SMALL_PHONE)
+    fun smallPhoneUdhaar() = screen("23-small-udhaar") { com.dtpos.salonmanager.presentation.messages.DuesScreen(onBack = {}) }
+
+    @Test
+    @Config(qualifiers = SMALL_PHONE)
+    fun smallPhoneTokens() = screen("24-small-tokens") { com.dtpos.salonmanager.presentation.tokens.TokensScreen(onBack = {}) }
+
+    @Test
+    @Config(qualifiers = SMALL_PHONE)
+    fun smallPhoneMenu() = screen("25-small-menu") {
+        com.dtpos.salonmanager.presentation.services.MenuScreen(onBack = {}, onNewSale = {}, onManage = {})
+    }
+
+    @Test
+    @Config(qualifiers = TABLET)
+    fun tabletDashboard() = dashboard(ColorTheme.ROYAL_PURPLE, dark = false, name = "26-tablet-dashboard")
+
+    @Test
+    @Config(qualifiers = TABLET)
+    fun tabletNewSale() = screen("27-tablet-new-sale") {
+        com.dtpos.salonmanager.presentation.sales.PosScreen(initialCustomerId = null, onBack = {}, onSaleCompleted = {})
     }
 
     @Test
