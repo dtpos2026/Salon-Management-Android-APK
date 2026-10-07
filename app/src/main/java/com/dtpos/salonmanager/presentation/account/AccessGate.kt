@@ -646,12 +646,13 @@ private fun LocationGate(content: @Composable () -> Unit) {
         androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions(),
     ) { result ->
         status = LocationAccess.status(context)
-        if (result.values.any { it }) {
+        if (status == LocationStatus.READY || status == LocationStatus.SERVICES_OFF) {
+            deniedForever = false
             container.deviceMonitor.reportNow()
         } else {
-            // Denied with "don't ask again" (or twice on Android 11+): only Settings can allow it now.
+            // Denied (or precise refused) with "don't ask again" / twice on Android 11+: only Settings can allow it now.
             val activity = context.findActivity()
-            deniedForever = activity != null && LocationAccess.PERMISSIONS.none { activity.shouldShowRequestPermissionRationale(it) }
+            deniedForever = activity != null && !activity.shouldShowRequestPermissionRationale(android.Manifest.permission.ACCESS_FINE_LOCATION)
         }
     }
     if (status == LocationStatus.READY) {
@@ -664,7 +665,13 @@ private fun LocationGate(content: @Composable () -> Unit) {
         StatusIcon(Icons.Filled.LocationOn)
         Spacer(Modifier.height(20.dp))
         Text(
-            stringResource(if (status == LocationStatus.SERVICES_OFF) R.string.location_off_title else R.string.location_required_title),
+            stringResource(
+                when (status) {
+                    LocationStatus.SERVICES_OFF -> R.string.location_off_title
+                    LocationStatus.NEEDS_PRECISE -> R.string.location_precise_title
+                    else -> R.string.location_required_title
+                },
+            ),
             color = Glass.TextPrimary,
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
@@ -675,6 +682,8 @@ private fun LocationGate(content: @Composable () -> Unit) {
             stringResource(
                 when {
                     status == LocationStatus.SERVICES_OFF -> R.string.location_off_message
+                    status == LocationStatus.NEEDS_PRECISE && deniedForever -> R.string.location_precise_settings
+                    status == LocationStatus.NEEDS_PRECISE -> R.string.location_precise_message
                     deniedForever -> R.string.location_denied_message
                     else -> R.string.location_required_message
                 },
@@ -696,7 +705,7 @@ private fun LocationGate(content: @Composable () -> Unit) {
                 icon = Icons.Filled.LocationOn,
             )
             else -> GlassPrimaryButton(
-                stringResource(R.string.location_allow),
+                stringResource(if (status == LocationStatus.NEEDS_PRECISE) R.string.location_allow_precise else R.string.location_allow),
                 onClick = { launcher.launch(LocationAccess.PERMISSIONS) },
                 icon = Icons.Filled.LocationOn,
             )

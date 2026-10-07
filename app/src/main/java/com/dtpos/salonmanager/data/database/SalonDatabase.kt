@@ -58,6 +58,7 @@ import com.dtpos.salonmanager.data.database.entities.VisitEntity
         CashSessionEntity::class,
         CashTransactionEntity::class,
         DueEntity::class,
+        com.dtpos.salonmanager.data.database.entities.DuePaymentEntity::class,
         BookingEntity::class,
         PaymentAccountEntity::class,
     ],
@@ -82,7 +83,7 @@ abstract class SalonDatabase : RoomDatabase() {
 
     companion object {
         const val NAME = "salon.db"
-        const val VERSION = 3
+        const val VERSION = 4
 
         /**
          * No destructive fallback is configured on purpose: if a migration is ever missing the

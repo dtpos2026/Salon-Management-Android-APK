@@ -23,7 +23,17 @@ object ExternalApps {
 
     private val WHATSAPP_PACKAGES = listOf("com.whatsapp", "com.whatsapp.w4b")
 
+    /** Installed WhatsApp apps (normal first). Detection can miss them on some phones, so the
+     * launchers below also try every WhatsApp package directly. */
     fun whatsAppPackage(context: Context): String? = WHATSAPP_PACKAGES.firstOrNull { isInstalled(context, it) }
+
+    /** WhatsApp packages to try: the detected one first, then the others. */
+    private fun whatsAppCandidates(context: Context): List<String> =
+        (listOfNotNull(whatsAppPackage(context)) + WHATSAPP_PACKAGES).distinct()
+
+    /** Starts [build] for the first WhatsApp app that accepts it. */
+    private fun startInWhatsApp(context: Context, build: (String) -> Intent): Boolean =
+        whatsAppCandidates(context).any { pkg -> start(context, build(pkg)) }
 
     private fun clickToChat(digits: String, message: String): Uri =
         Uri.parse("https://api.whatsapp.com/send?phone=$digits&text=" + Uri.encode(message))
@@ -36,11 +46,9 @@ object ExternalApps {
      */
     fun whatsAppText(context: Context, phone: String?, message: String, chooserTitle: String = "WhatsApp"): WhatsAppResult {
         val digits = PhoneNumbers.toWhatsApp(phone)
-        val pkg = whatsAppPackage(context)
-        if (pkg != null) {
-            if (digits != null && start(context, Intent(Intent.ACTION_VIEW, clickToChat(digits, message)).setPackage(pkg))) return WhatsAppResult.WHATSAPP
-            val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, message).setPackage(pkg)
-            if (start(context, send)) return WhatsAppResult.WHATSAPP
+        if (digits != null && startInWhatsApp(context) { Intent(Intent.ACTION_VIEW, clickToChat(digits, message)).setPackage(it) }) return WhatsAppResult.WHATSAPP
+        if (startInWhatsApp(context) { Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, message).setPackage(it) }) {
+            return WhatsAppResult.WHATSAPP
         }
         if (digits != null && start(context, Intent(Intent.ACTION_VIEW, clickToChat(digits, message)))) return WhatsAppResult.OTHER_APP
         return if (shareText(context, message, chooserTitle)) WhatsAppResult.OTHER_APP else WhatsAppResult.FAILED
@@ -53,8 +61,7 @@ object ExternalApps {
      */
     @Suppress("UNUSED_PARAMETER")
     fun whatsAppImage(context: Context, image: Uri, mimeType: String, phone: String?, message: String, chooserTitle: String = "WhatsApp"): WhatsAppResult {
-        val pkg = whatsAppPackage(context)
-        if (pkg != null && start(context, imageIntent(image, mimeType, message).setPackage(pkg))) return WhatsAppResult.WHATSAPP
+        if (startInWhatsApp(context) { imageIntent(image, mimeType, message).setPackage(it) }) return WhatsAppResult.WHATSAPP
         val chooser = Intent.createChooser(imageIntent(image, mimeType, message), chooserTitle)
         return if (start(context, chooser)) WhatsAppResult.OTHER_APP else WhatsAppResult.FAILED
     }

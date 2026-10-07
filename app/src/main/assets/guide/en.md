@@ -21,7 +21,7 @@
 ## Pending bills and reminders
 - Dashboard > Udhaar shows who owes how much.
 - WhatsApp or SMS opens with the reminder ready; you press Send. The app never says "sent" for you.
-- When the customer pays, press Received. Tick "Received in cash" to add it to today's cash drawer.
+- When the customer pays, press Received: enter the amount and choose Cash (goes into today's cash drawer) or Online and the JazzCash / EasyPaisa / bank account. Every payment is listed; part payments are fine.
 
 ## Receipt: print, WhatsApp, picture
 - After a sale the receipt opens. Print it, save PNG / JPEG, share it or send it on WhatsApp.
@@ -54,7 +54,7 @@
 ## Staff, commission and owner
 - Staff: add each worker with salary type (fixed, commission, or both) and commission %.
 - If you work yourself, add yourself with role Owner: your work shows apart as "Owner's own work" with no commission.
-- Record payment (salary, advance, commission). After saving you can print or share the staff payment slip.
+- Record payment (salary, advance, commission). The slip opens as a picture: Print, WhatsApp (to the staff member's number) or Share. The receipt icon on a payment opens its slip again.
 
 ## Expenses
 - Expenses: business expenses (rent, bills, products) and personal / household spending are kept apart.

@@ -5,6 +5,8 @@ import com.dtpos.salonmanager.core.util.DateTimeUtils
 import com.dtpos.salonmanager.data.database.SalonDatabase
 import com.dtpos.salonmanager.data.database.entities.CashTransactionEntity
 import com.dtpos.salonmanager.data.database.entities.DueEntity
+import com.dtpos.salonmanager.data.database.entities.DuePaymentEntity
+import com.dtpos.salonmanager.domain.model.PaymentMethod
 import com.dtpos.salonmanager.domain.calc.CashCalculator
 import com.dtpos.salonmanager.domain.model.CashSessionStatus
 import com.dtpos.salonmanager.domain.model.CashTxType
@@ -18,6 +20,7 @@ class DueRepository(
 ) {
     private val dao = db.dueDao()
     private val cashDao = db.cashDao()
+    private val accountDao = db.paymentAccountDao()
 
     fun observeOpen(): Flow<List<DueEntity>> = dao.observeOpen(businessId)
 
@@ -47,21 +50,44 @@ class DueRepository(
     }
 
     /**
-     * Records a payment; the due is settled once fully paid. Returns the remaining balance.
-     * With [intoCashDrawer] the money is added to today's cash counter (Close Day shows it).
+     * Older form: [intoCashDrawer] = cash, otherwise an unspecified (non-cash) payment.
      */
-    suspend fun recordPayment(id: Long, amountMinor: Long, intoCashDrawer: Boolean = false): DataResult<Long> = safeWrite {
+    suspend fun recordPayment(id: Long, amountMinor: Long, intoCashDrawer: Boolean = false): DataResult<Long> =
+        receivePayment(id, amountMinor, if (intoCashDrawer) PaymentMethod.CASH else PaymentMethod.OTHER, accountId = null)
+
+    /**
+     * Records money received against a pending bill and returns the remaining balance; the bill
+     * is settled once fully paid. Only the part up to the balance is recorded (never more than
+     * owed). Cash goes into the cash drawer; an online payment ([accountId] = JazzCash / bank
+     * account, or a non-cash [method] without an account) is recorded against that account
+     * and never touches the cash drawer. Everything happens in one transaction.
+     */
+    suspend fun receivePayment(id: Long, amountMinor: Long, method: PaymentMethod, accountId: Long?): DataResult<Long> = safeWrite {
         db.withTransaction {
             val due = dao.get(id) ?: return@withTransaction DataResult.Failure(DataError.NOT_FOUND)
             if (amountMinor <= 0 || due.settledAt != null) return@withTransaction DataResult.Failure(DataError.INVALID)
+            val account = accountId?.let { accountDao.get(it) ?: return@withTransaction DataResult.Failure(DataError.NOT_FOUND) }
+            val payMethod = account?.let { PaymentAccountRepository.methodFor(it.kind) } ?: method
             val paid = (due.paidMinor + amountMinor).coerceAtMost(due.amountMinor)
             val received = paid - due.paidMinor
-            val updated = due.copy(paidMinor = paid, settledAt = if (paid >= due.amountMinor) clock() else null)
+            if (received <= 0) return@withTransaction DataResult.Failure(DataError.INVALID)
+            val now = clock()
+            val day = businessDay(now)
+            val updated = due.copy(paidMinor = paid, settledAt = if (paid >= due.amountMinor) now else null)
             dao.update(updated)
-            if (intoCashDrawer && received > 0) {
-                val now = clock()
-                var day = DateTimeUtils.toLocalDate(now).toEpochDay()
-                if (cashDao.getSession(businessId, day)?.status == CashSessionStatus.CLOSED) day++
+            dao.insertPayment(
+                DuePaymentEntity(
+                    businessId = businessId,
+                    dueId = due.id,
+                    amountMinor = received,
+                    paymentMethod = payMethod,
+                    paymentAccountId = account?.id,
+                    paymentAccountName = account?.name,
+                    businessDate = day,
+                    createdAt = now,
+                ),
+            )
+            if (payMethod == PaymentMethod.CASH) {
                 cashDao.insertTransaction(
                     CashTransactionEntity(
                         businessId = businessId,
@@ -77,6 +103,16 @@ class DueRepository(
             }
             DataResult.Success(updated.balanceMinor)
         }
+    }
+
+    /** Payment history of one bill, newest first. */
+    fun observePayments(dueId: Long): Flow<List<DuePaymentEntity>> = dao.observePayments(dueId)
+
+    /** Today, or tomorrow once today is closed (same rule as sales). */
+    private suspend fun businessDay(now: Long): Long {
+        var day = DateTimeUtils.toLocalDate(now).toEpochDay()
+        if (cashDao.getSession(businessId, day)?.status == CashSessionStatus.CLOSED) day++
+        return day
     }
 
     suspend fun markReminded(id: Long) {

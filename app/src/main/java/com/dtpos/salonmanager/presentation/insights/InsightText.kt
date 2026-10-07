@@ -8,7 +8,7 @@ import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.Savings
+import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.runtime.Composable
@@ -87,7 +87,7 @@ fun Insight.content(): InsightContent {
         is Insight.PersonalSpendingHigh -> InsightContent(
             stringResource(R.string.insight_personal_high_title),
             stringResource(R.string.insight_personal_high_msg, Percent.formatRatio(percentOfProfit), money.format(personalMinor), money.format(profitMinor)),
-            Icons.Filled.Savings,
+            Icons.Filled.MonetizationOn,
         )
         is Insight.ReturningCustomers -> InsightContent(
             stringResource(R.string.insight_returning_title),

@@ -41,7 +41,7 @@ import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.PointOfSale
-import androidx.compose.material.icons.filled.Savings
+import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Spa
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
@@ -150,7 +150,10 @@ fun DashboardScreen(onNewSale: () -> Unit, onOpenSale: (Long) -> Unit, onNavigat
         ) {
             item { SalonHeader(state.profile?.logoPath, state.isDemo) }
             item { LicenseBanner(state.license, onClick = { onNavigate(Routes.LICENSE) }) }
-            item { BackupReminder(state.lastBackupAt, data.todaySales.saleCount > 0 || data.recentSales.isNotEmpty()) { onNavigate(Routes.BACKUP) } }
+            // After Close Day the dashboard stays clean: the backup suggestion moves to the Close Day screen.
+            if (!period.todayClosed) {
+                item { BackupReminder(state.lastBackupAt, data.todaySales.saleCount > 0 || data.recentSales.isNotEmpty()) { onNavigate(Routes.BACKUP) } }
+            }
             item {
                 Button(
                     onClick = onNewSale,
@@ -166,11 +169,15 @@ fun DashboardScreen(onNewSale: () -> Unit, onOpenSale: (Long) -> Unit, onNavigat
             if (period.todayClosed) {
                 item {
                     InfoBanner(
-                        text = stringResource(R.string.dashboard_day_closed, DateTimeUtils.formatDate(period.businessDay)),
+                        text = stringResource(
+                            R.string.dashboard_day_closed,
+                            DateTimeUtils.formatDate(DateTimeUtils.today()),
+                            DateTimeUtils.formatDate(period.businessDay),
+                        ),
                         icon = Icons.Filled.Lock,
-                        container = SalonTheme.extended.warningContainer,
-                        content = SalonTheme.extended.warning,
-                        actionLabel = stringResource(R.string.action_open),
+                        container = MaterialTheme.colorScheme.secondaryContainer,
+                        content = MaterialTheme.colorScheme.onSecondaryContainer,
+                        actionLabel = stringResource(R.string.dashboard_day_closed_report),
                         onAction = { onNavigate(Routes.CLOSE_DAY) },
                     )
                 }
@@ -320,7 +327,7 @@ private fun PeriodGrid(summary: PeriodSummary) {
             StatCard(
                 stringResource(R.string.dashboard_profit),
                 money.format(profit.businessProfitMinor),
-                Icons.Filled.Savings,
+                Icons.Filled.MonetizationOn,
                 m,
                 accent = if (profit.isLoss) ext.negative else ext.positive,
                 valueColor = if (profit.isLoss) ext.negative else ext.positive,
@@ -351,6 +358,14 @@ private fun MoneyByAccountCard(summary: PeriodSummary, onManage: () -> Unit) {
         }
         HorizontalDivider(Modifier.padding(vertical = 6.dp))
         LabeledValueRow(stringResource(R.string.dashboard_sales), money.format(summary.sales.totalMinor), emphasize = true)
+        // Old udhaar paid back in this period: extra money, not part of the sales above.
+        summary.duesCollected.forEach { row ->
+            LabeledValueRow(
+                stringResource(R.string.close_udhaar_received) + " · " + (row.accountName ?: stringResource(row.paymentMethod.labelRes)),
+                money.format(row.totalMinor),
+                valueColor = SalonTheme.extended.positive,
+            )
+        }
     }
 }
 

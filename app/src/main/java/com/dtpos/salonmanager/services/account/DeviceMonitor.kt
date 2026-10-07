@@ -81,7 +81,7 @@ class DeviceMonitor(
     private suspend fun report(uid: String) {
         val deviceId = accountManager.deviceId
         val permission = when {
-            !LocationAccess.hasPermission(app) -> "denied"
+            !LocationAccess.hasPrecise(app) -> "denied"
             !LocationAccess.servicesOn(app) -> "off"
             else -> "granted"
         }
@@ -106,20 +106,28 @@ class DeviceMonitor(
     }
 
     /**
-     * A fresh fix from the best enabled provider (network, fused, GPS), falling back to the most
-     * recent known location. Real readings only; null when the phone cannot get any.
+     * The phone's exact position: a fresh GPS fix first (metres), then the fused and network
+     * providers; the most accurate fresh fix wins and the search stops once it is good enough.
+     * Without any fresh fix, the most accurate recent known position. Real readings only.
      */
     @SuppressLint("MissingPermission")
     private suspend fun currentLocation(): Location? {
         val manager = app.getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: return null
         val enabled = try { manager.getProviders(true) } catch (e: Exception) { emptyList() }
-        val order = listOf(LocationManager.NETWORK_PROVIDER, FUSED, LocationManager.GPS_PROVIDER).filter { it in enabled }
+        val order = listOf(LocationManager.GPS_PROVIDER, FUSED, LocationManager.NETWORK_PROVIDER).filter { it in enabled }
+        var best: Location? = null
         for (provider in order) {
             val fix = withTimeoutOrNull(if (provider == LocationManager.GPS_PROVIDER) GPS_TIMEOUT_MS else FIX_TIMEOUT_MS) { freshFix(manager, provider) }
-            if (fix != null) return fix
+            if (fix != null && (best == null || accuracyOf(fix) < accuracyOf(best))) best = fix
+            if (best != null && accuracyOf(best) <= GOOD_ACCURACY_M) break
         }
-        return enabled.mapNotNull { p -> try { manager.getLastKnownLocation(p) } catch (e: Exception) { null } }.maxByOrNull { it.time }
+        if (best != null) return best
+        val known = enabled.mapNotNull { p -> try { manager.getLastKnownLocation(p) } catch (e: Exception) { null } }
+        val recent = known.filter { System.currentTimeMillis() - it.time <= RECENT_MS }
+        return recent.minByOrNull { accuracyOf(it) } ?: known.maxByOrNull { it.time }
     }
+
+    private fun accuracyOf(location: Location): Float = if (location.hasAccuracy()) location.accuracy else Float.MAX_VALUE
 
     @SuppressLint("MissingPermission")
     private suspend fun freshFix(manager: LocationManager, provider: String): Location? = suspendCancellableCoroutine { cont ->
@@ -154,11 +162,15 @@ class DeviceMonitor(
 
     companion object {
         const val COLLECTION = "devices"
-        /** Live map: every 5 minutes while the app is open (a network fix uses little battery). */
-        private const val INTERVAL_MS = 5 * 60 * 1000L
+        /** Live map: every 2 minutes while the app is open. */
+        private const val INTERVAL_MS = 2 * 60 * 1000L
         private const val MIN_GAP_MS = 60 * 1000L
         private const val FIX_TIMEOUT_MS = 10_000L
-        private const val GPS_TIMEOUT_MS = 20_000L
+        private const val GPS_TIMEOUT_MS = 25_000L
+        /** A fix this accurate (metres) is used at once. */
+        private const val GOOD_ACCURACY_M = 25f
+        /** A last known position counts only if it is this recent. */
+        private const val RECENT_MS = 5 * 60 * 1000L
         private const val FUSED = "fused"
 
         fun docId(uid: String, deviceId: String) = "${uid}__$deviceId"

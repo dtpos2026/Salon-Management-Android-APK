@@ -31,6 +31,29 @@ data class DueEntity(
 }
 
 /**
+ * One payment received against a pending bill: how much, how (cash or an online account) and
+ * on which business day. Cash payments also add a cash-drawer entry; online payments do not.
+ * [DueEntity.paidMinor] is always the sum of a bill's payments.
+ */
+@Entity(
+    tableName = "due_payments",
+    indices = [Index(value = ["dueId"]), Index(value = ["businessId", "businessDate"])],
+)
+data class DuePaymentEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val businessId: Long,
+    val dueId: Long,
+    val amountMinor: Long,
+    val paymentMethod: com.dtpos.salonmanager.domain.model.PaymentMethod,
+    /** JazzCash / EasyPaisa / bank account it was paid into (online payments). */
+    val paymentAccountId: Long?,
+    val paymentAccountName: String?,
+    /** Business day it counts for (the next day when today is already closed). */
+    val businessDate: Long,
+    val createdAt: Long,
+)
+
+/**
  * A queue token: a walk-in (timeMinutes = null) or an advance booking for a date and time.
  * Token numbers start at 1 every day; walk-ins and bookings share the day's numbers.
  */

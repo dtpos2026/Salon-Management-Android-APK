@@ -296,7 +296,7 @@ private fun SalonNavHost(nav: NavHostController) {
         composable(Routes.GUIDE) {
             com.dtpos.salonmanager.presentation.settings.GuideScreen(onBack = back, onSupport = { nav.navigate(Routes.SUPPORT) })
         }
-        composable(Routes.CLOSE_DAY) { SecuredArea(ProtectedArea.CLOSE_DAY) { com.dtpos.salonmanager.presentation.cash.CloseDayScreen(onBack = back) } }
+        composable(Routes.CLOSE_DAY) { SecuredArea(ProtectedArea.CLOSE_DAY) { com.dtpos.salonmanager.presentation.cash.CloseDayScreen(onBack = back, onBackup = { nav.navigate(Routes.BACKUP) }) } }
         composable(Routes.MENU) {
             com.dtpos.salonmanager.presentation.services.MenuScreen(
                 onBack = back,

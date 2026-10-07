@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="dashboard_day_closed">آج کا دن بند ہو چکا ہے۔ نئی سیل اب %1$s میں شمار ہوگی۔</string>
+    <string name="dashboard_day_closed">%1$s کا دن بند ہے۔ نئی سیل %2$s میں شمار ہوگی۔ پچھلی سب سیل، سیلز اور رپورٹس میں موجود ہے۔</string>
     <string name="dashboard_period_title">کاروبار کا خلاصہ</string>
     <string name="dashboard_online_received">آن لائن وصول</string>
     <string name="dashboard_udhaar">اُدھار</string>
@@ -101,9 +101,7 @@
     <string name="staff_slip_sign">وصول کنندہ: ____________</string>
     <string name="staff_slip_share">شیئر</string>
     <string name="staff_slip_print">پرچی پرنٹ</string>
-    <string name="staff_slip_ask">%2$s کو %1$s ادا ہوئے۔ پرچی پرنٹ کریں؟</string>
     <string name="staff_commission_short">کمیشن %1$s</string>
-    <string name="dues_in_cash">کیش میں ملا (کیش دراز میں شامل)</string>
     <string name="services_photo_failed">یہ تصویر استعمال نہیں ہو سکی۔ دوسری آزمائیں۔</string>
     <string name="services_photo_add">تصویر لگائیں</string>
     <string name="services_photo_change">تصویر بدلیں</string>
@@ -170,4 +168,30 @@
     <string name="share_due_balance">باقی رقم</string>
     <string name="share_due_closing">براہ کرم سہولت سے ادا کر دیں۔ شکریہ!</string>
     <string name="whatsapp_copied">بھیجنے کے لیے کوئی ایپ نہیں کھلی۔ پیغام کاپی ہو گیا ہے: واٹس ایپ کھولیں اور پیسٹ کریں۔</string>
+    <string name="dues_error_more_than_balance">رقم باقی رقم سے زیادہ ہے</string>
+    <string name="dues_choose_account">وہ اکاؤنٹ چنیں جس میں پیسے آئے</string>
+    <string name="dues_full_balance">پوری باقی رقم %1$s</string>
+    <string name="dues_received_by">کیسے ملا</string>
+    <string name="dues_method_online">آن لائن / اکاؤنٹ</string>
+    <string name="dues_cash_hint">آج کے کیش دراز میں شامل ہوگا۔</string>
+    <string name="dues_online_hint">اس اکاؤنٹ کے ٹوٹل میں شمار ہوگا، کیش دراز میں نہیں۔</string>
+    <string name="dues_no_accounts">ابھی کوئی آن لائن اکاؤنٹ نہیں۔ یہ \"آن لائن\" کے طور پر محفوظ ہوگا۔ سیٹنگز › ادائیگی اکاؤنٹس میں جاز کیش / ایزی پیسہ / بینک شامل کریں۔</string>
+    <string name="dues_history">وصول شدہ ادائیگیاں</string>
+    <string name="dues_save_payment">ادائیگی محفوظ کریں</string>
+    <string name="staff_slip_failed">پرچی نہیں بن سکی</string>
+    <string name="staff_slip_preview_hint">بالکل وہی جو پرنٹر چھاپے گا۔ پرنٹ کریں یا واٹس ایپ پر بھیجیں۔</string>
+    <string name="staff_slip_no_phone">اس اسٹاف کا فون نمبر محفوظ نہیں: واٹس ایپ میں چیٹ خود چنیں۔ نمبر ایڈٹ میں شامل کریں۔</string>
+    <string name="receipt_wa_title">واٹس ایپ پر بھیجیں</string>
+    <string name="receipt_wa_text_customer">کسٹمر کی چیٹ میں پیغام</string>
+    <string name="receipt_wa_text_choose">پیغام (چیٹ خود چنیں)</string>
+    <string name="receipt_wa_picture">رسید کی تصویر + پیغام</string>
+    <string name="receipt_wa_hint">پیغام سیدھا کسٹمر کی چیٹ میں کھلتا ہے۔ تصویر کے لیے واٹس ایپ میں کسٹمر کی چیٹ پر ٹیپ کریں۔</string>
+    <string name="receipt_wa_hint_no_phone">اس رسید پر فون نمبر نہیں: واٹس ایپ میں چیٹ چنیں۔</string>
+    <string name="dashboard_day_closed_report">رپورٹ</string>
+    <string name="close_backup_title">آج کے ڈیٹا کی کاپی رکھیں</string>
+    <string name="close_backup_hint">دن بند ہو گیا۔ ابھی بیک اپ بنائیں تاکہ فون گم ہونے پر بھی سیل، اُدھار اور اسٹاف ادائیگیاں محفوظ رہیں۔</string>
+    <string name="location_precise_title">درست (Precise) لوکیشن آن کریں</string>
+    <string name="location_precise_message">ابھی صرف \"اندازاً\" لوکیشن کی اجازت ہے جو کلومیٹروں دور ہو سکتی ہے۔ نیچے دبائیں اور \"Precise\" چنیں تاکہ DT کو اس فون کی بالکل درست جگہ نظر آئے۔</string>
+    <string name="location_precise_settings">ایپ سیٹنگز کھولیں، Permissions › Location دبائیں اور \"Use precise location\" آن کریں، پھر واپس آئیں۔</string>
+    <string name="location_allow_precise">درست لوکیشن کی اجازت دیں</string>
 </resources>

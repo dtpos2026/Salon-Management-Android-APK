@@ -60,6 +60,10 @@ import com.dtpos.salonmanager.core.di.AppContainer
 import com.dtpos.salonmanager.core.util.DateTimeUtils
 import com.dtpos.salonmanager.core.util.Money
 import com.dtpos.salonmanager.data.database.entities.DueEntity
+import com.dtpos.salonmanager.data.database.entities.PaymentAccountEntity
+import com.dtpos.salonmanager.domain.model.PaymentMethod
+import com.dtpos.salonmanager.presentation.common.labelRes
+import androidx.compose.foundation.verticalScroll
 import com.dtpos.salonmanager.data.database.model.CustomerListRow
 import com.dtpos.salonmanager.data.repository.DataResult
 import com.dtpos.salonmanager.domain.model.BusinessProfile
@@ -111,13 +115,35 @@ class DuesViewModel(container: AppContainer) : BaseViewModel() {
         }
     }
 
-    fun pay(due: DueEntity, amount: String, inCash: Boolean, onDone: () -> Unit) {
+    /** Active JazzCash / EasyPaisa / bank accounts an online payment can go into. */
+    val accounts: StateFlow<List<PaymentAccountEntity>> = container.paymentAccountRepository.observeActive()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** True while a payment is being saved (the Save button is disabled: no double entries). */
+    val saving = MutableStateFlow(false)
+
+    fun payments(dueId: Long) = repo.observePayments(dueId)
+
+    /**
+     * Records a payment against [due]. Cash goes into the cash drawer; online goes into the
+     * chosen account (or "online" when the salon has no account yet) and not into the drawer.
+     */
+    fun pay(due: DueEntity, amount: String, online: Boolean, accountId: Long?, onDone: () -> Unit) {
+        if (saving.value) return
         val minor = Money.parse(amount)
         if (minor == null || minor <= 0) return showMessage(R.string.dues_error_amount)
+        if (minor > due.balanceMinor) return showMessage(R.string.dues_error_more_than_balance)
+        if (online && accountId == null && accounts.value.isNotEmpty()) return showMessage(R.string.dues_choose_account)
+        saving.value = true
         launchSafe {
-            when (val r = repo.recordPayment(due.id, minor, intoCashDrawer = inCash)) {
-                is DataResult.Success -> { showMessage(if (r.data == 0L) R.string.dues_settled else R.string.dues_payment_saved); onDone() }
-                is DataResult.Failure -> showMessage(r.error.messageRes)
+            try {
+                val method = if (online) PaymentMethod.BANK else PaymentMethod.CASH
+                when (val r = repo.receivePayment(due.id, minor, method, if (online) accountId else null)) {
+                    is DataResult.Success -> { showMessage(if (r.data == 0L) R.string.dues_settled else R.string.dues_payment_saved); onDone() }
+                    is DataResult.Failure -> showMessage(r.error.messageRes)
+                }
+            } finally {
+                saving.value = false
             }
         }
     }
@@ -210,28 +236,7 @@ fun DuesScreen(onBack: () -> Unit) {
     }
 
     if (adding) AddDueDialog(vm, money.config.symbol, onDismiss = { adding = false })
-    paying?.let { due ->
-        var amount by remember(due.id) { mutableStateOf(Money.toInput(due.balanceMinor)) }
-        var inCash by remember(due.id) { mutableStateOf(true) }
-        AlertDialog(
-            onDismissRequest = { paying = null },
-            icon = { Icon(Icons.Filled.Payments, contentDescription = null) },
-            title = { Text(stringResource(R.string.dues_receive_title, due.customerName)) },
-            text = {
-                Column {
-                    Text(stringResource(R.string.dues_balance, money.format(due.balanceMinor)))
-                    Spacer(Modifier.height(10.dp))
-                    AmountField(amount, { amount = it }, stringResource(R.string.dues_amount_received), money.config.symbol)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        androidx.compose.material3.Checkbox(checked = inCash, onCheckedChange = { inCash = it })
-                        Text(stringResource(R.string.dues_in_cash), style = MaterialTheme.typography.bodyMedium)
-                    }
-                }
-            },
-            confirmButton = { Button(onClick = { vm.pay(due, amount, inCash) { paying = null } }) { Text(stringResource(R.string.action_save)) } },
-            dismissButton = { TextButton(onClick = { paying = null }) { Text(stringResource(R.string.action_cancel)) } },
-        )
-    }
+    paying?.let { due -> ReceivePaymentDialog(vm, due, onDismiss = { paying = null }) }
     deleting?.let { due ->
         AlertDialog(
             onDismissRequest = { deleting = null },
@@ -338,5 +343,114 @@ private fun AddDueDialog(vm: DuesViewModel, symbol: String, onDismiss: () -> Uni
         },
         confirmButton = { Button(onClick = { vm.add(customerId, name, phone, amount, note, onDismiss) }) { Text(stringResource(R.string.action_save)) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
+    )
+}
+
+/**
+ * Collect udhaar: amount (full balance pre-filled), how it was received (cash into the drawer,
+ * or online into a JazzCash / EasyPaisa / bank account) and the bill's earlier payments.
+ */
+@Composable
+private fun ReceivePaymentDialog(vm: DuesViewModel, due: DueEntity, onDismiss: () -> Unit) {
+    val money = LocalMoney.current
+    val accounts by vm.accounts.collectAsStateWithLifecycle()
+    val saving by vm.saving.collectAsStateWithLifecycle()
+    val history by remember(due.id) { vm.payments(due.id) }.collectAsStateWithLifecycle(emptyList())
+    var amount by remember(due.id) { mutableStateOf(Money.toInput(due.balanceMinor)) }
+    var online by remember(due.id) { mutableStateOf(false) }
+    var accountId by remember(due.id) { mutableStateOf<Long?>(null) }
+    // One account: chosen for the owner. Several: the owner picks.
+    androidx.compose.runtime.LaunchedEffect(accounts) {
+        if (accountId == null && accounts.size == 1) accountId = accounts.single().id
+        if (accountId != null && accounts.none { it.id == accountId }) accountId = null
+    }
+    val entered = Money.parse(amount)
+    val amountError = when {
+        amount.isBlank() -> null
+        entered == null || entered <= 0 -> stringResource(R.string.dues_error_amount)
+        entered > due.balanceMinor -> stringResource(R.string.dues_error_more_than_balance)
+        else -> null
+    }
+    AlertDialog(
+        onDismissRequest = { if (!saving) onDismiss() },
+        icon = { Icon(Icons.Filled.Payments, contentDescription = null) },
+        title = { Text(stringResource(R.string.dues_receive_title, due.customerName)) },
+        text = {
+            Column(
+                Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Column {
+                    Text(stringResource(R.string.dues_balance, money.format(due.balanceMinor)), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    if (due.paidMinor > 0) {
+                        Text(
+                            stringResource(R.string.dues_paid_of, money.format(due.paidMinor), money.format(due.amountMinor)),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                AmountField(amount, { amount = it }, stringResource(R.string.dues_amount_received), money.config.symbol)
+                if (amountError != null) {
+                    Text(amountError, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                }
+                if (entered != due.balanceMinor) {
+                    TextButton(onClick = { amount = Money.toInput(due.balanceMinor) }) {
+                        Text(stringResource(R.string.dues_full_balance, money.format(due.balanceMinor)))
+                    }
+                }
+                Text(stringResource(R.string.dues_received_by), style = MaterialTheme.typography.labelLarge)
+                SegmentedChoice(
+                    options = listOf(false, true),
+                    selected = online,
+                    label = { stringResource(if (it) R.string.dues_method_online else R.string.payment_cash) },
+                    onSelect = { online = it },
+                )
+                if (!online) {
+                    Text(stringResource(R.string.dues_cash_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else if (accounts.isEmpty()) {
+                    Text(stringResource(R.string.dues_no_accounts), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else {
+                    accounts.forEach { account ->
+                        Row(
+                            Modifier.fillMaxWidth().clickable { accountId = account.id }.padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            androidx.compose.material3.RadioButton(selected = accountId == account.id, onClick = { accountId = account.id })
+                            Column(Modifier.weight(1f)) {
+                                Text(account.name, style = MaterialTheme.typography.bodyLarge)
+                                listOfNotNull(account.accountTitle, account.accountNumber).joinToString(" · ").takeIf { it.isNotEmpty() }?.let {
+                                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+                    }
+                    Text(stringResource(R.string.dues_online_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                if (history.isNotEmpty()) {
+                    androidx.compose.material3.HorizontalDivider()
+                    Text(stringResource(R.string.dues_history), style = MaterialTheme.typography.labelLarge)
+                    history.forEach { p ->
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                DateTimeUtils.formatDate(p.createdAt) + " · " + (p.paymentAccountName ?: stringResource(p.paymentMethod.labelRes)),
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.weight(1f),
+                            )
+                            Text(money.format(p.amountMinor), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { vm.pay(due, amount, online, accountId, onDismiss) },
+                enabled = !saving && amountError == null && amount.isNotBlank() && (!online || accounts.isEmpty() || accountId != null),
+            ) {
+                if (saving) androidx.compose.material3.CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp) else Text(stringResource(R.string.dues_save_payment))
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss, enabled = !saving) { Text(stringResource(R.string.action_cancel)) } },
     )
 }

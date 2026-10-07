@@ -70,5 +70,28 @@ object Migrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
+    /**
+     * Version 4: a ledger of udhaar payments (cash or an online account). Old udhaar received in
+     * cash is copied from the cash drawer so each bill keeps its payment history.
+     */
+    val MIGRATION_3_4 = object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `due_payments` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`businessId` INTEGER NOT NULL, `dueId` INTEGER NOT NULL, `amountMinor` INTEGER NOT NULL, " +
+                    "`paymentMethod` TEXT NOT NULL, `paymentAccountId` INTEGER, `paymentAccountName` TEXT, " +
+                    "`businessDate` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL)",
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_due_payments_dueId` ON `due_payments` (`dueId`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_due_payments_businessId_businessDate` ON `due_payments` (`businessId`, `businessDate`)")
+            db.execSQL(
+                "INSERT INTO `due_payments` (`businessId`, `dueId`, `amountMinor`, `paymentMethod`, `paymentAccountId`, " +
+                    "`paymentAccountName`, `businessDate`, `createdAt`) " +
+                    "SELECT `businessId`, `referenceId`, ABS(`amountMinor`), 'CASH', NULL, NULL, `txDate`, `createdAt` " +
+                    "FROM `cash_transactions` WHERE `referenceType` = 'DUE' AND `referenceId` IS NOT NULL",
+            )
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
 }

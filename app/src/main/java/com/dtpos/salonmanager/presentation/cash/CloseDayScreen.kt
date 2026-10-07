@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Lock
@@ -176,7 +177,7 @@ class CloseDayViewModel(private val container: AppContainer) : BaseViewModel() {
  * After closing, new sales count for the next day so the dashboard starts from zero.
  */
 @Composable
-fun CloseDayScreen(onBack: () -> Unit) {
+fun CloseDayScreen(onBack: () -> Unit, onBackup: () -> Unit = {}) {
     val vm = appViewModel { CloseDayViewModel(it) }
     val date by vm.date.collectAsStateWithLifecycle()
     val report by vm.report.collectAsStateWithLifecycle()
@@ -247,8 +248,13 @@ fun CloseDayScreen(onBack: () -> Unit) {
                     if (r.sales.creditMinor > 0) {
                         LabeledValueRow(stringResource(R.string.close_udhaar_given), money.format(r.sales.creditMinor), valueColor = SalonTheme.extended.warning)
                     }
-                    if (r.duesCollectedMinor > 0) {
-                        LabeledValueRow(stringResource(R.string.close_udhaar_received), money.format(r.duesCollectedMinor), valueColor = SalonTheme.extended.positive)
+                    // Udhaar paid back today, per place: cash is in the drawer, online in its account.
+                    r.duesCollected.forEach {
+                        LabeledValueRow(
+                            stringResource(R.string.close_udhaar_received) + " · " + (it.accountName ?: stringResource(it.paymentMethod.labelRes)),
+                            money.format(it.totalMinor),
+                            valueColor = SalonTheme.extended.positive,
+                        )
                     }
                 }
             }
@@ -339,6 +345,19 @@ fun CloseDayScreen(onBack: () -> Unit) {
             if (!r.isClosed) {
                 item { CloseForm(r, money, onClose = vm::close) }
             } else {
+                // The day is closed: the right moment to keep a copy of the data.
+                item {
+                    ContentCard {
+                        Text(stringResource(R.string.close_backup_title), style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.close_backup_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedButton(onClick = onBackup, modifier = Modifier.fillMaxWidth()) {
+                            Icon(Icons.Filled.Backup, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(stringResource(R.string.dashboard_backup_now))
+                        }
+                    }
+                }
                 item {
                     TextButton(onClick = { askReopen = true }, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Filled.LockOpen, contentDescription = null, modifier = Modifier.size(18.dp))

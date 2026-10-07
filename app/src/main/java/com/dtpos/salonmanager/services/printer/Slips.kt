@@ -38,7 +38,10 @@ object Slips {
             lines += PrintLine.Columns(it.accountName ?: res.getString(ReceiptPrinter.paymentMethodLabel(it.paymentMethod)), money.plain(it.totalMinor))
         }
         if (report.sales.creditMinor > 0) lines += PrintLine.Columns(res.getString(R.string.close_udhaar_given), money.plain(report.sales.creditMinor))
-        if (report.duesCollectedMinor > 0) lines += PrintLine.Columns(res.getString(R.string.close_udhaar_received), money.plain(report.duesCollectedMinor))
+        report.duesCollected.forEach {
+            val place = it.accountName ?: res.getString(ReceiptPrinter.paymentMethodLabel(it.paymentMethod))
+            lines += PrintLine.Columns("${res.getString(R.string.close_udhaar_received)} · $place", money.plain(it.totalMinor))
+        }
         lines += PrintLine.Separator()
 
         if (report.staff.isNotEmpty()) {

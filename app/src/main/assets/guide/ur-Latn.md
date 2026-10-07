@@ -21,7 +21,7 @@
 ## Baqi bill aur yaad dihani
 - Dashboard > Udhaar: kis ne kitne dene hain.
 - WhatsApp ya SMS paigham tayyar khulta hai; Send aap dabate hain. App khud "bhej diya" nahi kehti.
-- Jab customer paise de to Wusool dabayein. "Cash mein mila" tick karein to aaj ke cash daraz mein jud jata hai.
+- Jab customer paise de to Wasool dabayein: raqam likhein aur Cash (aaj ke cash drawer mein) ya Online aur JazzCash / EasyPaisa / bank account chunein. Har payment ki list rehti hai; thori thori payment bhi theek hai.
 
 ## Raseed: print, WhatsApp, tasveer
 - Sale ke baad raseed khulti hai. Print karein, PNG / JPEG save karein, share karein ya WhatsApp par bhejein.
@@ -54,7 +54,7 @@
 ## Staff, commission aur malik
 - Staff: har worker ki tankhwah ki qisam (fixed, commission ya dono) aur commission % likhein.
 - Agar aap khud kaam karte hain to apne aap ko role Malik ke saath shamil karein: aap ka kaam "Malik ka apna kaam" mein alag dikhega, commission nahi.
-- Adaigi likhein (tankhwah, advance, commission). Mehfooz karne ke baad staff parchi print ya share karein.
+- Adaigi likhein (tankhwah, advance, commission). Parchi tasveer ki shakal mein khulti hai: Print, WhatsApp (staff ke number par) ya Share. Kisi payment ke raseed icon se parchi dobara khulti hai.
 
 ## Akhrajaat
 - Akhrajaat: karobari kharche (kiraya, bill, saman) aur ghar ke kharche alag rehte hain.

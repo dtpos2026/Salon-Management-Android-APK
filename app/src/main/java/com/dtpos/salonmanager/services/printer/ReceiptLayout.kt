@@ -109,7 +109,7 @@ object ReceiptLayout {
             lines += PrintLine.Columns(labels.change, money.plain(receipt.changeMinor))
         }
         if (receipt.creditMinor > 0) {
-            lines += PrintLine.Columns(labels.paidNow, money.plain(receipt.paidMinor))
+            lines += PrintLine.Columns(labels.paidNow, money.format(receipt.paidMinor))
             lines += PrintLine.Columns(labels.balanceDue, money.format(receipt.creditMinor), bold = true)
         }
         lines += PrintLine.Separator('=')

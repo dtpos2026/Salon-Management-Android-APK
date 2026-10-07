@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="dashboard_day_closed">Aaj ka din band ho chuka hai. Nayi sale ab %1$s mein shumar hogi.</string>
+    <string name="dashboard_day_closed">%1$s ka din band hai. Nayi sale %2$s mein shumar hogi. Pichhli sab sale, Sales aur Reports mein maujood hai.</string>
     <string name="dashboard_period_title">Karobar ka khulasa</string>
     <string name="dashboard_online_received">Online wusool</string>
     <string name="dashboard_udhaar">Udhaar</string>
@@ -101,9 +101,7 @@
     <string name="staff_slip_sign">Wusool kunanda: ____________</string>
     <string name="staff_slip_share">Share</string>
     <string name="staff_slip_print">Parchi print</string>
-    <string name="staff_slip_ask">%2$s ko %1$s ada huay. Parchi print karein?</string>
     <string name="staff_commission_short">Commission %1$s</string>
-    <string name="dues_in_cash">Cash mein mila (cash daraz mein shamil)</string>
     <string name="services_photo_failed">Yeh tasveer istemal nahi ho saki. Doosri aazmayein.</string>
     <string name="services_photo_add">Tasveer lagayein</string>
     <string name="services_photo_change">Tasveer badlein</string>
@@ -170,4 +168,30 @@
     <string name="share_due_balance">Baqi raqam</string>
     <string name="share_due_closing">Meharbani kar ke sahulat se ada kar dein. Shukriya!</string>
     <string name="whatsapp_copied">Bhejne ke liye koi app nahi khuli. Message copy ho gaya hai: WhatsApp kholein aur paste karein.</string>
+    <string name="dues_error_more_than_balance">Raqam baqi raqam se zyada hai</string>
+    <string name="dues_choose_account">Woh account chunein jis mein paise aaye</string>
+    <string name="dues_full_balance">Poori baqi raqam %1$s</string>
+    <string name="dues_received_by">Kaise mila</string>
+    <string name="dues_method_online">Online / account</string>
+    <string name="dues_cash_hint">Aaj ke cash drawer mein shamil hoga.</string>
+    <string name="dues_online_hint">Is account ke total mein shumar hoga, cash drawer mein nahi.</string>
+    <string name="dues_no_accounts">Abhi koi online account nahi. Yeh \"Online\" ke taur par save hoga. Settings › Payment accounts mein JazzCash / EasyPaisa / bank shamil karein.</string>
+    <string name="dues_history">Wasool shuda payments</string>
+    <string name="dues_save_payment">Payment save karein</string>
+    <string name="staff_slip_failed">Parchi nahi ban saki</string>
+    <string name="staff_slip_preview_hint">Bilkul wohi jo printer chhapega. Print karein ya WhatsApp par bhejein.</string>
+    <string name="staff_slip_no_phone">Is staff ka phone number save nahi: WhatsApp mein chat khud chunein. Number Edit mein shamil karein.</string>
+    <string name="receipt_wa_title">WhatsApp par bhejein</string>
+    <string name="receipt_wa_text_customer">Customer ki chat mein message</string>
+    <string name="receipt_wa_text_choose">Message (chat khud chunein)</string>
+    <string name="receipt_wa_picture">Raseed ki tasveer + message</string>
+    <string name="receipt_wa_hint">Message seedha customer ki chat mein khulta hai. Tasveer ke liye WhatsApp mein customer ki chat par tap karein.</string>
+    <string name="receipt_wa_hint_no_phone">Is raseed par phone number nahi: WhatsApp mein chat chunein.</string>
+    <string name="dashboard_day_closed_report">Report</string>
+    <string name="close_backup_title">Aaj ke data ki copy rakhein</string>
+    <string name="close_backup_hint">Din band ho gaya. Abhi backup banayein taake phone gum hone par bhi sale, udhaar aur staff payments mehfooz rahein.</string>
+    <string name="location_precise_title">Precise location on karein</string>
+    <string name="location_precise_message">Abhi sirf \"approximate\" location ki ijazat hai jo kilometers door ho sakti hai. Neeche dabayein aur \"Precise\" chunein taake DT ko is phone ki bilkul durust jagah nazar aaye.</string>
+    <string name="location_precise_settings">App settings kholein, Permissions › Location dabayein aur \"Use precise location\" on karein, phir wapas aayein.</string>
+    <string name="location_allow_precise">Precise location ki ijazat dein</string>
 </resources>

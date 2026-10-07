@@ -96,5 +96,46 @@ class MigrationTest {
         }
         context.deleteDatabase(testDb)
     }
-}
 
+    /** Version 4 adds the udhaar payment ledger; old cash collections become its first rows. */
+    @Test
+    fun migration3To4CopiesCashUdhaarIntoTheLedger() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        context.deleteDatabase(testDb)
+        helper.createDatabase(testDb, 3).use { db ->
+            db.execSQL(
+                "INSERT INTO businesses (id, name, phone, address, logoPath, currencyCode, currencySymbol, receiptPrefix, " +
+                    "receiptHeaderNote, receiptFooter, showLogoOnReceipt, showStaffOnReceipt, isSetupComplete, createdAt, updatedAt) " +
+                    "VALUES (1, 'Royal Cuts', NULL, NULL, NULL, 'PKR', 'Rs.', 'SAL', NULL, NULL, 1, 1, 1, 1, 1)",
+            )
+            db.execSQL(
+                "INSERT INTO customer_dues (id, businessId, customerId, customerName, customerPhone, amountMinor, paidMinor, note, createdAt, settledAt, lastReminderAt, saleId) " +
+                    "VALUES (5, 1, NULL, 'Ali', NULL, 80000, 30000, NULL, 1, NULL, NULL, NULL)",
+            )
+            db.execSQL(
+                "INSERT INTO cash_transactions (id, businessId, type, amountMinor, txDate, referenceType, referenceId, note, createdAt) " +
+                    "VALUES (9, 1, 'CASH_IN', 30000, 20000, 'DUE', 5, 'Ali', 1700000000000)",
+            )
+            db.execSQL(
+                "INSERT INTO cash_transactions (id, businessId, type, amountMinor, txDate, referenceType, referenceId, note, createdAt) " +
+                    "VALUES (10, 1, 'SALE', 50000, 20000, 'SALE', 2, 'SAL-000002', 1700000000000)",
+            )
+        }
+        helper.runMigrationsAndValidate(testDb, 4, true, Migrations.MIGRATION_3_4).use { db ->
+            db.query("SELECT dueId, amountMinor, paymentMethod, paymentAccountId, businessDate FROM due_payments").use {
+                assertEquals(1, it.count)
+                it.moveToFirst()
+                assertEquals(5L, it.getLong(0))
+                assertEquals(30000L, it.getLong(1))
+                assertEquals("CASH", it.getString(2))
+                assertEquals(true, it.isNull(3))
+                assertEquals(20000L, it.getLong(4))
+            }
+            db.query("SELECT paidMinor FROM customer_dues WHERE id = 5").use {
+                it.moveToFirst()
+                assertEquals(30000L, it.getLong(0))
+            }
+        }
+        context.deleteDatabase(testDb)
+    }
+}

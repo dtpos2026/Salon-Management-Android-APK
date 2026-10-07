@@ -248,7 +248,7 @@ class ReceiptImageRenderer(
             y += row(canvas, labels.change, money.plain(r.changeMinor), y)
         }
         if (r.creditMinor > 0) {
-            y += row(canvas, labels.paidNow, money.plain(r.paidMinor), y)
+            y += row(canvas, labels.paidNow, money.format(r.paidMinor), y)
             y += row(canvas, labels.balanceDue, money.format(r.creditMinor), y, TextPaint(valueBold).apply { color = alert }, valueBold)
         }
 

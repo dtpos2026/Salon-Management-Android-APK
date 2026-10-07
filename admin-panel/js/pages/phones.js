@@ -69,7 +69,7 @@ export async function render(el, ctx) {
     <div class="card">
       <div class="card-head"><h2>Map</h2><div class="spacer"></div><span class="cell-sub" id="map-count"></span></div>
       <div id="map" class="phone-map"></div>
-      <div class="help">Live: a phone reports every 5 minutes while the app is open (and when it is opened). Map © OpenStreetMap contributors. Locations come from the phone (network or GPS, accuracy shown). IP addresses are not collected.</div>
+      <div class="help">Live: a phone reports every 2 minutes while the app is open (and when it is opened), from GPS when available; the circle shows the accuracy. Map © OpenStreetMap contributors. Locations come from the phone (network or GPS, accuracy shown). IP addresses are not collected.</div>
     </div>
     <div id="orphans"></div>
     <div class="card" style="margin-top:16px;padding:8px 12px" id="phone-list"></div>`;
@@ -107,18 +107,22 @@ export async function render(el, ctx) {
       }).addTo(map);
       layer = L.featureGroup().addTo(map);
     }
+    // Zoom to the phones once (before drawing: circles need a map view); later updates keep the admin's own view.
+    if (!fitted) {
+      map.fitBounds(L.latLngBounds(located.map((d) => [d.lat, d.lng])).pad(0.3), { maxZoom: 14 });
+      fitted = true;
+    }
     layer.clearLayers();
     located.forEach((d) => {
       const a = accounts[d.uid];
+      // The circle shows how exact the reported position is (GPS: a few metres).
+      if (d.accuracyM > 0) {
+        L.circle([d.lat, d.lng], { radius: Math.min(d.accuracyM, 3000), color: '#6a2bd9', weight: 1, fillOpacity: 0.12, interactive: false }).addTo(layer);
+      }
       L.marker([d.lat, d.lng]).addTo(layer).bindPopup(
         `<b>${esc(a?.salonName || d.uid)}</b><br>${esc(d.model || '')}<br>Location ${esc(ago(d.locationAt) || '—')} · ±${Math.round(d.accuracyM || 0)} m<br><a href="#/salon/${encodeURIComponent(d.uid)}">Open salon</a>`,
       );
     });
-    // Zoom to the phones once; later updates keep the admin's own zoom and position.
-    if (!fitted) {
-      map.fitBounds(layer.getBounds().pad(0.3), { maxZoom: 14 });
-      fitted = true;
-    }
   };
 
   let orphans = [];

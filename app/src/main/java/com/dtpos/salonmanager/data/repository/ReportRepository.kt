@@ -81,6 +81,8 @@ data class PeriodSummary(
     val staffPaidMinor: Long,
     val profit: ProfitSummary,
     val staff: List<StaffPerformanceRow>,
+    /** Old udhaar collected in the period, per place (cash, each account); not part of sales. */
+    val duesCollected: List<ReceivedTotalRow> = emptyList(),
 ) {
     val commissionMinor: Long get() = staff.sumOf { it.commissionMinor }
 }
@@ -104,8 +106,10 @@ data class DayCloseReport(
     val staff: List<StaffDayLine>,
     val businessExpensesMinor: Long,
     val staffPaidMinor: Long,
-    /** Old udhaar received in cash today. */
+    /** Old udhaar received in cash today (part of the cash drawer). */
     val duesCollectedMinor: Long,
+    /** All udhaar received today per place (cash and each online account). */
+    val duesCollected: List<ReceivedTotalRow> = emptyList(),
     val cash: CashBreakdown,
     val session: CashSessionEntity?,
     val profit: ProfitSummary,
@@ -183,8 +187,9 @@ class ReportRepository(
             money,
             saleDao.observeReceivedBreakdown(businessId, from, to),
             staffDao.observePerformance(businessId, from, to),
-        ) { (sales, costs, profit), received, staff ->
-            PeriodSummary(range, sales, received, costs.first, costs.second, profit, staff)
+            db.dueDao().observeCollected(businessId, from, to),
+        ) { (sales, costs, profit), received, staff, dues ->
+            PeriodSummary(range, sales, received, costs.first, costs.second, profit, staff, dues)
         }
     }
 
@@ -216,6 +221,7 @@ class ReportRepository(
             businessExpensesMinor = business,
             staffPaidMinor = staffPaid,
             duesCollectedMinor = cashDao.sumByReference(businessId, d, CashTransactionEntity.REF_DUE),
+            duesCollected = db.dueDao().collected(businessId, d, d),
             cash = CashCalculator.breakdown(
                 session?.openingCashMinor ?: 0L,
                 cashDao.totalsByType(businessId, d).associate { it.type to it.totalMinor },

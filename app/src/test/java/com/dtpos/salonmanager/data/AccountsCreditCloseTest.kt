@@ -160,6 +160,72 @@ class AccountsCreditCloseTest {
     }
 
     @Test
+    fun `udhaar paid online goes to the account, never to the cash drawer`() = runTest {
+        val jazz = (accounts.save(null, "JazzCash", AccountKind.WALLET, null, "0300-1111111") as DataResult.Success).data
+        val id = (dues.add(null, "Bilal", null, 100_000, "SAL-000009") as DataResult.Success).data
+
+        // Partial online, then a cash payment, then the rest online: three payments, one bill.
+        assertEquals(DataResult.Success(70_000L), dues.receivePayment(id, 30_000, PaymentMethod.BANK, jazz))
+        assertEquals(DataResult.Success(50_000L), dues.receivePayment(id, 20_000, PaymentMethod.CASH, null))
+        assertEquals(DataResult.Success(0L), dues.receivePayment(id, 50_000, PaymentMethod.BANK, jazz))
+
+        // Cash drawer only has the cash part.
+        val drawer = env.cash.observeDay(today).first()
+        assertEquals(20_000L, drawer.breakdown.cashInMinor)
+        assertEquals(1, drawer.transactions.size)
+
+        // Close Day and the dashboard show each place once; sales are untouched.
+        val close = env.reports.buildDayClose(today)
+        assertEquals(20_000L, close.duesCollectedMinor)
+        assertEquals(80_000L, close.duesCollected.single { it.accountId == jazz }.totalMinor)
+        assertEquals("JazzCash", close.duesCollected.single { it.accountId == jazz }.accountName)
+        assertEquals(20_000L, close.duesCollected.single { it.paymentMethod == PaymentMethod.CASH }.totalMinor)
+        assertEquals(0L, close.sales.totalMinor)
+        val summary = env.reports.observePeriod(day).first()
+        assertEquals(100_000L, summary.duesCollected.sumOf { it.totalMinor })
+        assertTrue(summary.received.isEmpty())
+
+        // History has all three, newest first; the bill is settled and paid in full.
+        val history = dues.observePayments(id).first()
+        assertEquals(listOf(50_000L, 20_000L, 30_000L).sorted(), history.map { it.amountMinor }.sorted())
+        assertEquals(3, history.size)
+        val settled = dues.observeSettled().first().single()
+        assertEquals(100_000L, settled.paidMinor)
+        assertNotNull(settled.settledAt)
+        // A settled bill takes no more money (no double counting).
+        assertEquals(DataResult.Failure(DataError.INVALID), dues.receivePayment(id, 1_000, PaymentMethod.CASH, null))
+        assertEquals(3, dues.observePayments(id).first().size)
+    }
+
+    @Test
+    fun `udhaar payment edge cases`() = runTest {
+        val id = (dues.add(null, "Kamran", null, 50_000, null) as DataResult.Success).data
+        assertEquals(DataResult.Failure(DataError.INVALID), dues.receivePayment(id, 0, PaymentMethod.CASH, null))
+        assertEquals(DataResult.Failure(DataError.INVALID), dues.receivePayment(id, -5, PaymentMethod.CASH, null))
+        assertEquals(DataResult.Failure(DataError.NOT_FOUND), dues.receivePayment(id, 1_000, PaymentMethod.BANK, 9_999))
+        assertEquals(DataResult.Failure(DataError.NOT_FOUND), dues.receivePayment(9_999, 1_000, PaymentMethod.CASH, null))
+        assertTrue(dues.observePayments(id).first().isEmpty())
+        // Online without an account (the salon has none yet): recorded, not in the drawer.
+        assertEquals(DataResult.Success(40_000L), dues.receivePayment(id, 10_000, PaymentMethod.BANK, null))
+        assertEquals(0L, env.cash.observeDay(today).first().breakdown.cashInMinor)
+        // More than the balance: only the balance is recorded.
+        assertEquals(DataResult.Success(0L), dues.receivePayment(id, 90_000, PaymentMethod.CASH, null))
+        assertEquals(40_000L, env.cash.observeDay(today).first().breakdown.cashInMinor)
+        assertEquals(50_000L, dues.observePayments(id).first().sumOf { it.amountMinor })
+    }
+
+    @Test
+    fun `udhaar paid after the day is closed counts for the next day`() = runTest {
+        val id = (dues.add(null, "Usman", null, 30_000, null) as DataResult.Success).data
+        env.cash.closeDay(today, 0, null)
+        dues.receivePayment(id, 30_000, PaymentMethod.CASH, null)
+        val payment = dues.observePayments(id).first().single()
+        assertEquals(today.plusDays(1).toEpochDay(), payment.businessDate)
+        assertTrue(env.reports.buildDayClose(today).duesCollected.isEmpty())
+        assertEquals(30_000L, env.reports.buildDayClose(today.plusDays(1)).duesCollected.single().totalMinor)
+    }
+
+    @Test
     fun `period summary splits cash online and udhaar`() = runTest {
         val bank = (accounts.save(null, "Meezan", AccountKind.BANK, null, null) as DataResult.Success).data
         env.sales.completeSale(env.request(listOf(env.line(env.service("Hair Cut")))), env.at(today))

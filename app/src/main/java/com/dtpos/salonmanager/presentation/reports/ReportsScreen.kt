@@ -20,7 +20,7 @@ import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.MoneyOff
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Savings
+import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.TableView
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.DatePickerDialog
@@ -276,7 +276,7 @@ private fun SummaryCards(r: ReportData) {
             StatCard(
                 stringResource(R.string.report_business_profit),
                 money.format(r.profit.businessProfitMinor),
-                Icons.Filled.Savings,
+                Icons.Filled.MonetizationOn,
                 Modifier.weight(1f),
                 accent = if (r.profit.isLoss) ext.negative else ext.positive,
                 valueColor = if (r.profit.isLoss) ext.negative else ext.positive,

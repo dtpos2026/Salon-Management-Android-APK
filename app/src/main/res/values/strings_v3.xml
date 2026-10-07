@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="dashboard_day_closed">Today is closed. New sales now count for %1$s.</string>
+    <string name="dashboard_day_closed">%1$s is closed. New sales count for %2$s. All past sales stay in Sales and Reports.</string>
     <string name="dashboard_period_title">Business summary</string>
     <string name="dashboard_online_received">Online received</string>
     <string name="dashboard_udhaar">Udhaar (credit)</string>
@@ -101,9 +101,7 @@
     <string name="staff_slip_sign">Received by: ____________</string>
     <string name="staff_slip_share">Share</string>
     <string name="staff_slip_print">Print slip</string>
-    <string name="staff_slip_ask">%1$s paid to %2$s. Print the slip?</string>
     <string name="staff_commission_short">Commission %1$s</string>
-    <string name="dues_in_cash">Received in cash (add to cash drawer)</string>
     <string name="services_photo_failed">Could not use this photo. Try another one.</string>
     <string name="services_photo_add">Add photo</string>
     <string name="services_photo_change">Change photo</string>
@@ -170,4 +168,30 @@
     <string name="share_due_balance">Balance due</string>
     <string name="share_due_closing">Please clear it at your convenience. Thank you!</string>
     <string name="whatsapp_copied">No app could open to send this. The message is copied: open WhatsApp and paste it.</string>
+    <string name="dues_error_more_than_balance">Amount is more than the balance</string>
+    <string name="dues_choose_account">Choose the account the money came into</string>
+    <string name="dues_full_balance">Full balance %1$s</string>
+    <string name="dues_received_by">Received by</string>
+    <string name="dues_method_online">Online / account</string>
+    <string name="dues_cash_hint">Added to today\'s cash drawer.</string>
+    <string name="dues_online_hint">Counted in this account\'s total, not in the cash drawer.</string>
+    <string name="dues_no_accounts">No online account yet. It is saved as \"Online\". Add JazzCash / EasyPaisa / bank in Settings › Payment accounts to choose one.</string>
+    <string name="dues_history">Payments received</string>
+    <string name="dues_save_payment">Save payment</string>
+    <string name="staff_slip_failed">Could not make the slip</string>
+    <string name="staff_slip_preview_hint">Exactly what the printer prints. Print it, or send it on WhatsApp.</string>
+    <string name="staff_slip_no_phone">No phone number saved for this staff member: WhatsApp lets you pick the chat. Add the number in Edit.</string>
+    <string name="receipt_wa_title">Send on WhatsApp</string>
+    <string name="receipt_wa_text_customer">Message to customer\'s chat</string>
+    <string name="receipt_wa_text_choose">Message (choose the chat)</string>
+    <string name="receipt_wa_picture">Receipt picture + message</string>
+    <string name="receipt_wa_hint">The message opens straight in the customer\'s chat. For the picture, WhatsApp asks you to tap the customer\'s chat.</string>
+    <string name="receipt_wa_hint_no_phone">No phone number on this receipt: choose the chat in WhatsApp.</string>
+    <string name="dashboard_day_closed_report">Report</string>
+    <string name="close_backup_title">Keep a copy of today</string>
+    <string name="close_backup_hint">The day is closed. Back up now so all sales, udhaar and staff payments are safe if the phone is lost.</string>
+    <string name="location_precise_title">Turn on precise location</string>
+    <string name="location_precise_message">Only \"approximate\" location is allowed, which can be kilometres away. Tap below and choose \"Precise\" so DT sees this phone\'s exact place.</string>
+    <string name="location_precise_settings">Open the app settings, tap Permissions › Location and turn on \"Use precise location\", then come back.</string>
+    <string name="location_allow_precise">Allow precise location</string>
 </resources>

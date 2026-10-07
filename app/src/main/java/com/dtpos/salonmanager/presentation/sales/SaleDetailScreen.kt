@@ -245,6 +245,8 @@ fun SaleDetailScreen(
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
     var showVoid by remember { mutableStateOf(false) }
+    /** WhatsApp choice for this receipt: the message text (and phone) when the dialog is open. */
+    var whatsAppChoice by remember { mutableStateOf<Pair<String, String?>?>(null) }
     MessageEffect(vm.messages, snackbar)
     val shareTitle = stringResource(R.string.share_receipt)
     LaunchedEffect(vm) {
@@ -356,7 +358,7 @@ fun SaleDetailScreen(
                 onPng = { vm.saveImage(ReceiptImageFormat.PNG) },
                 onJpeg = { vm.saveImage(ReceiptImageFormat.JPEG) },
                 onShare = vm::shareImage,
-                onWhatsApp = { vm.sendWhatsApp(whatsappMessage) },
+                onWhatsApp = { whatsAppChoice = whatsappMessage to data.customerPhone },
                 modifier = Modifier.widthIn(max = 420.dp).fillMaxWidth(),
             )
             Row(Modifier.widthIn(max = 420.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -399,6 +401,39 @@ fun SaleDetailScreen(
         )
     }
 
+    whatsAppChoice?.let { (message, phone) ->
+        val number = com.dtpos.salonmanager.core.util.PhoneNumbers.toWhatsApp(phone)
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { whatsAppChoice = null },
+            icon = { Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null, tint = com.dtpos.salonmanager.presentation.messages.WhatsAppGreen) },
+            title = { Text(stringResource(R.string.receipt_wa_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Button(
+                        onClick = {
+                            whatsAppChoice = null
+                            context.showWhatsAppResult(ExternalApps.whatsAppText(context, phone, message, shareImageTitle), message)
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = com.dtpos.salonmanager.presentation.messages.WhatsAppGreen, contentColor = androidx.compose.ui.graphics.Color.White),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text(stringResource(if (number != null) R.string.receipt_wa_text_customer else R.string.receipt_wa_text_choose)) }
+                    OutlinedButton(
+                        onClick = {
+                            whatsAppChoice = null
+                            vm.sendWhatsApp(message)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text(stringResource(R.string.receipt_wa_picture)) }
+                    Text(
+                        stringResource(if (number != null) R.string.receipt_wa_hint else R.string.receipt_wa_hint_no_phone),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            },
+            confirmButton = { TextButton(onClick = { whatsAppChoice = null }) { Text(stringResource(R.string.action_cancel)) } },
+        )
+    }
     if (showVoid) {
         var reason by remember { mutableStateOf("") }
         AlertDialog(

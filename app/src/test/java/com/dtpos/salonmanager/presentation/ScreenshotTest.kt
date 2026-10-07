@@ -336,6 +336,29 @@ class ScreenshotTest {
         capture("14-close-day")
     }
 
+    /** The staff payment slip renders as the preview picture the owner sees before printing / WhatsApp. */
+    @Test
+    fun staffPaymentSlipPreview() {
+        val staff = com.dtpos.salonmanager.data.database.entities.StaffEntity(
+            id = 3, businessId = 1, name = "Taimoor", phone = "0300-1234567", createdAt = 0, updatedAt = 0,
+        )
+        val payment = com.dtpos.salonmanager.data.database.entities.StaffPaymentEntity(
+            id = 9, businessId = 1, staffId = 3, amountMinor = 8_800, type = com.dtpos.salonmanager.domain.model.StaffPaymentType.ADVANCE,
+            paymentDate = com.dtpos.salonmanager.core.util.DateTimeUtils.today().toEpochDay(), paymentMethod = PaymentMethod.CASH,
+            paidFromCounter = true, note = null, createdAt = 0,
+        )
+        val lines = com.dtpos.salonmanager.services.printer.Slips.staffPayment(
+            payment, staff, null, "Burewala Salon", app, com.dtpos.salonmanager.core.util.CurrencyFormatter(CurrencyConfig()),
+        )
+        val bitmap = com.dtpos.salonmanager.services.printer.ReceiptCanvasRenderer(576, 576 / 17f).renderBitmap(lines, null)
+        assertEquals(576, bitmap.width)
+        assertTrue(bitmap.height > 200)
+        val text = com.dtpos.salonmanager.services.printer.Slips.asText(lines)
+        assertTrue(text, text.contains("Taimoor") && text.contains("Rs. 88"))
+        FileOutputStream(File(outDir, "28-staff-slip.png")).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        compose.setContent { Text("ok") }
+    }
+
     /** Salon with today's queue (a walk-in and a booking) and a hand-written udhaar. */
     private fun seedSalonWithQueue() {
         seedSalon()

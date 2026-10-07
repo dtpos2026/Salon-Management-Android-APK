@@ -16,7 +16,7 @@ import org.robolectric.annotation.Config
 
 /**
  * The location check that guards the app, on the oldest supported Android (8, providers) and a
- * current one (14, the system location switch). "Approximate" location alone is accepted.
+ * current one (14, the system location switch). "Approximate" location alone is not enough.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [26, 34], application = Application::class)
@@ -46,10 +46,12 @@ class LocationAccessTest {
     }
 
     @Test
-    fun `approximate location alone is enough`() {
+    fun `approximate location alone asks for precise location`() {
         shadowOf(app).denyPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
         shadowOf(app).grantPermissions(Manifest.permission.ACCESS_COARSE_LOCATION)
         setLocation(true)
+        assertEquals(LocationStatus.NEEDS_PRECISE, LocationAccess.status(app))
+        shadowOf(app).grantPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
         assertEquals(LocationStatus.READY, LocationAccess.status(app))
     }
 
