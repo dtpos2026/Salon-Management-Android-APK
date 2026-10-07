@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.util.LruCache
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -16,6 +17,20 @@ import java.util.UUID
  * restore them on another phone.
  */
 class ServiceImageStore(private val context: Context) {
+
+    /**
+     * Decoded photos kept in memory (up to 1/8 of the app's memory) so scrolling the menu and
+     * the sale screen does not read and decode the same files again.
+     */
+    private val memory = object : LruCache<String, Bitmap>((Runtime.getRuntime().maxMemory() / 1024 / 8).toInt()) {
+        override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount / 1024
+    }
+
+    private fun key(relativePath: String, maxSize: Int) = "$relativePath@$maxSize"
+
+    /** An already decoded photo, without touching the disk (null when not in memory). */
+    fun cached(relativePath: String?, maxSize: Int = MAX_SIZE): Bitmap? =
+        relativePath?.let { memory.get(key(it, maxSize)) }
 
     fun resolve(relativePath: String?): File? =
         relativePath?.takeIf { isValidPath(it) }?.let { File(context.filesDir, it) }?.takeIf { it.isFile }
@@ -51,6 +66,7 @@ class ServiceImageStore(private val context: Context) {
 
     fun delete(relativePath: String?) {
         resolve(relativePath)?.delete()
+        relativePath?.let { path -> memory.snapshot().keys.filter { it.startsWith("$path@") }.forEach(memory::remove) }
     }
 
     /** All stored photos (for backups): relative path to file. */
@@ -59,6 +75,7 @@ class ServiceImageStore(private val context: Context) {
             ?.associateBy { "$DIR/${it.name}" }.orEmpty()
 
     fun loadBitmap(relativePath: String?, maxSize: Int = MAX_SIZE): Bitmap? {
+        cached(relativePath, maxSize)?.let { return it }
         val file = resolve(relativePath) ?: return null
         return try {
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
@@ -66,6 +83,7 @@ class ServiceImageStore(private val context: Context) {
             var sample = 1
             while (bounds.outWidth / (sample * 2) >= maxSize && bounds.outHeight / (sample * 2) >= maxSize) sample *= 2
             BitmapFactory.decodeFile(file.absolutePath, BitmapFactory.Options().apply { inSampleSize = sample })
+                ?.also { memory.put(key(relativePath!!, maxSize), it) }
         } catch (e: Exception) {
             null
         } catch (e: OutOfMemoryError) {

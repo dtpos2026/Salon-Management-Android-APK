@@ -17,7 +17,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
@@ -25,13 +24,16 @@ import com.dtpos.salonmanager.presentation.common.LocalAppContainer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/** A service's menu photo (loaded off the main thread), or a scissors placeholder. */
+/**
+ * A service's menu photo, or a scissors placeholder. Photos already in memory show at once
+ * (smooth scrolling); others are read off the main thread.
+ */
 @Composable
 fun ServicePhoto(path: String?, modifier: Modifier = Modifier, maxSize: Int = 360) {
     val store = LocalAppContainer.current.serviceImageStore
-    var image by remember(path, maxSize) { mutableStateOf<ImageBitmap?>(null) }
+    var image by remember(path, maxSize) { mutableStateOf(store.cached(path, maxSize)?.asImageBitmap()) }
     LaunchedEffect(path, maxSize) {
-        image = if (path == null) null else withContext(Dispatchers.IO) { store.loadBitmap(path, maxSize)?.asImageBitmap() }
+        if (image == null && path != null) image = withContext(Dispatchers.IO) { store.loadBitmap(path, maxSize)?.asImageBitmap() }
     }
     Box(modifier.background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
         val bitmap = image

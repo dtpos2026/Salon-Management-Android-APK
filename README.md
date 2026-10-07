@@ -170,8 +170,10 @@ A release build is minified (R8) and must be signed before installing:
 3. Build: `./gradlew assembleRelease` → `app/build/outputs/apk/release/app-release.apk`
    (or `bundleRelease` for Google Play).
 
-Without `keystore.properties` the release APK is produced unsigned
-(`app-release-unsigned.apk`); sign it with `apksigner` or add the properties file.
+Without `keystore.properties` the release APK is signed with the build's debug key, so it is
+still installable (optimized, not debuggable). CI keeps that debug key between builds in the
+Actions cache; set the `DT_KEYSTORE_BASE64` / `DT_SIGNING_PASSWORD` secrets for a permanent key.
+Install the **release** APK on salon phones: it is much faster than the debug APK.
 
 > Moving from the debug build to the release build: they are different apps. Use
 > *Settings → Backup & restore* in the debug app, then restore the file in the release app.

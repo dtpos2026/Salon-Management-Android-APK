@@ -42,14 +42,14 @@ private fun phase(progress: Float, start: Float, length: Float): Float =
     FastOutSlowInEasing.transform(((progress - start) / length).coerceIn(0f, 1f))
 
 /**
- * Animated brand intro (about 1.6 s, tap to skip): the DT monogram rises in, a light sweeps across
+ * Animated brand intro (about 1.1 s, tap to skip): the DT monogram rises in, a light sweeps across
  * it like a mirror reflection, then the wordmark opens up. Always in the DT purple brand colours.
  */
 @Composable
 fun IntroSplash(onFinished: () -> Unit) {
     val progress = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
-        progress.animateTo(1f, tween(durationMillis = 1600, easing = LinearEasing))
+        progress.animateTo(1f, tween(durationMillis = 1100, easing = LinearEasing))
         onFinished()
     }
     CompositionLocalProvider(LocalGlassPalette provides glassPaletteFor(ColorTheme.ROYAL_PURPLE)) {

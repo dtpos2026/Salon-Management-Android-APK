@@ -26,6 +26,14 @@ jobs:
         with:
           cache-cleanup: always
 
+      # The debug signing key Android Studio / Gradle creates is kept between builds, so a new
+      # APK installs over the previous one (until the release key secrets are set).
+      - name: Keep the same debug signing key between builds
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: dt-debug-keystore-v1
+
       - name: Configure signing key and Firebase from secrets
         run: bash .github/scripts/configure-secrets.sh
         env:
@@ -94,7 +102,7 @@ jobs:
           name: SalonManager-debug-apk
           path: app/build/outputs/apk/debug/*.apk
 
-      - name: Upload release APK (signed when the signing secrets are set)
+      - name: Upload release APK (optimized; signed with the release key when its secrets are set)
         uses: actions/upload-artifact@v4
         with:
           retention-days: 7
@@ -126,7 +134,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        api: [26, 34]
+        api: [26, 30, 34]
     steps:
       - uses: actions/checkout@v5
 
@@ -145,6 +153,14 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      # The debug signing key Android Studio / Gradle creates is kept between builds, so a new
+      # APK installs over the previous one (until the release key secrets are set).
+      - name: Keep the same debug signing key between builds
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: dt-debug-keystore-v1
+
       - name: Configure signing key and Firebase from secrets
         run: bash .github/scripts/configure-secrets.sh
         env:
@@ -154,6 +170,12 @@ jobs:
 
       - name: Build debug and test APKs
         run: ./gradlew assembleDebug assembleDebugAndroidTest --stacktrace
+
+      - name: Download the release APK built above (the one salons install)
+        uses: actions/download-artifact@v4
+        with:
+          name: SalonManager-release-apk
+          path: release-apk
 
       - name: Install, launch and run instrumented tests on the emulator
         uses: reactivecircus/android-emulator-runner@v2

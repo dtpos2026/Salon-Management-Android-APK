@@ -17,7 +17,7 @@ PROPS
   keytool -list -v -keystore app/signing/dt-salon-release.p12 -storepass "$DT_SIGNING_PASSWORD" -alias dtsalon \
     | grep -E "SHA1:|SHA256:" || echo "::warning::Could not read the key: check the alias is 'dtsalon' and the password."
 else
-  echo "::warning::DT_KEYSTORE_BASE64 / DT_SIGNING_PASSWORD secrets are not set: the release APK will be unsigned (use the debug APK; each build has a different key, so updates need a reinstall)."
+  echo "::warning::DT_KEYSTORE_BASE64 / DT_SIGNING_PASSWORD secrets are not set: the release APK is signed with the build's debug key (kept between builds by the Actions cache). Set the secrets for a permanent release key."
 fi
 
 if [ -n "${GOOGLE_SERVICES_JSON:-}" ]; then

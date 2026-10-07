@@ -85,9 +85,12 @@ GitHub par repo kholein → **Settings → Secrets and variables → Actions →
 | `FIREBASE_WEB_CONFIG` | Sirf GitHub Pages panel ke liye | Firebase web app config (step 5.2) |
 
 ### 3.1 Signing key (mashwara, ek dafa)
-Signing key ke baghair bhi app chalti hai (**debug APK**), lekin har nayi APK alag key se banti hai.
-Is liye nayi APK purani ke upar install nahi hogi: pehle purani uninstall karni padegi, aur
-uninstall se **phone ka salon data mit jata hai** (pehle Settings → Backup kar lein).
+Salon phones par hamesha **release APK** (`SalonManager-release-apk`) install karein: yeh
+optimized hai aur debug APK se kafi tez chalti hai. Signing key ke baghair release APK build ki
+debug key se sign hoti hai; GitHub Actions yeh key cache mein rakhta hai, is liye agli APK aam
+taur par upar install ho jati hai. Lekin cache 7 din istemal na hone par mit sakta hai: tab nayi
+APK purani ke upar install nahi hogi, pehle purani uninstall karni padegi, aur uninstall se
+**phone ka salon data mit jata hai** (pehle Settings → Backup kar lein).
 Ek pakki key bana lein to nayi APK seedha upar install hoti hai aur data mehfooz rehta hai:
 
 - **Windows:** repo ke folder `tools/signing` mein CMD kholein:
