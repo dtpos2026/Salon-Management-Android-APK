@@ -26,13 +26,25 @@ jobs:
         with:
           cache-cleanup: always
 
-      # The debug signing key Android Studio / Gradle creates is kept between builds, so a new
-      # APK installs over the previous one (until the release key secrets are set).
+      # The same debug signing key is kept between builds (Actions cache), so a new APK
+      # installs over the previous one until the release key secrets are set.
       - name: Keep the same debug signing key between builds
         uses: actions/cache@v4
         with:
-          path: ~/.android/debug.keystore
-          key: dt-debug-keystore-v1
+          path: ~/.dt-debug/debug.keystore
+          key: dt-debug-keystore-v2
+
+      - name: Use (or create once) the debug signing key
+        run: |
+          ks="$HOME/.dt-debug/debug.keystore"
+          if [ ! -f "$ks" ]; then
+            mkdir -p "$(dirname "$ks")"
+            keytool -genkeypair -keystore "$ks" -storepass android -alias androiddebugkey -keypass android \
+              -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+            echo "Created a new debug key (the next builds reuse it)."
+          fi
+          echo "DT_DEBUG_KEYSTORE=$ks" >> "$GITHUB_ENV"
+          keytool -list -keystore "$ks" -storepass android | grep -i "fingerprint" || true
 
       - name: Configure signing key and Firebase from secrets
         run: bash .github/scripts/configure-secrets.sh
@@ -153,13 +165,25 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      # The debug signing key Android Studio / Gradle creates is kept between builds, so a new
-      # APK installs over the previous one (until the release key secrets are set).
+      # The same debug signing key is kept between builds (Actions cache), so a new APK
+      # installs over the previous one until the release key secrets are set.
       - name: Keep the same debug signing key between builds
         uses: actions/cache@v4
         with:
-          path: ~/.android/debug.keystore
-          key: dt-debug-keystore-v1
+          path: ~/.dt-debug/debug.keystore
+          key: dt-debug-keystore-v2
+
+      - name: Use (or create once) the debug signing key
+        run: |
+          ks="$HOME/.dt-debug/debug.keystore"
+          if [ ! -f "$ks" ]; then
+            mkdir -p "$(dirname "$ks")"
+            keytool -genkeypair -keystore "$ks" -storepass android -alias androiddebugkey -keypass android \
+              -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+            echo "Created a new debug key (the next builds reuse it)."
+          fi
+          echo "DT_DEBUG_KEYSTORE=$ks" >> "$GITHUB_ENV"
+          keytool -list -keystore "$ks" -storepass android | grep -i "fingerprint" || true
 
       - name: Configure signing key and Firebase from secrets
         run: bash .github/scripts/configure-secrets.sh

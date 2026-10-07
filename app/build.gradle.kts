@@ -46,6 +46,10 @@ android {
     }
 
     signingConfigs {
+        // CI keeps one debug key between builds (DT_DEBUG_KEYSTORE) so new APKs install over old ones.
+        getByName("debug") {
+            System.getenv("DT_DEBUG_KEYSTORE")?.let { File(it) }?.takeIf { it.isFile }?.let { storeFile = it }
+        }
         create("release") {
             if (keystorePropertiesFile.exists()) {
                 storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
