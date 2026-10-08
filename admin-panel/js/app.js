@@ -245,6 +245,16 @@ function renderShell(user) {
   if (badgeWatch) badgeWatch();
   badgeWatch = accountsStore.subscribe(refreshBadge);
   route();
+  // The map library of the Phones page is fetched while the admin looks at the first page.
+  (window.requestIdleCallback || ((fn) => setTimeout(fn, 2000)))(() => {
+    ['vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.css'].forEach((href) => {
+      if (document.querySelector(`link[href="${href}"]`)) return;
+      const link = document.createElement('link');
+      link.rel = 'prefetch';
+      link.href = href;
+      document.head.appendChild(link);
+    });
+  });
 }
 
 export async function refreshBadge() {

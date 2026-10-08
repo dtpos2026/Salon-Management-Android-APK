@@ -101,7 +101,10 @@ const context = await browser.newContext({ viewport: { width: 1360, height: 900 
 const page = await context.newPage();
 const cdp = await context.newCDPSession(page);
 await cdp.send('Network.enable');
-await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: 150, downloadThroughput: 1250000, uploadThroughput: 625000 });
+// LATENCY_MS / DOWN_KBIT override the network, e.g. LATENCY_MS=300 DOWN_KBIT=2000 for slow mobile data.
+const LATENCY_MS = Number(process.env.LATENCY_MS || 150);
+const DOWN_BYTES = Number(process.env.DOWN_KBIT || 10000) * 125;
+await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: LATENCY_MS, downloadThroughput: DOWN_BYTES, uploadThroughput: DOWN_BYTES / 2 });
 const base = `http://127.0.0.1:${PORT}`;
 const results = {};
 const firstContent = {}; // shown separately, not added to the total
@@ -124,7 +127,10 @@ const statReady = shows((n) => [...document.querySelectorAll('.stat')]
 const salonRows = shows(() => document.querySelector('#rows tr[data-href^="#/salon/"]'));
 
 try {
-  await page.goto(`${base}/index.html`);
+  const opened = Date.now();
+  await page.goto(`${base}/index.html`, { waitUntil: 'commit' });
+  await page.locator('#email').waitFor();
+  firstContent['first visit → login form'] = Date.now() - opened;
   await page.fill('#email', 'owner@digitaltarget.test');
   await page.fill('#password', 'Secret#2026');
   await time('login → dashboard', () => page.click('#signin'), statReady);
