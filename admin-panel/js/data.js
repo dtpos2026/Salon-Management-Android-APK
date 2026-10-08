@@ -686,6 +686,26 @@ export async function salesDays(uid, n = 31) {
 
 // ---- Phones (status reported by the app, see DeviceMonitor) ------------------------------
 
+/** Every salon account (from the live copy when it is ready). */
+export async function allAccounts() {
+  if (await accountsStore.ready()) return accountsStore.list();
+  const snap = await getDocs(collection(db(), 'accounts'));
+  return snap.docs.map(fromSnap);
+}
+
+/** A phone counts as online while the app is open: it reports every 2 minutes. */
+export const ONLINE_MS = 5 * 60 * 1000;
+
+/** Phones of registered salons split into online (app open now) and offline, newest first. */
+export function phonesOnline(devices, accountsById, now = Date.now()) {
+  const seenAt = (d) => toDate(d.lastSeenAt)?.getTime() || 0;
+  const mine = devices.filter((d) => accountsById[d.uid]).sort((a, b) => seenAt(b) - seenAt(a));
+  return {
+    online: mine.filter((d) => now - seenAt(d) < ONLINE_MS),
+    offline: mine.filter((d) => now - seenAt(d) >= ONLINE_MS),
+  };
+}
+
 /** Every phone that reported itself: model, versions, last seen and location. */
 export async function listDevices() {
   if (await devicesStore.ready()) return devicesStore.list();

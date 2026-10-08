@@ -323,3 +323,8 @@ table.list tr.row-link:hover td { background: #faf8fd; }
 .phone-map { height: 420px; border-radius: 14px; overflow: hidden; margin: 6px 0 10px; background: #eef0f3; }
 .phone-map .empty { padding-top: 160px; }
 @media (max-width: 700px) { .phone-map { height: 300px; } }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; }
+.dot-on { background: #1e8a4a; box-shadow: 0 0 0 3px rgba(30,138,74,.18); }
+.dot-off { background: #b9b2c6; }
+/* The last dashboard, shown at once while the panel connects (replaced by live data). */
+.shell.snapshot .content, .shell.snapshot .side-foot { pointer-events: none; }

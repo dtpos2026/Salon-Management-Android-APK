@@ -7,6 +7,7 @@ import { isAdmin, dashboardCounts, ownerClaimed, claimFirstAdmin, ensureOwnerRec
 import { accountsStore, startStores, stopStores, forgetCachedCollections } from './store.js';
 import { esc, $, $$, toast, copyText, errorMessage } from './util.js';
 import { ICONS } from './icons.js';
+import { showSnapshot, forgetSnapshot } from './snapshot.js';
 import * as dashboard from './pages/dashboard.js';
 import * as salons from './pages/salons.js';
 import * as salon from './pages/salon.js';
@@ -200,6 +201,7 @@ async function signOutEverywhere() {
   signingOut = true;
   renderLoading('Signing out…');
   rememberAdmin(null);
+  forgetSnapshot();
   stopStores();
   await signOut(firebase().auth);
   await clearLocalData();
@@ -276,7 +278,9 @@ let cleanups = [];
 
 async function route() {
   const content = $('#content');
-  if (!content) return;
+  // While the saved dashboard shows, a menu click only changes the address; the page opens
+  // as soon as the panel is connected (renderShell routes to it).
+  if (!content || !currentUser || $('.shell.snapshot')) return;
   const token = ++routeToken;
   const alive = () => token === routeToken;
   // Stop the previous page's live updates (and its map).
@@ -364,18 +368,26 @@ async function start(user) {
   }
 }
 
+/** An admin signed in on this browser before (the saved dashboard may be shown at once). */
+function adminBefore() {
+  try { return Boolean(localStorage.getItem(ADMIN_KEY)); } catch (e) { return false; }
+}
+
 async function boot() {
-  renderLoading();
+  // Returning admin: the last dashboard shows at once; live data replaces it in a moment.
+  const instant = showSnapshot(adminBefore());
+  if (!instant) renderLoading();
   const services = await initFirebase();
   if (!services) {
     renderSetup();
     return;
   }
-  renderLoading();
+  if (!instant) renderLoading();
   onAuthStateChanged(services.auth, (user) => {
     if (!user) {
       currentUser = null;
       stopStores();
+      forgetSnapshot();
       if (!signingOut) renderLogin();
     } else if (!currentUser || currentUser.uid !== user.uid) {
       start(user);

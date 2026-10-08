@@ -143,11 +143,21 @@ try {
   await page.screenshot({ path: join(SHOTS, '1-dashboard.png'), fullPage: true });
   step('admin dashboard shows the right counts and today\'s sales of all salons');
 
+  // Phones: online = the app reported in the last 5 minutes. Both Royal Cuts phones are older.
+  assert.equal(await statValue('Phones online now'), '0');
+  await page.locator('#phones-box').getByText('2 offline').waitFor();
+  await page.getByText('No sales shared yet').first().waitFor();
+  await admin((db) => setDoc(doc(db, 'devices/royal1__a-old-phone-1111'), { lastSeenAt: Timestamp.now() }, { merge: true }));
+  await page.locator('#phones-box').getByText('1 online').waitFor();
+  await page.locator('#phones-box tr', { hasText: 'Royal Cuts' }).getByText('Online now').waitFor();
+  assert.equal(await statValue('Phones online now'), '1');
+  step('dashboard: phones online now and offline (live); every salon listed under sales');
+
   // A salon signs up while the dashboard is open: counts and the badge follow without reloading.
   await admin((db) => setDoc(doc(db, 'accounts/live1'), { uid: 'live1', email: 'live@gmail.com', salonName: 'Live Salon', status: 'PENDING', createdAt: Timestamp.now() }));
   await page.locator('.stat', { hasText: 'Waiting for approval' }).locator('.value', { hasText: /^2$/ }).waitFor();
   await page.locator('#pending-badge', { hasText: /^2$/ }).waitFor();
-  await page.getByText('Live Salon').waitFor();
+  await page.locator('[data-approve="live1"]').waitFor();
   await admin((db) => deleteDoc(doc(db, 'accounts/live1')));
   await page.locator('.stat', { hasText: 'Waiting for approval' }).locator('.value', { hasText: /^1$/ }).waitFor();
   step('live: a new sign-up shows on the open dashboard and the badge without reloading');
@@ -379,11 +389,13 @@ try {
   await page.reload();
   await page.locator('.stat', { hasText: 'Total salons' }).locator('.value').waitFor();
   assert.equal(await page.getByText('Checking admin access').count(), 0);
+  // The saved dashboard shows first; the live one replaces it.
+  await page.waitForSelector('.shell:not(.snapshot)');
   step('returning admin: a reload opens the panel straight away (admin check in the background)');
 
   await Promise.all([page.waitForEvent('load'), page.click('#sign-out')]);
   await page.locator('#signin').waitFor();
-  const leftovers = await page.evaluate(() => Object.keys(localStorage).filter((k) => k === 'dt-admin-verified' || k.startsWith('dt-admin-synced-')));
+  const leftovers = await page.evaluate(() => Object.keys(localStorage).filter((k) => k === 'dt-admin-verified' || k === 'dt-admin-snapshot' || k.startsWith('dt-admin-synced-')));
   assert.deepEqual(leftovers, []);
   step('sign out returns to the login and forgets this browser\'s cached admin data');
 

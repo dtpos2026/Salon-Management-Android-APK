@@ -13,6 +13,9 @@
   <!-- The font loads without holding up the page (system font until it arrives). -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" media="print" onload="this.media='all'">
   <link rel="stylesheet" href="css/panel.css">
+  <!-- Firebase web config (created at deploy time, git-ignored). Missing file = setup screen.
+       Deferred: it runs before the panel code without holding up the page. -->
+  <script defer src="firebase-config.js" onerror="void 0"></script>
   <!-- All panel code is fetched in parallel (not one import level after another). Map and
        invoice-image libraries load only on the pages that use them. -->
   <link rel="modulepreload" href="js/app.js">
@@ -22,6 +25,7 @@
   <link rel="modulepreload" href="js/store.js">
   <link rel="modulepreload" href="js/util.js">
   <link rel="modulepreload" href="js/icons.js">
+  <link rel="modulepreload" href="js/snapshot.js">
   <link rel="modulepreload" href="js/actions.js">
   <link rel="modulepreload" href="js/invoice-render.js">
   <link rel="modulepreload" href="js/pages/dashboard.js">
@@ -35,11 +39,28 @@
   <link rel="modulepreload" href="js/pages/reminders.js">
   <link rel="modulepreload" href="js/pages/support.js">
   <link rel="modulepreload" href="js/pages/phones.js">
-  <!-- Firebase web config (created at deploy time, git-ignored). Missing file = setup screen. -->
-  <script src="firebase-config.js" onerror="void 0"></script>
 </head>
 <body>
   <div id="app"></div>
+  <script>
+    // Returning admin: the last dashboard (js/snapshot.js) shows before the panel code has
+    // even loaded; the live dashboard replaces it. Nothing is shown after a sign-out.
+    (function () {
+      try {
+        var hash = location.hash || '#/dashboard';
+        if (!localStorage.getItem('dt-admin-verified') || !/^(#\/?(dashboard)?)?$/.test(hash)) return;
+        var saved = JSON.parse(localStorage.getItem('dt-admin-snapshot') || 'null');
+        if (!saved || !saved.html || Date.now() - saved.at > 7 * 24 * 3600 * 1000) return;
+        var root = document.getElementById('app');
+        root.innerHTML = saved.html;
+        var shell = root.querySelector('.shell');
+        if (!shell) { root.innerHTML = ''; return; }
+        shell.classList.add('snapshot');
+        var actions = root.querySelector('#page-actions');
+        if (actions) actions.innerHTML = '<span class="cell-sub"><span class="spinner"></span>Updating…</span>';
+      } catch (e) { /* the panel loads normally */ }
+    })();
+  </script>
   <noscript>Please enable JavaScript to use the DT Salon admin panel.</noscript>
   <script type="module" src="js/app.js"></script>
 </body>
