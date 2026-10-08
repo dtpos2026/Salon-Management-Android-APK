@@ -1,7 +1,6 @@
 package com.dtpos.salonmanager.presentation.sales
 
 import com.dtpos.salonmanager.presentation.common.receiptShareText
-import com.dtpos.salonmanager.presentation.common.showWhatsAppResult
 import androidx.compose.foundation.Image
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -15,7 +14,6 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.layout.ContentScale
 import com.dtpos.salonmanager.core.util.CurrencyFormatter
-import com.dtpos.salonmanager.services.export.ExternalApps
 import com.dtpos.salonmanager.services.export.ReceiptImageFormat
 import com.dtpos.salonmanager.services.export.SaveResult
 import com.dtpos.salonmanager.services.printer.PrintMode
@@ -260,18 +258,13 @@ fun SaleDetailScreen(
         if (granted && format != null) vm.saveImage(format) else Toast.makeText(context, permissionDenied, Toast.LENGTH_LONG).show()
     }
     val shareImageTitle = stringResource(R.string.receipt_share_image)
+    val whatsApp = com.dtpos.salonmanager.presentation.common.rememberWhatsAppLauncher()
     LaunchedEffect(vm) {
         vm.imageActions.collect { action ->
             when (action) {
                 is SaleDetailViewModel.ImageAction.Share -> ShareHelper.shareFile(context, action.file, "image/png", shareImageTitle)
-                is SaleDetailViewModel.ImageAction.WhatsApp -> {
-                    val uri = ShareHelper.uriFor(context, action.file)
-                    context.showWhatsAppResult(
-                        if (uri == null) ExternalApps.whatsAppText(context, action.phone, action.message, shareImageTitle)
-                        else ExternalApps.whatsAppImage(context, uri, "image/png", action.phone, action.message, shareImageTitle),
-                        action.message,
-                    )
-                }
+                is SaleDetailViewModel.ImageAction.WhatsApp ->
+                    whatsApp.image(ShareHelper.uriFor(context, action.file), action.phone, action.message, shareImageTitle)
                 is SaleDetailViewModel.ImageAction.RequestPermission -> {
                     pendingFormat = action.format
                     storagePermission.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -412,7 +405,7 @@ fun SaleDetailScreen(
                     Button(
                         onClick = {
                             whatsAppChoice = null
-                            context.showWhatsAppResult(ExternalApps.whatsAppText(context, phone, message, shareImageTitle), message)
+                            whatsApp.text(phone, message, shareImageTitle)
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = com.dtpos.salonmanager.presentation.messages.WhatsAppGreen, contentColor = androidx.compose.ui.graphics.Color.White),
                         modifier = Modifier.fillMaxWidth(),

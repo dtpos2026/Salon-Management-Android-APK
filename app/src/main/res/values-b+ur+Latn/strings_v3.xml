@@ -99,8 +99,6 @@
     <string name="staff_slip_paid">Is mahine ada</string>
     <string name="staff_slip_balance">Baqi</string>
     <string name="staff_slip_sign">Wusool kunanda: ____________</string>
-    <string name="staff_slip_share">Share</string>
-    <string name="staff_slip_print">Parchi print</string>
     <string name="staff_commission_short">Commission %1$s</string>
     <string name="services_photo_failed">Yeh tasveer istemal nahi ho saki. Doosri aazmayein.</string>
     <string name="services_photo_add">Tasveer lagayein</string>
@@ -179,8 +177,6 @@
     <string name="dues_history">Wasool shuda payments</string>
     <string name="dues_save_payment">Payment save karein</string>
     <string name="staff_slip_failed">Parchi nahi ban saki</string>
-    <string name="staff_slip_preview_hint">Bilkul wohi jo printer chhapega. Print karein ya WhatsApp par bhejein.</string>
-    <string name="staff_slip_no_phone">Is staff ka phone number save nahi: WhatsApp mein chat khud chunein. Number Edit mein shamil karein.</string>
     <string name="receipt_wa_title">WhatsApp par bhejein</string>
     <string name="receipt_wa_text_customer">Customer ki chat mein message</string>
     <string name="receipt_wa_text_choose">Message (chat khud chunein)</string>
@@ -194,4 +190,23 @@
     <string name="location_precise_message">Abhi sirf \"approximate\" location ki ijazat hai jo kilometers door ho sakti hai. Neeche dabayein aur \"Precise\" chunein taake DT ko is phone ki bilkul durust jagah nazar aaye.</string>
     <string name="location_precise_settings">App settings kholein, Permissions › Location dabayein aur \"Use precise location\" on karein, phir wapas aayein.</string>
     <string name="location_allow_precise">Precise location ki ijazat dein</string>
+    <string name="slip_preview_hint">Printer %1$s kaghaz par bilkul yehi print karega.</string>
+    <string name="slip_print">Print karein</string>
+    <string name="slip_printed">Printer ko bhej diya gaya.</string>
+    <string name="slip_wa_picture">WhatsApp: tasveer + paigham</string>
+    <string name="slip_wa_text">WhatsApp: sirf paigham</string>
+    <string name="slip_share">Share karein (koi bhi app)</string>
+    <string name="slip_no_phone">Phone number save nahi: WhatsApp mein chat khud chunein.</string>
+    <string name="slip_phone">WhatsApp %1$s ki chat kholega.</string>
+    <string name="whatsapp_not_opened">Is phone par WhatsApp nahi khula, is liye share list kholi gayi hai: us mein WhatsApp dabayein.</string>
+    <string name="due_slip_title">UDHAAR WUSOOLI RASEED</string>
+    <string name="due_slip_full">MUKAMMAL ADA</string>
+    <string name="due_paid_intro">%1$s mein aap ki adaigi wusool ho gayi hai.</string>
+    <string name="due_paid_received">Wusool</string>
+    <string name="due_paid_total">Ab tak ada</string>
+    <string name="due_paid_balance">Baqi udhaar</string>
+    <string name="due_paid_full">Aap ka udhaar mukammal ada ho gaya hai.</string>
+    <string name="due_paid_thanks">Shukriya!</string>
+    <string name="dues_paid_receipt">Adaigi ki raseed</string>
+    <string name="dues_no_receipt">Is udhaar ki koi adaigi abhi darj nahi.</string>
 </resources>

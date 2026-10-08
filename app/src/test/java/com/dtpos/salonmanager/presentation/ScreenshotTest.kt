@@ -359,6 +359,28 @@ class ScreenshotTest {
         compose.setContent { Text("ok") }
     }
 
+    @Test
+    fun udhaarPaymentReceipt58mm() {
+        val due = com.dtpos.salonmanager.data.database.entities.DueEntity(
+            id = 4, businessId = 1, customerId = null, customerName = "Usman Ali", customerPhone = "0300-1112233", amountMinor = 150_000,
+            paidMinor = 150_000, note = "SAL-000012", createdAt = 0, settledAt = 1, lastReminderAt = null, saleId = 12,
+        )
+        val payment = com.dtpos.salonmanager.data.database.entities.DuePaymentEntity(
+            id = 2, businessId = 1, dueId = 4, amountMinor = 50_000, paymentMethod = PaymentMethod.BANK, paymentAccountId = 1,
+            paymentAccountName = "EasyPaisa", businessDate = 0, createdAt = System.currentTimeMillis(),
+        )
+        val lines = com.dtpos.salonmanager.services.printer.Slips.duePayment(
+            due, payment, 150_000, "Burewala Salon", app, com.dtpos.salonmanager.core.util.CurrencyFormatter(CurrencyConfig()),
+        )
+        // 58 mm paper: 384 printer dots wide, as in the preview.
+        val bitmap = com.dtpos.salonmanager.services.printer.ReceiptCanvasRenderer(384, 384 / 17f).renderBitmap(lines, null)
+        assertEquals(384, bitmap.width)
+        val text = com.dtpos.salonmanager.services.printer.Slips.asText(lines)
+        assertTrue(text, text.contains("Usman Ali") && text.contains("Rs. 500") && text.contains("EasyPaisa") && text.contains("FULLY PAID"))
+        FileOutputStream(File(outDir, "29-udhaar-receipt-58mm.png")).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        compose.setContent { Text("ok") }
+    }
+
     /** Salon with today's queue (a walk-in and a booking) and a hand-written udhaar. */
     private fun seedSalonWithQueue() {
         seedSalon()

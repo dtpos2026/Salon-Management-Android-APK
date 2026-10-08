@@ -125,6 +125,49 @@ object Slips {
         return lines
     }
 
+    /**
+     * Receipt for an udhaar payment: customer, when and how it was paid, the amount received,
+     * the bill, paid so far and what is still due (or FULLY PAID). [paidSoFarMinor] includes
+     * this payment.
+     */
+    fun duePayment(
+        due: com.dtpos.salonmanager.data.database.entities.DueEntity,
+        payment: com.dtpos.salonmanager.data.database.entities.DuePaymentEntity,
+        paidSoFarMinor: Long,
+        salon: String,
+        res: Context,
+        money: CurrencyFormatter,
+    ): List<PrintLine> {
+        val lines = mutableListOf<PrintLine>()
+        lines += PrintLine.Text(salon.ifBlank { res.getString(R.string.app_name) }, PrintAlign.CENTER, bold = true, large = true)
+        lines += PrintLine.Text(res.getString(R.string.due_slip_title), PrintAlign.CENTER, bold = true)
+        lines += PrintLine.Separator('=')
+        lines += PrintLine.Columns(res.getString(R.string.receipt_customer), due.customerName, bold = true)
+        due.customerPhone?.takeIf { it.isNotBlank() }?.let { lines += PrintLine.Columns(res.getString(R.string.receipt_phone), it) }
+        lines += PrintLine.Columns(res.getString(R.string.receipt_date), DateTimeUtils.formatDateTime(payment.createdAt))
+        due.note?.takeIf { it.isNotBlank() }?.let {
+            lines += PrintLine.Columns(res.getString(if (due.saleId != null) R.string.share_receipt_label else R.string.share_note), it)
+        }
+        lines += PrintLine.Columns(
+            res.getString(R.string.receipt_payment),
+            payment.paymentAccountName ?: res.getString(ReceiptPrinter.paymentMethodLabel(payment.paymentMethod)),
+        )
+        lines += PrintLine.Separator()
+        lines += PrintLine.Columns(res.getString(R.string.due_paid_received), money.format(payment.amountMinor), bold = true, large = true)
+        lines += PrintLine.Separator()
+        lines += PrintLine.Columns(res.getString(R.string.share_bill), money.plain(due.amountMinor))
+        lines += PrintLine.Columns(res.getString(R.string.due_paid_total), money.plain(paidSoFarMinor))
+        val balance = (due.amountMinor - paidSoFarMinor).coerceAtLeast(0)
+        lines += if (balance == 0L) {
+            PrintLine.Text(res.getString(R.string.due_slip_full), PrintAlign.CENTER, bold = true, large = true)
+        } else {
+            PrintLine.Columns(res.getString(R.string.due_paid_balance), money.plain(balance), bold = true)
+        }
+        lines += PrintLine.Separator('=')
+        lines += PrintLine.Text(res.getString(R.string.due_paid_thanks), PrintAlign.CENTER)
+        return lines
+    }
+
     /** The same slip as plain text, for WhatsApp / SMS / share. */
     fun asText(lines: List<PrintLine>): String = buildString {
         lines.forEach { line ->

@@ -110,6 +110,7 @@ fun AccountScreen(onBack: () -> Unit) {
     val config by vm.appConfig.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val whatsApp = com.dtpos.salonmanager.presentation.common.rememberWhatsAppLauncher()
     var confirmSignOut by remember { mutableStateOf(false) }
     MessageEffect(vm.messages, snackbar)
 
@@ -189,7 +190,7 @@ fun AccountScreen(onBack: () -> Unit) {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     if (whatsapp.isNotBlank()) {
                         OutlinedButton(onClick = {
-                            context.showWhatsAppResult(ExternalApps.whatsAppText(context, whatsapp, message), message)
+                            whatsApp.text(whatsapp, message)
                         }, modifier = Modifier.weight(1f)) {
                             Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(6.dp))

@@ -91,7 +91,11 @@ class CloseDayViewModel(private val container: AppContainer) : BaseViewModel() {
     private val _report = MutableStateFlow<DayCloseReport?>(null)
     val report: StateFlow<DayCloseReport?> = _report.asStateFlow()
 
-    val printing = MutableStateFlow(false)
+    /** The Close Day slip shown before printing / sending (the picture the printer prints). */
+    val slips = com.dtpos.salonmanager.presentation.common.SlipPreviews(container.receiptPrinter, container.context, viewModelScope)
+
+    /** True while the slip picture for Share is being made. */
+    val preparing = MutableStateFlow(false)
 
     val salonName: StateFlow<String> = kotlinx.coroutines.flow.flow {
         container.businessRepository.profile.collect { emit(it?.name.orEmpty()) }
@@ -148,26 +152,35 @@ class CloseDayViewModel(private val container: AppContainer) : BaseViewModel() {
     private suspend fun money(): CurrencyFormatter =
         CurrencyFormatter(container.businessRepository.profile.first()?.currency ?: com.dtpos.salonmanager.core.util.CurrencyConfig())
 
-    fun print() {
+    /** The slip for the shown day: printer lines (printer language) and the same in the app language. */
+    private suspend fun slip(current: DayCloseReport): Pair<List<com.dtpos.salonmanager.services.printer.PrintLine>, String> {
+        val lines = Slips.dayClose(current, salonName.value, container.receiptPrinter.slipContext(), money())
+        val text = Slips.asText(Slips.dayClose(current, salonName.value, container.context, money()))
+        return lines to text
+    }
+
+    private fun fileName(current: DayCloseReport) = "CloseDay_" + current.day.toString()
+
+    /** Print slip: the slip as it prints (58 / 80 mm) with Print, WhatsApp and Share. */
+    fun openSlip() {
         val current = _report.value ?: return
-        if (printing.value) return
-        printing.value = true
         launchSafe {
-            try {
-                val lines = Slips.dayClose(current, salonName.value, container.receiptPrinter.slipContext(), money())
-                when (val result = container.receiptPrinter.printLines(lines)) {
-                    PrintResult.Success -> showMessage(R.string.print_success)
-                    is PrintResult.Failure -> showMessage(result.error.messageRes)
-                }
-            } finally {
-                printing.value = false
-            }
+            val (lines, text) = slip(current)
+            slips.show(container.context.getString(R.string.close_slip_title), lines, text, null, fileName(current))
         }
     }
 
-    suspend fun shareText(): String? {
+    /** Share: the slip picture with the same text, for any app the owner picks. */
+    suspend fun shareSlip(): com.dtpos.salonmanager.presentation.common.SlipPreview? {
         val current = _report.value ?: return null
-        return Slips.asText(Slips.dayClose(current, salonName.value, container.context, money()))
+        if (preparing.value) return null
+        preparing.value = true
+        return try {
+            val (lines, text) = slip(current)
+            slips.build(container.context.getString(R.string.close_slip_title), lines, text, null, fileName(current))
+        } finally {
+            preparing.value = false
+        }
     }
 }
 
@@ -181,7 +194,7 @@ fun CloseDayScreen(onBack: () -> Unit, onBackup: () -> Unit = {}) {
     val vm = appViewModel { CloseDayViewModel(it) }
     val date by vm.date.collectAsStateWithLifecycle()
     val report by vm.report.collectAsStateWithLifecycle()
-    val printing by vm.printing.collectAsStateWithLifecycle()
+    val preparing by vm.preparing.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     MessageEffect(vm.messages, snackbar)
     val context = LocalContext.current
@@ -190,9 +203,14 @@ fun CloseDayScreen(onBack: () -> Unit, onBackup: () -> Unit = {}) {
     val shareTitle = stringResource(R.string.close_share)
     LaunchedEffect(shareRequest) {
         if (shareRequest > 0) {
-            vm.shareText()?.let { context.showWhatsAppResult(ExternalApps.whatsAppText(context, null, it, shareTitle), it) }
+            vm.shareSlip()?.let { slip ->
+                val uri = slip.file?.let { com.dtpos.salonmanager.services.export.ShareHelper.uriFor(context, it) }
+                val ok = if (uri != null) ExternalApps.shareImage(context, uri, "image/png", slip.message, shareTitle) else ExternalApps.shareText(context, slip.message, shareTitle)
+                if (!ok) context.showWhatsAppResult(com.dtpos.salonmanager.services.export.WhatsAppResult.FAILED, slip.message)
+            }
         }
     }
+    com.dtpos.salonmanager.presentation.common.SlipPreviewDialog(vm.slips)
 
     Scaffold(
         topBar = { SalonTopBar(stringResource(R.string.nav_close_day), onBack = onBack) },
@@ -328,17 +346,17 @@ fun CloseDayScreen(onBack: () -> Unit, onBackup: () -> Unit = {}) {
             }
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = vm::print, enabled = !printing, modifier = Modifier.weight(1f)) {
-                        if (printing) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp) else {
-                            Icon(Icons.Filled.Print, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text(stringResource(R.string.close_print))
-                        }
-                    }
-                    OutlinedButton(onClick = { shareRequest++ }, modifier = Modifier.weight(1f)) {
-                        Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                    OutlinedButton(onClick = vm::openSlip, modifier = Modifier.weight(1f)) {
+                        Icon(Icons.Filled.Print, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text(stringResource(R.string.close_share))
+                        Text(stringResource(R.string.close_print))
+                    }
+                    OutlinedButton(onClick = { shareRequest++ }, enabled = !preparing, modifier = Modifier.weight(1f)) {
+                        if (preparing) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp) else {
+                            Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(stringResource(R.string.close_share))
+                        }
                     }
                 }
             }

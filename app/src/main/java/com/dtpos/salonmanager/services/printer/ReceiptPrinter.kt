@@ -61,6 +61,18 @@ class ReceiptPrinter(
         return transmit(settings, buildBytes(lines, settings, logoPath = null), copies = 1)
     }
 
+    /** The paper the printer is set to (58 mm unless changed in Printer settings). */
+    suspend fun paper(): PaperWidth = settingsStore.current().paper
+
+    /**
+     * A slip (Close Day, staff payment, udhaar payment) as the printer prints it: rendered at the
+     * paper's dot width, black on white. The preview shows it and WhatsApp / share send it.
+     */
+    suspend fun slipBitmap(lines: List<PrintLine>): Bitmap {
+        val dots = settingsStore.current().paper.dots
+        return withContext(Dispatchers.Default) { ReceiptCanvasRenderer(dots, textSizePx = dots / 17f).renderBitmap(lines, null) }
+    }
+
     /**
      * Context for slip labels: English when a text-mode printer would get Urdu (its built-in
      * font has Latin letters only), otherwise the app language.

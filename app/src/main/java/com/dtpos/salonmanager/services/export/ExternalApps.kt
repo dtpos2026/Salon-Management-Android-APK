@@ -1,7 +1,9 @@
 package com.dtpos.salonmanager.services.export
 
+import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -128,14 +130,29 @@ object ExternalApps {
         false
     }
 
+    /** The screen behind [context] (Compose dialogs and language wrappers hide it), if any. */
+    fun activityOf(context: Context): Activity? {
+        var current: Context? = context
+        while (current is ContextWrapper) {
+            if (current is Activity) return current
+            current = current.baseContext
+        }
+        return null
+    }
+
+    /**
+     * Started from the screen itself, like Android's own share sheet does. A separate task
+     * (FLAG_ACTIVITY_NEW_TASK) is only used without a screen: some phones silently drop a
+     * hand-off into WhatsApp's already running task, so the button seemed to do nothing.
+     */
     private fun start(context: Context, intent: Intent): Boolean = try {
-        context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        val activity = activityOf(context)
+        if (activity != null) activity.startActivity(intent) else context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         true
     } catch (e: ActivityNotFoundException) {
         false
-    } catch (e: SecurityException) {
-        false
-    } catch (e: IllegalArgumentException) {
+    } catch (e: RuntimeException) {
+        // SecurityException, a refused URI, or another app's crash on launch: try the next way.
         false
     }
 }

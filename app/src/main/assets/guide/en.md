@@ -22,6 +22,7 @@
 - Dashboard > Udhaar shows who owes how much.
 - WhatsApp or SMS opens with the reminder ready; you press Send. The app never says "sent" for you.
 - When the customer pays, press Received: enter the amount and choose Cash (goes into today's cash drawer) or Online and the JazzCash / EasyPaisa / bank account. Every payment is listed; part payments are fine.
+- After saving, the payment receipt opens (58 / 80 mm as your printer): Print, WhatsApp the thank-you message with the remaining balance (or "fully paid") to the customer's number, or Share. "Paid receipt" on the bill opens it again.
 
 ## Receipt: print, WhatsApp, picture
 - After a sale the receipt opens. Print it, save PNG / JPEG, share it or send it on WhatsApp.
@@ -63,6 +64,7 @@
 ## Close Day
 - At night open Close day. Check sales, customers, cash, each account, udhaar, staff commission, owner's work and expenses.
 - Count the cash in the drawer and enter it; the app shows short or extra money. Press Close day.
+- Print slip shows the report as it prints (58 / 80 mm) with Print, WhatsApp and Share; Share sends the same picture to any app.
 - Print the report on 58 / 80 mm or share it. After closing, new sales count for the next day so the dashboard starts from zero.
 - Closed by mistake? Open Close day and press Reopen day.
 

@@ -109,4 +109,45 @@ class ShareMessagesTest {
         assertTrue(text, text.contains("Balance due: Rs. 2,500"))
         assertFalse(text, text.contains("Paid:"))
     }
+
+    private val paidLabels = ShareMessages.DuePaidLabels(
+        greeting = "Assalam o Alaikum Ali,", intro = "Payment received at Royal Barber Shop.", receipt = "Receipt", note = "Note",
+        received = "Received", bill = "Bill", paidTotal = "Paid so far", balance = "Remaining udhaar",
+        fullyPaid = "Your udhaar is fully paid.", thanks = "Thank you!",
+    )
+
+    @Test
+    fun `udhaar part payment thanks the customer and shows what is still due`() {
+        val text = ShareMessages.duePaid(
+            paidLabels, money, fromSale = true, reference = "SAL-000123", date = "09 Oct 2026",
+            receivedMinor = 40_000, method = "JazzCash", billMinor = 100_000, paidMinor = 40_000,
+        )
+        assertEquals(
+            listOf(
+                "Assalam o Alaikum Ali,",
+                "Payment received at Royal Barber Shop.",
+                "",
+                "Receipt SAL-000123",
+                "Received: Rs. 400 (JazzCash) · 09 Oct 2026",
+                "Bill: Rs. 1,000",
+                "Paid so far: Rs. 400",
+                "Remaining udhaar: Rs. 600",
+                "",
+                "Thank you!",
+            ).joinToString("\n"),
+            text,
+        )
+    }
+
+    @Test
+    fun `last udhaar payment says it is fully paid`() {
+        val text = ShareMessages.duePaid(
+            paidLabels, money, fromSale = false, reference = "Facial", date = "09 Oct 2026",
+            receivedMinor = 60_000, method = "Cash", billMinor = 100_000, paidMinor = 100_000,
+        )
+        assertTrue(text, text.contains("Note: Facial"))
+        assertTrue(text, text.contains("Received: Rs. 600 (Cash)"))
+        assertTrue(text, text.contains("Your udhaar is fully paid."))
+        assertFalse(text, text.contains("Remaining udhaar"))
+    }
 }

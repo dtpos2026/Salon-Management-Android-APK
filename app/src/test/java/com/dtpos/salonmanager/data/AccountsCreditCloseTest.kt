@@ -198,6 +198,45 @@ class AccountsCreditCloseTest {
     }
 
     @Test
+    fun `each udhaar payment has a receipt with what was still due after it`() = runTest {
+        val jazz = (accounts.save(null, "JazzCash", AccountKind.WALLET, null, "0300-1111111") as DataResult.Success).data
+        val id = (dues.add(null, "Bilal", "0300-2222222", 100_000, "SAL-000009") as DataResult.Success).data
+        dues.receivePayment(id, 30_000, PaymentMethod.BANK, jazz)
+        dues.receivePayment(id, 20_000, PaymentMethod.CASH, null)
+        val payments = dues.observePayments(id).first().sortedBy { it.id }
+
+        // The latest receipt (shown right after saving): paid 50,000 of 100,000.
+        val latest = dues.receiptOf(id, null)!!
+        assertEquals(payments.last().id, latest.payment.id)
+        assertEquals(50_000L, latest.paidSoFarMinor)
+        assertEquals(50_000L, latest.balanceAfterMinor)
+        // An earlier receipt shows the bill as it was then.
+        val first = dues.receiptOf(id, payments.first().id)!!
+        assertEquals(30_000L, first.payment.amountMinor)
+        assertEquals("JazzCash", first.payment.paymentAccountName)
+        assertEquals(30_000L, first.paidSoFarMinor)
+        assertEquals(70_000L, first.balanceAfterMinor)
+
+        // The printed slip: customer, amount, how, and the balance; FULLY PAID after the last one.
+        val res = ApplicationProvider.getApplicationContext<Application>()
+        val money = com.dtpos.salonmanager.core.util.CurrencyFormatter()
+        val partText = com.dtpos.salonmanager.services.printer.Slips.asText(
+            com.dtpos.salonmanager.services.printer.Slips.duePayment(first.due, first.payment, first.paidSoFarMinor, "Royal Cuts", res, money),
+        )
+        assertTrue(partText, partText.contains("Bilal") && partText.contains("Rs. 300") && partText.contains("JazzCash") && partText.contains("700"))
+        dues.receivePayment(id, 50_000, PaymentMethod.CASH, null)
+        val last = dues.receiptOf(id, null)!!
+        assertEquals(0L, last.balanceAfterMinor)
+        val fullText = com.dtpos.salonmanager.services.printer.Slips.asText(
+            com.dtpos.salonmanager.services.printer.Slips.duePayment(last.due, last.payment, last.paidSoFarMinor, "Royal Cuts", res, money),
+        )
+        assertTrue(fullText, fullText.contains(res.getString(com.dtpos.salonmanager.R.string.due_slip_full)))
+        // No payment yet: no receipt.
+        val fresh = (dues.add(null, "Ali", null, 5_000, null) as DataResult.Success).data
+        assertNull(dues.receiptOf(fresh, null))
+    }
+
+    @Test
     fun `udhaar payment edge cases`() = runTest {
         val id = (dues.add(null, "Kamran", null, 50_000, null) as DataResult.Success).data
         assertEquals(DataResult.Failure(DataError.INVALID), dues.receivePayment(id, 0, PaymentMethod.CASH, null))

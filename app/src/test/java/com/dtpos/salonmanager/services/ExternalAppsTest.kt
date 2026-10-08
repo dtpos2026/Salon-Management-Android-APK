@@ -9,20 +9,28 @@ import android.content.IntentFilter
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.net.Uri
+import android.view.ContextThemeWrapper
+import androidx.activity.ComponentActivity
+import androidx.lifecycle.lifecycleScope
 import com.dtpos.salonmanager.R
+import com.dtpos.salonmanager.presentation.common.WhatsAppLauncher
 import com.dtpos.salonmanager.presentation.common.showWhatsAppResult
 import com.dtpos.salonmanager.services.export.ExternalApps
 import com.dtpos.salonmanager.services.export.WhatsAppResult
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowLooper
 import org.robolectric.shadows.ShadowToast
+import java.util.concurrent.TimeUnit
 
 /**
  * What every WhatsApp / SMS button hands to Android: the right app, the customer's number and
@@ -140,5 +148,50 @@ class ExternalAppsTest {
         assertEquals(Intent.ACTION_SENDTO, intent.action)
         assertEquals("smsto", intent.data?.scheme)
         assertEquals(message, intent.getStringExtra("sms_body"))
+    }
+
+    private fun textWhatsApp() = installApp("com.whatsapp", IntentFilter(Intent.ACTION_SEND).apply { addDataType("text/plain") })
+
+    @Test
+    fun `from a screen WhatsApp opens like the share sheet does, without a separate task`() {
+        textWhatsApp()
+        val screen = Robolectric.buildActivity(ComponentActivity::class.java).setup().get()
+        // Compose dialogs and the language setting wrap the screen's context.
+        assertEquals(WhatsAppResult.WHATSAPP, ExternalApps.whatsAppText(ContextThemeWrapper(screen, 0), null, message))
+        val intent = shadowOf(screen).nextStartedActivity
+        assertEquals("com.whatsapp", intent.`package`)
+        assertEquals(message, intent.getStringExtra(Intent.EXTRA_TEXT))
+        assertEquals(0, intent.flags and Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+
+    @Test
+    fun `when WhatsApp does not come to the front the share sheet opens instead`() {
+        textWhatsApp()
+        installApp("com.android.intentresolver", IntentFilter(Intent.ACTION_CHOOSER))
+        val screen = Robolectric.buildActivity(ComponentActivity::class.java).setup().get()
+        val launcher = WhatsAppLauncher(screen, screen.lifecycleScope)
+        assertEquals(WhatsAppResult.WHATSAPP, launcher.text(null, message))
+        assertEquals("com.whatsapp", shadowOf(screen).nextStartedActivity.`package`)
+        // The screen stayed in front (the phone dropped the hand-off): after the wait the share sheet opens.
+        ShadowLooper.idleMainLooper(WhatsAppLauncher.OPEN_CHECK_MS + 100, TimeUnit.MILLISECONDS)
+        val chooser = shadowOf(screen).nextStartedActivity
+        assertEquals(Intent.ACTION_CHOOSER, chooser.action)
+        @Suppress("DEPRECATION")
+        assertEquals(message, chooser.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)?.getStringExtra(Intent.EXTRA_TEXT))
+        assertEquals(app.getString(R.string.whatsapp_not_opened), ShadowToast.getTextOfLatestToast())
+    }
+
+    @Test
+    fun `when WhatsApp opens nothing else opens`() {
+        textWhatsApp()
+        installApp("com.android.intentresolver", IntentFilter(Intent.ACTION_CHOOSER))
+        val controller = Robolectric.buildActivity(ComponentActivity::class.java).setup()
+        val screen = controller.get()
+        val launcher = WhatsAppLauncher(screen, screen.lifecycleScope)
+        assertEquals(WhatsAppResult.WHATSAPP, launcher.text("03001234567", message))
+        shadowOf(screen).nextStartedActivity
+        controller.pause().stop() // WhatsApp covers the screen
+        ShadowLooper.idleMainLooper(WhatsAppLauncher.OPEN_CHECK_MS + 100, TimeUnit.MILLISECONDS)
+        assertNull(shadowOf(screen).nextStartedActivity)
     }
 }

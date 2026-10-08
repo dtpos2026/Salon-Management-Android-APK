@@ -271,6 +271,7 @@ fun languageName(language: AppLanguage): String = stringResource(
 @Composable
 private fun SupportRow(branding: Branding, reference: String) {
     val context = LocalContext.current
+    val whatsApp = com.dtpos.salonmanager.presentation.common.rememberWhatsAppLauncher()
     val whatsapp = branding.whatsapp.ifBlank { branding.contactNumber }
     if (whatsapp.isBlank() && branding.contactNumber.isBlank() && branding.email.isBlank()) return
     val message = stringResource(R.string.support_message, reference)
@@ -281,7 +282,7 @@ private fun SupportRow(branding: Branding, reference: String) {
     ) {
         if (whatsapp.isNotBlank()) {
             GlassOutlinedButton(stringResource(R.string.support_whatsapp), icon = Icons.AutoMirrored.Filled.Chat, onClick = {
-                context.showWhatsAppResult(ExternalApps.whatsAppText(context, whatsapp, message), message)
+                whatsApp.text(whatsapp, message)
             })
         }
         if (branding.contactNumber.isNotBlank()) {

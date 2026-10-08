@@ -36,6 +36,20 @@ object ShareMessages {
         val closing: String,
     )
 
+    data class DuePaidLabels(
+        val greeting: String,
+        /** "Payment received at %1$s" already formatted with the salon's name. */
+        val intro: String,
+        val receipt: String,
+        val note: String,
+        val received: String,
+        val bill: String,
+        val paidTotal: String,
+        val balance: String,
+        val fullyPaid: String,
+        val thanks: String,
+    )
+
     /** Receipt text for WhatsApp / SMS. [paymentLabel] is the payment method or account name. */
     fun receipt(data: ReceiptData, labels: Labels, money: CurrencyFormatter, dateTime: String, paymentLabel: String): String {
         val lines = mutableListOf(labels.greeting)
@@ -85,6 +99,37 @@ object ShareMessages {
         lines += "${labels.balance}: ${money.format((amountMinor - paidMinor).coerceAtLeast(0))}"
         lines += ""
         lines += labels.closing
+        return lines.joinToString("\n")
+    }
+
+    /**
+     * Thank-you message after an udhaar payment: how much was received and how ([method]: cash
+     * or the account), the bill, paid so far, and what is still due or that it is fully paid.
+     */
+    fun duePaid(
+        labels: DuePaidLabels,
+        money: CurrencyFormatter,
+        fromSale: Boolean,
+        reference: String?,
+        date: String,
+        receivedMinor: Long,
+        method: String,
+        billMinor: Long,
+        paidMinor: Long,
+    ): String {
+        val lines = mutableListOf(labels.greeting, labels.intro, "")
+        val ref = reference?.trim().orEmpty()
+        when {
+            fromSale && ref.isNotEmpty() -> lines += "${labels.receipt} $ref"
+            ref.isNotEmpty() -> lines += "${labels.note}: $ref"
+        }
+        lines += "${labels.received}: ${money.format(receivedMinor)} ($method) · $date"
+        lines += "${labels.bill}: ${money.format(billMinor)}"
+        lines += "${labels.paidTotal}: ${money.format(paidMinor)}"
+        val balance = (billMinor - paidMinor).coerceAtLeast(0)
+        lines += if (balance == 0L) labels.fullyPaid else "${labels.balance}: ${money.format(balance)}"
+        lines += ""
+        lines += labels.thanks
         return lines.joinToString("\n")
     }
 }

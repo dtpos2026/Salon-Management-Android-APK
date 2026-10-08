@@ -99,8 +99,6 @@
     <string name="staff_slip_paid">اس مہینے ادا</string>
     <string name="staff_slip_balance">باقی</string>
     <string name="staff_slip_sign">وصول کنندہ: ____________</string>
-    <string name="staff_slip_share">شیئر</string>
-    <string name="staff_slip_print">پرچی پرنٹ</string>
     <string name="staff_commission_short">کمیشن %1$s</string>
     <string name="services_photo_failed">یہ تصویر استعمال نہیں ہو سکی۔ دوسری آزمائیں۔</string>
     <string name="services_photo_add">تصویر لگائیں</string>
@@ -179,8 +177,6 @@
     <string name="dues_history">وصول شدہ ادائیگیاں</string>
     <string name="dues_save_payment">ادائیگی محفوظ کریں</string>
     <string name="staff_slip_failed">پرچی نہیں بن سکی</string>
-    <string name="staff_slip_preview_hint">بالکل وہی جو پرنٹر چھاپے گا۔ پرنٹ کریں یا واٹس ایپ پر بھیجیں۔</string>
-    <string name="staff_slip_no_phone">اس اسٹاف کا فون نمبر محفوظ نہیں: واٹس ایپ میں چیٹ خود چنیں۔ نمبر ایڈٹ میں شامل کریں۔</string>
     <string name="receipt_wa_title">واٹس ایپ پر بھیجیں</string>
     <string name="receipt_wa_text_customer">کسٹمر کی چیٹ میں پیغام</string>
     <string name="receipt_wa_text_choose">پیغام (چیٹ خود چنیں)</string>
@@ -194,4 +190,23 @@
     <string name="location_precise_message">ابھی صرف \"اندازاً\" لوکیشن کی اجازت ہے جو کلومیٹروں دور ہو سکتی ہے۔ نیچے دبائیں اور \"Precise\" چنیں تاکہ DT کو اس فون کی بالکل درست جگہ نظر آئے۔</string>
     <string name="location_precise_settings">ایپ سیٹنگز کھولیں، Permissions › Location دبائیں اور \"Use precise location\" آن کریں، پھر واپس آئیں۔</string>
     <string name="location_allow_precise">درست لوکیشن کی اجازت دیں</string>
+    <string name="slip_preview_hint">پرنٹر %1$s کاغذ پر بالکل یہی پرنٹ کرے گا۔</string>
+    <string name="slip_print">پرنٹ کریں</string>
+    <string name="slip_printed">پرنٹر کو بھیج دیا گیا۔</string>
+    <string name="slip_wa_picture">واٹس ایپ: تصویر + پیغام</string>
+    <string name="slip_wa_text">واٹس ایپ: صرف پیغام</string>
+    <string name="slip_share">شیئر کریں (کوئی بھی ایپ)</string>
+    <string name="slip_no_phone">فون نمبر محفوظ نہیں: واٹس ایپ میں چیٹ خود چنیں۔</string>
+    <string name="slip_phone">واٹس ایپ %1$s کی چیٹ کھولے گا۔</string>
+    <string name="whatsapp_not_opened">اس فون پر واٹس ایپ نہیں کھلا، اس لیے شیئر لسٹ کھولی گئی ہے: اس میں واٹس ایپ دبائیں۔</string>
+    <string name="due_slip_title">ادھار وصولی رسید</string>
+    <string name="due_slip_full">مکمل ادا</string>
+    <string name="due_paid_intro">%1$s میں آپ کی ادائیگی وصول ہو گئی ہے۔</string>
+    <string name="due_paid_received">وصول</string>
+    <string name="due_paid_total">اب تک ادا</string>
+    <string name="due_paid_balance">باقی ادھار</string>
+    <string name="due_paid_full">آپ کا ادھار مکمل ادا ہو گیا ہے۔</string>
+    <string name="due_paid_thanks">شکریہ!</string>
+    <string name="dues_paid_receipt">ادائیگی کی رسید</string>
+    <string name="dues_no_receipt">اس ادھار کی کوئی ادائیگی ابھی درج نہیں۔</string>
 </resources>

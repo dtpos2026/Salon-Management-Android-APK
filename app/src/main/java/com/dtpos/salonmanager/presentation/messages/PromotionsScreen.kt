@@ -110,6 +110,7 @@ fun PromotionsScreen(onBack: () -> Unit) {
     val customers by vm.customers.collectAsStateWithLifecycle()
     val profile by vm.profile.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val whatsApp = com.dtpos.salonmanager.presentation.common.rememberWhatsAppLauncher()
     val salon = profile?.name.orEmpty()
     var template by rememberSaveable { mutableStateOf(PromoTemplate.OFFER) }
     var audience by rememberSaveable { mutableStateOf(PromoAudience.ALL) }
@@ -173,9 +174,7 @@ fun PromotionsScreen(onBack: () -> Unit) {
                         Button(
                             onClick = {
                                 val text = if (greetByName) context.getString(R.string.promo_greeting, row.customer.name) + "\n" + message else message
-                                val result = ExternalApps.whatsAppText(context, row.customer.phone, text)
-                                if (result != WhatsAppResult.FAILED) sent.add(row.customer.id)
-                                context.showWhatsAppResult(result, text)
+                                if (whatsApp.text(row.customer.phone, text) != WhatsAppResult.FAILED) sent.add(row.customer.id)
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = if (done) MaterialTheme.colorScheme.surfaceVariant else WhatsAppGreen, contentColor = if (done) MaterialTheme.colorScheme.onSurfaceVariant else Color.White),
                         ) {

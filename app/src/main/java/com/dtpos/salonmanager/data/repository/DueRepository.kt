@@ -108,6 +108,20 @@ class DueRepository(
     /** Payment history of one bill, newest first. */
     fun observePayments(dueId: Long): Flow<List<DuePaymentEntity>> = dao.observePayments(dueId)
 
+    suspend fun get(id: Long): DueEntity? = dao.get(id)
+
+    /**
+     * A payment with its bill as it stood right after that payment (for its receipt): the bill and
+     * how much had been paid by then, this payment included.
+     */
+    suspend fun receiptOf(dueId: Long, paymentId: Long?): DuePaymentReceipt? {
+        val due = dao.get(dueId) ?: return null
+        val payments = dao.payments(dueId)
+        val payment = (if (paymentId == null) payments.maxByOrNull { it.id } else payments.firstOrNull { it.id == paymentId }) ?: return null
+        val paidLater = payments.filter { it.id > payment.id }.sumOf { it.amountMinor }
+        return DuePaymentReceipt(due, payment, (due.paidMinor - paidLater).coerceIn(0, due.amountMinor))
+    }
+
     /** Today, or tomorrow once today is closed (same rule as sales). */
     private suspend fun businessDay(now: Long): Long {
         var day = DateTimeUtils.toLocalDate(now).toEpochDay()
@@ -123,4 +137,9 @@ class DueRepository(
         dao.delete(id)
         DataResult.Success(Unit)
     }
+}
+
+/** One udhaar payment for its receipt; [paidSoFarMinor] includes this payment. */
+data class DuePaymentReceipt(val due: DueEntity, val payment: DuePaymentEntity, val paidSoFarMinor: Long) {
+    val balanceAfterMinor: Long get() = (due.amountMinor - paidSoFarMinor).coerceAtLeast(0)
 }

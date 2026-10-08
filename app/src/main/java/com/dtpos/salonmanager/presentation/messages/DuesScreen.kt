@@ -2,6 +2,8 @@ package com.dtpos.salonmanager.presentation.messages
 
 import com.dtpos.salonmanager.services.export.WhatsAppResult
 import com.dtpos.salonmanager.presentation.common.dueReminderText
+import com.dtpos.salonmanager.presentation.common.duePaidText
+import com.dtpos.salonmanager.presentation.common.rememberWhatsAppLauncher
 import com.dtpos.salonmanager.presentation.common.showWhatsAppResult
 import android.widget.Toast
 import androidx.compose.foundation.clickable
@@ -79,6 +81,7 @@ import com.dtpos.salonmanager.presentation.components.SalonTopBar
 import com.dtpos.salonmanager.presentation.components.SegmentedChoice
 import com.dtpos.salonmanager.services.export.ExternalApps
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -89,7 +92,7 @@ import kotlinx.coroutines.flow.stateIn
 val WhatsAppGreen = Color(0xFF1FA855)
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class DuesViewModel(container: AppContainer) : BaseViewModel() {
+class DuesViewModel(private val container: AppContainer) : BaseViewModel() {
     private val repo = container.dueRepository
     private val customers = container.customerRepository
 
@@ -139,13 +142,39 @@ class DuesViewModel(container: AppContainer) : BaseViewModel() {
             try {
                 val method = if (online) PaymentMethod.BANK else PaymentMethod.CASH
                 when (val r = repo.receivePayment(due.id, minor, method, if (online) accountId else null)) {
-                    is DataResult.Success -> { showMessage(if (r.data == 0L) R.string.dues_settled else R.string.dues_payment_saved); onDone() }
+                    is DataResult.Success -> {
+                        showMessage(if (r.data == 0L) R.string.dues_settled else R.string.dues_payment_saved)
+                        onDone()
+                        openReceipt(due.id, null)
+                    }
                     is DataResult.Failure -> showMessage(r.error.messageRes)
                 }
             } finally {
                 saving.value = false
             }
         }
+    }
+
+    /** The payment receipt shown before printing / sending (the picture the printer prints). */
+    val slips = com.dtpos.salonmanager.presentation.common.SlipPreviews(container.receiptPrinter, container.context, viewModelScope)
+
+    /**
+     * Receipt of one udhaar payment ([paymentId] null: the latest) with the thank-you message
+     * for the customer's WhatsApp: received, how, paid so far, still due or fully paid.
+     */
+    fun openReceipt(dueId: Long, paymentId: Long?) = launchSafe {
+        val receipt = repo.receiptOf(dueId, paymentId) ?: return@launchSafe showMessage(R.string.dues_no_receipt)
+        val profile = container.businessRepository.profile.first()
+        val salon = profile?.name.orEmpty()
+        val money = com.dtpos.salonmanager.core.util.CurrencyFormatter(profile?.currency ?: com.dtpos.salonmanager.core.util.CurrencyConfig())
+        val lines = com.dtpos.salonmanager.services.printer.Slips.duePayment(
+            receipt.due, receipt.payment, receipt.paidSoFarMinor, salon, container.receiptPrinter.slipContext(), money,
+        )
+        val text = container.context.duePaidText(receipt, salon, money)
+        slips.show(
+            container.context.getString(R.string.due_slip_title), lines, text, receipt.due.customerPhone,
+            "Udhaar_${receipt.due.id}_${receipt.payment.id}",
+        )
     }
 
     fun reminded(due: DueEntity) = launchSafe { repo.markReminded(due.id) }
@@ -167,6 +196,7 @@ fun DuesScreen(onBack: () -> Unit) {
     var paying by remember { mutableStateOf<DueEntity?>(null) }
     var deleting by remember { mutableStateOf<DueEntity?>(null) }
     val context = LocalContext.current
+    val whatsApp = rememberWhatsAppLauncher()
     MessageEffect(vm.messages, snackbar)
 
     val salon = profile?.name.orEmpty()
@@ -220,15 +250,14 @@ fun DuesScreen(onBack: () -> Unit) {
                     format = money::format,
                     onRemind = {
                         val text = context.dueReminderText(due, salon, money)
-                        val result = ExternalApps.whatsAppText(context, due.customerPhone, text)
-                        if (result != WhatsAppResult.FAILED) vm.reminded(due)
-                        context.showWhatsAppResult(result, text)
+                        if (whatsApp.text(due.customerPhone, text) != WhatsAppResult.FAILED) vm.reminded(due)
                     },
                     onSms = {
                         val text = context.dueReminderText(due, salon, money)
                         if (ExternalApps.sms(context, due.customerPhone, text)) vm.reminded(due) else context.showWhatsAppResult(WhatsAppResult.FAILED, text)
                     },
                     onPay = { paying = due },
+                    onReceipt = { vm.openReceipt(due.id, null) },
                     onDelete = { deleting = due },
                 )
             }
@@ -237,6 +266,7 @@ fun DuesScreen(onBack: () -> Unit) {
 
     if (adding) AddDueDialog(vm, money.config.symbol, onDismiss = { adding = false })
     paying?.let { due -> ReceivePaymentDialog(vm, due, onDismiss = { paying = null }) }
+    com.dtpos.salonmanager.presentation.common.SlipPreviewDialog(vm.slips)
     deleting?.let { due ->
         AlertDialog(
             onDismissRequest = { deleting = null },
@@ -254,7 +284,15 @@ fun DuesScreen(onBack: () -> Unit) {
 
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-private fun DueCard(due: DueEntity, format: (Long) -> String, onRemind: () -> Unit, onSms: () -> Unit, onPay: () -> Unit, onDelete: () -> Unit) {
+private fun DueCard(
+    due: DueEntity,
+    format: (Long) -> String,
+    onRemind: () -> Unit,
+    onSms: () -> Unit,
+    onPay: () -> Unit,
+    onReceipt: () -> Unit,
+    onDelete: () -> Unit,
+) {
     val settled = due.settledAt != null
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
@@ -296,7 +334,15 @@ private fun DueCard(due: DueEntity, format: (Long) -> String, onRemind: () -> Un
                     }
                     OutlinedButton(onClick = onSms) { Text(stringResource(R.string.tokens_send_sms)) }
                     OutlinedButton(onClick = onPay) { Text(stringResource(R.string.dues_received)) }
+                    if (due.paidMinor > 0) OutlinedButton(onClick = onReceipt) { Text(stringResource(R.string.dues_paid_receipt)) }
                     IconButton(onClick = onDelete) { Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.action_delete)) }
+                }
+            } else if (due.paidMinor > 0) {
+                Spacer(Modifier.height(10.dp))
+                OutlinedButton(onClick = onReceipt) {
+                    Icon(Icons.AutoMirrored.Filled.ReceiptLong, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.dues_paid_receipt))
                 }
             }
         }
@@ -438,6 +484,9 @@ private fun ReceivePaymentDialog(vm: DuesViewModel, due: DueEntity, onDismiss: (
                                 modifier = Modifier.weight(1f),
                             )
                             Text(money.format(p.amountMinor), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                            IconButton(onClick = { vm.openReceipt(due.id, p.id) }) {
+                                Icon(Icons.AutoMirrored.Filled.ReceiptLong, contentDescription = stringResource(R.string.dues_paid_receipt), modifier = Modifier.size(20.dp))
+                            }
                         }
                     }
                 }

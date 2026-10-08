@@ -22,6 +22,7 @@
 - Dashboard > Udhaar: kis ne kitne dene hain.
 - WhatsApp ya SMS paigham tayyar khulta hai; Send aap dabate hain. App khud "bhej diya" nahi kehti.
 - Jab customer paise de to Wasool dabayein: raqam likhein aur Cash (aaj ke cash drawer mein) ya Online aur JazzCash / EasyPaisa / bank account chunein. Har payment ki list rehti hai; thori thori payment bhi theek hai.
+- Save karne ke baad adaigi ki raseed khulti hai (printer ke mutabiq 58 / 80 mm): Print, customer ke number par shukriya ka WhatsApp paigham baqi raqam ke saath (ya "mukammal ada"), ya Share. Bill par "Adaigi ki raseed" usay dobara kholti hai.
 
 ## Raseed: print, WhatsApp, tasveer
 - Sale ke baad raseed khulti hai. Print karein, PNG / JPEG save karein, share karein ya WhatsApp par bhejein.
@@ -63,6 +64,7 @@
 ## Din band
 - Raat ko Din band kholein. Sale, customer, cash, har account, udhaar, staff commission, malik ka kaam aur kharche dekhein.
 - Daraz ka cash gin kar likhein; app batati hai kam hai ya zyada. Din band dabayein.
+- "Print slip" report waise hi dikhati hai jaise print hogi (58 / 80 mm): Print, WhatsApp aur Share; Share yehi tasveer kisi bhi app mein bhejta hai.
 - Report 58 / 80 mm par print karein ya share karein. Band karne ke baad nayi sale agle din mein jati hai, dashboard sifar se shuru.
 - Ghalti se band ho gaya? Din band kholein aur "Din dobara kholein" dabayein.
 

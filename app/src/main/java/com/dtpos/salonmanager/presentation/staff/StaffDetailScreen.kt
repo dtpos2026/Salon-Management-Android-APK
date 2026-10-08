@@ -1,13 +1,9 @@
 package com.dtpos.salonmanager.presentation.staff
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.border
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -97,8 +93,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import com.dtpos.salonmanager.presentation.common.showWhatsAppResult
-import com.dtpos.salonmanager.services.export.ExternalApps
 import java.time.LocalDate
 
 data class StaffDetailState(
@@ -110,40 +104,20 @@ data class StaffDetailState(
     val payments: List<StaffPaymentEntity> = emptyList(),
 )
 
-private const val SLIP_WIDTH = 576
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class StaffDetailViewModel(private val container: AppContainer, private val staffId: Long) : BaseViewModel() {
     private val repo = container.staffRepository
 
-    val printing = MutableStateFlow(false)
+    /** The staff slip shown before printing / sending (the picture the printer prints). */
+    val slips = com.dtpos.salonmanager.presentation.common.SlipPreviews(container.receiptPrinter, container.context, viewModelScope)
 
-    /** A staff slip shown before printing / sending: the picture, its file and the same text. */
-    data class SlipPreview(val payment: StaffPaymentEntity, val bitmap: android.graphics.Bitmap, val file: java.io.File?, val text: String)
-    val slipPreview = MutableStateFlow<SlipPreview?>(null)
-
-    /** Builds the slip exactly as printed (picture + text) and shows it for Print / WhatsApp / Share. */
+    /** Builds the slip exactly as printed and shows it for Print / WhatsApp / Share. */
     fun openSlip(payment: StaffPaymentEntity) = launchSafe {
-        val lines = slip(payment, container.context) ?: return@launchSafe showMessage(R.string.staff_slip_failed)
-        val preview = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-            val inner = com.dtpos.salonmanager.services.printer.ReceiptCanvasRenderer(SLIP_WIDTH, SLIP_WIDTH / 17f).renderBitmap(lines, null)
-            val pad = 28
-            val bitmap = android.graphics.Bitmap.createBitmap(inner.width + pad * 2, inner.height + pad * 2, android.graphics.Bitmap.Config.ARGB_8888)
-            android.graphics.Canvas(bitmap).apply {
-                drawColor(android.graphics.Color.WHITE)
-                drawBitmap(inner, pad.toFloat(), pad.toFloat(), null)
-            }
-            val file = try {
-                val dir = java.io.File(container.context.cacheDir, "shared/slips").apply { mkdirs() }
-                java.io.File(dir, "StaffSlip_${payment.id}.png").also { f ->
-                    java.io.FileOutputStream(f).use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
-                }
-            } catch (e: Exception) {
-                null
-            }
-            SlipPreview(payment, bitmap, file, com.dtpos.salonmanager.services.printer.Slips.asText(lines))
-        }
-        slipPreview.value = preview
+        val staff = repo.get(staffId) ?: return@launchSafe showMessage(R.string.staff_slip_failed)
+        val lines = slip(payment, container.receiptPrinter.slipContext()) ?: return@launchSafe showMessage(R.string.staff_slip_failed)
+        val text = com.dtpos.salonmanager.services.printer.Slips.asText(slip(payment, container.context) ?: lines)
+        slips.show(container.context.getString(R.string.staff_slip_title), lines, text, staff.phone, "StaffSlip_${payment.id}")
     }
 
     private suspend fun slip(payment: StaffPaymentEntity, res: android.content.Context): List<com.dtpos.salonmanager.services.printer.PrintLine>? {
@@ -154,23 +128,6 @@ class StaffDetailViewModel(private val container: AppContainer, private val staf
         val profile = container.businessRepository.profile.first()
         val money = com.dtpos.salonmanager.core.util.CurrencyFormatter(profile?.currency ?: com.dtpos.salonmanager.core.util.CurrencyConfig())
         return com.dtpos.salonmanager.services.printer.Slips.staffPayment(payment, staff, settlement, profile?.name.orEmpty(), res, money)
-    }
-
-    /** Prints the staff payment slip (name, type, amount, this month's balance, signature line). */
-    fun printSlip(payment: StaffPaymentEntity) {
-        if (printing.value) return
-        printing.value = true
-        launchSafe {
-            try {
-                val lines = slip(payment, container.receiptPrinter.slipContext()) ?: return@launchSafe
-                when (val result = container.receiptPrinter.printLines(lines)) {
-                    com.dtpos.salonmanager.services.printer.PrintResult.Success -> showMessage(R.string.print_success)
-                    is com.dtpos.salonmanager.services.printer.PrintResult.Failure -> showMessage(result.error.messageRes)
-                }
-            } finally {
-                printing.value = false
-            }
-        }
     }
 
     private val month = MutableStateFlow(DateTimeUtils.monthStart(DateTimeUtils.today()))
@@ -236,8 +193,6 @@ fun StaffDetailScreen(staffId: Long, onBack: () -> Unit, onEdit: () -> Unit) {
     var deletePayment by remember { mutableStateOf<StaffPaymentEntity?>(null) }
     val money = LocalMoney.current
     MessageEffect(vm.messages, snackbar)
-    val slip by vm.slipPreview.collectAsStateWithLifecycle()
-    val shareTitle = stringResource(R.string.staff_slip_share)
 
     Scaffold(
         topBar = {
@@ -371,7 +326,7 @@ fun StaffDetailScreen(staffId: Long, onBack: () -> Unit, onEdit: () -> Unit) {
         }
     }
 
-    slip?.let { preview -> StaffSlipDialog(vm, preview, state.staff?.phone, shareTitle) }
+    com.dtpos.salonmanager.presentation.common.SlipPreviewDialog(vm.slips)
 
     if (showPayment) {
         PaymentDialog(
@@ -448,66 +403,3 @@ private fun PaymentDialog(
     )
 }
 
-/** The staff slip as it will print, with Print, WhatsApp (to the staff member's number) and Share. */
-@Composable
-private fun StaffSlipDialog(vm: StaffDetailViewModel, preview: StaffDetailViewModel.SlipPreview, phone: String?, shareTitle: String) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val printing by vm.printing.collectAsStateWithLifecycle()
-    val uri = remember(preview.file) { preview.file?.let { com.dtpos.salonmanager.services.export.ShareHelper.uriFor(context, it) } }
-    val close = { vm.slipPreview.value = null }
-    androidx.compose.material3.AlertDialog(
-        onDismissRequest = close,
-        title = { Text(stringResource(R.string.staff_slip_title)) },
-        text = {
-            Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(stringResource(R.string.staff_slip_preview_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                androidx.compose.foundation.Image(
-                    bitmap = preview.bitmap.asImageBitmap(),
-                    contentDescription = stringResource(R.string.staff_slip_title),
-                    modifier = Modifier.fillMaxWidth()
-                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, androidx.compose.foundation.shape.RoundedCornerShape(8.dp)),
-                    contentScale = androidx.compose.ui.layout.ContentScale.FillWidth,
-                )
-                androidx.compose.material3.Button(onClick = { vm.printSlip(preview.payment) }, enabled = !printing, modifier = Modifier.fillMaxWidth()) {
-                    if (printing) {
-                        androidx.compose.material3.CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
-                    } else {
-                        Icon(Icons.Filled.Print, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text(stringResource(R.string.staff_slip_print))
-                    }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    androidx.compose.material3.Button(
-                        onClick = { context.showWhatsAppResult(ExternalApps.whatsAppText(context, phone, preview.text, shareTitle), preview.text) },
-                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = com.dtpos.salonmanager.presentation.messages.WhatsAppGreen, contentColor = androidx.compose.ui.graphics.Color.White),
-                        modifier = Modifier.weight(1f),
-                    ) { Text(stringResource(R.string.tokens_send_wa_text), maxLines = 1) }
-                    androidx.compose.material3.OutlinedButton(
-                        onClick = {
-                            val result = if (uri != null) ExternalApps.whatsAppImage(context, uri, "image/png", phone, preview.text, shareTitle)
-                            else ExternalApps.whatsAppText(context, phone, preview.text, shareTitle)
-                            context.showWhatsAppResult(result, preview.text)
-                        },
-                        modifier = Modifier.weight(1f),
-                    ) { Text(stringResource(R.string.tokens_send_wa_image), color = com.dtpos.salonmanager.presentation.messages.WhatsAppGreen, maxLines = 1) }
-                }
-                androidx.compose.material3.OutlinedButton(
-                    onClick = {
-                        val ok = if (uri != null) ExternalApps.shareImage(context, uri, "image/png", preview.text, shareTitle) else ExternalApps.shareText(context, preview.text, shareTitle)
-                        if (!ok) context.showWhatsAppResult(com.dtpos.salonmanager.services.export.WhatsAppResult.FAILED, preview.text)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text(stringResource(R.string.staff_slip_share))
-                }
-                if (phone.isNullOrBlank()) {
-                    Text(stringResource(R.string.staff_slip_no_phone), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-        },
-        confirmButton = { androidx.compose.material3.TextButton(onClick = close) { Text(stringResource(R.string.action_close)) } },
-    )
-}

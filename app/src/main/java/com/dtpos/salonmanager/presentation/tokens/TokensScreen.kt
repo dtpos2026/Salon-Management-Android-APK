@@ -314,6 +314,7 @@ private fun TokenPreviewDialog(
     onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
+    val whatsApp = com.dtpos.salonmanager.presentation.common.rememberWhatsAppLauncher()
     val b = preview.booking
     val message = remember(b.id, preview.turn) { tokenMessage(context, b, salon, preview.turn) }
     val chooser = stringResource(R.string.tokens_send_title)
@@ -364,16 +365,11 @@ private fun TokenPreviewDialog(
                 Text(stringResource(R.string.tokens_send_title), style = MaterialTheme.typography.labelLarge)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(
-                        onClick = { context.showWhatsAppResult(ExternalApps.whatsAppText(context, b.customerPhone, message, chooser), message) },
+                        onClick = { whatsApp.text(b.customerPhone, message, chooser) },
                         modifier = Modifier.weight(1f),
                     ) { Text(stringResource(R.string.tokens_send_wa_text), color = WhatsAppGreen) }
                     OutlinedButton(
-                        onClick = {
-                            val uri = pictureUri()
-                            val result = if (uri != null) ExternalApps.whatsAppImage(context, uri, "image/png", b.customerPhone, message, chooser)
-                            else ExternalApps.whatsAppText(context, b.customerPhone, message, chooser)
-                            context.showWhatsAppResult(result, message)
-                        },
+                        onClick = { whatsApp.image(pictureUri(), b.customerPhone, message, chooser) },
                         modifier = Modifier.weight(1f),
                     ) { Text(stringResource(R.string.tokens_send_wa_image), color = WhatsAppGreen) }
                 }

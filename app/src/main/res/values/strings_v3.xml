@@ -99,8 +99,6 @@
     <string name="staff_slip_paid">Paid this month</string>
     <string name="staff_slip_balance">Balance</string>
     <string name="staff_slip_sign">Received by: ____________</string>
-    <string name="staff_slip_share">Share</string>
-    <string name="staff_slip_print">Print slip</string>
     <string name="staff_commission_short">Commission %1$s</string>
     <string name="services_photo_failed">Could not use this photo. Try another one.</string>
     <string name="services_photo_add">Add photo</string>
@@ -179,8 +177,6 @@
     <string name="dues_history">Payments received</string>
     <string name="dues_save_payment">Save payment</string>
     <string name="staff_slip_failed">Could not make the slip</string>
-    <string name="staff_slip_preview_hint">Exactly what the printer prints. Print it, or send it on WhatsApp.</string>
-    <string name="staff_slip_no_phone">No phone number saved for this staff member: WhatsApp lets you pick the chat. Add the number in Edit.</string>
     <string name="receipt_wa_title">Send on WhatsApp</string>
     <string name="receipt_wa_text_customer">Message to customer\'s chat</string>
     <string name="receipt_wa_text_choose">Message (choose the chat)</string>
@@ -194,4 +190,23 @@
     <string name="location_precise_message">Only \"approximate\" location is allowed, which can be kilometres away. Tap below and choose \"Precise\" so DT sees this phone\'s exact place.</string>
     <string name="location_precise_settings">Open the app settings, tap Permissions › Location and turn on \"Use precise location\", then come back.</string>
     <string name="location_allow_precise">Allow precise location</string>
+    <string name="slip_preview_hint">Exactly what the printer prints on %1$s paper.</string>
+    <string name="slip_print">Print</string>
+    <string name="slip_printed">Sent to the printer.</string>
+    <string name="slip_wa_picture">WhatsApp: picture + message</string>
+    <string name="slip_wa_text">WhatsApp: message only</string>
+    <string name="slip_share">Share (any app)</string>
+    <string name="slip_no_phone">No phone number saved: WhatsApp lets you choose the chat.</string>
+    <string name="slip_phone">WhatsApp opens the chat of %1$s.</string>
+    <string name="whatsapp_not_opened">WhatsApp did not open on this phone, so the share list opened: tap WhatsApp in it.</string>
+    <string name="due_slip_title">UDHAAR PAYMENT RECEIPT</string>
+    <string name="due_slip_full">FULLY PAID</string>
+    <string name="due_paid_intro">Payment received at %1$s.</string>
+    <string name="due_paid_received">Received</string>
+    <string name="due_paid_total">Paid so far</string>
+    <string name="due_paid_balance">Remaining udhaar</string>
+    <string name="due_paid_full">Your udhaar is fully paid.</string>
+    <string name="due_paid_thanks">Thank you!</string>
+    <string name="dues_paid_receipt">Paid receipt</string>
+    <string name="dues_no_receipt">No payment record for this udhaar yet.</string>
 </resources>
