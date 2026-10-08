@@ -279,6 +279,21 @@ export async function getAccount(uid, { cached = false } = {}) {
   return fromSnap(await getDoc(doc(db(), 'accounts', uid)));
 }
 
+/**
+ * The salon account of [uid]; null only when the server confirms it does not exist, and
+ * undefined when that is not known (offline or no answer), so nothing is treated as deleted by mistake.
+ */
+export async function findAccount(uid) {
+  if (accountsStore.isReady && accountsStore.synced) return accountsStore.get(uid);
+  try {
+    const snap = await getDoc(doc(db(), 'accounts', uid));
+    if (snap.exists()) return { id: snap.id, ...snap.data() };
+    return snap.metadata.fromCache ? undefined : null;
+  } catch (e) {
+    return undefined;
+  }
+}
+
 export async function getNotes(uid) {
   const snap = await getDoc(doc(db(), 'adminNotes', uid));
   return snap.exists() ? snap.data().notes || '' : '';
@@ -404,7 +419,7 @@ export async function dismissDeviceRequest(account) {
   });
 }
 
-/** Deletes the online account with its notes, shared sales totals and phone reports (map). */
+/** Deletes the online account with its notes, shared sales totals, phone reports (map) and support chat. */
 export async function deleteAccount(uid) {
   const phones = await devicesOf(uid).catch(() => []);
   await deleteDoc(doc(db(), 'accounts', uid));
@@ -412,7 +427,22 @@ export async function deleteAccount(uid) {
     deleteDoc(doc(db(), 'adminNotes', uid)).catch(() => null),
     deleteDoc(doc(db(), 'stats', uid)).catch(() => null),
     ...phones.map((d) => deleteDeviceReport(d.id).catch(() => null)),
+    deleteSupportThread(uid).catch(() => null),
   ]);
+}
+
+/**
+ * Deletes a salon's whole support conversation (every message and the conversation itself), so it
+ * leaves the Support list for the admin and the salon. If the salon writes again, a new one starts.
+ */
+export async function deleteSupportThread(uid) {
+  const snap = await getDocs(collection(db(), 'support', uid, 'messages'));
+  for (let i = 0; i < snap.docs.length; i += 400) {
+    const batch = writeBatch(db());
+    snap.docs.slice(i, i + 400).forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+  }
+  await deleteDoc(doc(db(), 'support', uid));
 }
 
 // ------------------------------------------------------------------ invoices

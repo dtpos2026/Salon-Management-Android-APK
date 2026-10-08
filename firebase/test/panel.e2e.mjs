@@ -92,6 +92,9 @@ await admin(async (db) => {
   await setDoc(doc(db, `stats/royal1/days/${key(now - DAY)}`), { date: key(now - DAY), salesMinor: 990000, customers: 14, services: 20, cashMinor: 990000, onlineMinor: 0, creditMinor: 0, updatedAt: Timestamp.fromMillis(now - DAY) });
   await setDoc(doc(db, 'support/royal1'), { uid: 'royal1', salonName: 'Royal Cuts', lastMessage: 'Printer not printing', lastFrom: 'user', lastAt: Timestamp.fromMillis(now - 60000), unreadForAdmin: true, unreadForUser: false });
   await setDoc(doc(db, 'support/royal1/messages/m1'), { from: 'user', text: 'Printer not printing', at: Timestamp.fromMillis(now - 60000) });
+  // A conversation left by a salon that was deleted later.
+  await setDoc(doc(db, 'support/gone1'), { uid: 'gone1', salonName: 'Old Salon', lastMessage: 'Hello', lastFrom: 'user', lastAt: Timestamp.fromMillis(now - 9 * DAY), unreadForAdmin: false, unreadForUser: false });
+  await setDoc(doc(db, 'support/gone1/messages/m1'), { from: 'user', text: 'Hello', at: Timestamp.fromMillis(now - 9 * DAY) });
   await setDoc(doc(db, 'config/billing'), {
     companyName: 'Digital Target', phone: '+923451873354', bankAccountTitle: 'TEST ACCOUNT', bankName: 'Test Bank', accountNumber: '0000000000',
   });
@@ -323,6 +326,28 @@ try {
   assert.equal(thread.unreadForUser, true);
   assert.equal(thread.unreadForAdmin, false);
   step('support inbox: salon message shown live, admin reply delivered');
+
+  const threadsBox = page.locator('#threads');
+  await threadsBox.locator('li', { hasText: 'Old Salon' }).getByText('Salon deleted').waitFor();
+  assert.equal(await threadsBox.locator('li', { hasText: 'Royal Cuts' }).getByText('Salon deleted').count(), 0);
+  await page.getByText('1 conversation(s) of salons that no longer exist').waitFor();
+  await page.click('#delete-orphans');
+  await page.click('.modal button[type=submit]');
+  await page.getByText('Old conversations deleted').waitFor();
+  await threadsBox.locator('li', { hasText: 'Old Salon' }).waitFor({ state: 'detached' });
+  assert.equal((await admin(async (db) => getDoc(doc(db, 'support/gone1')))).exists(), false);
+  assert.equal((await admin(async (db) => getDocs(collection(db, 'support/gone1/messages')))).size, 0);
+  step('support inbox: conversations of deleted salons are marked and can be deleted together');
+
+  await page.click('#delete-chat');
+  await page.click('.modal button[type=submit]');
+  await page.getByText('Conversation deleted').waitFor();
+  await threadsBox.locator('li', { hasText: 'Royal Cuts' }).waitFor({ state: 'detached' });
+  await page.getByText('Choose a conversation.').waitFor();
+  assert.equal((await admin(async (db) => getDoc(doc(db, 'support/royal1')))).exists(), false);
+  assert.equal((await admin(async (db) => getDocs(collection(db, 'support/royal1/messages')))).size, 0);
+  await page.getByText('No messages yet').waitFor();
+  step('support inbox: one conversation deleted with all its messages, it leaves the list');
 
   await page.goto(`${base}/index.html#/settings`);
   await page.fill('input[name=appName]', 'DT Salon Management');
