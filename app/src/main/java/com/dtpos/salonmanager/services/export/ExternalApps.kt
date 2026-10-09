@@ -56,18 +56,6 @@ object ExternalApps {
         return if (shareText(context, message, chooserTitle)) WhatsAppResult.OTHER_APP else WhatsAppResult.FAILED
     }
 
-    /**
-     * Sends an image (receipt, token) with [message] as caption through WhatsApp's own Send
-     * screen, where the owner taps the customer's chat (WhatsApp lets apps attach a picture this
-     * way only). Without WhatsApp the Android share sheet opens with the same picture.
-     */
-    @Suppress("UNUSED_PARAMETER")
-    fun whatsAppImage(context: Context, image: Uri, mimeType: String, phone: String?, message: String, chooserTitle: String = "WhatsApp"): WhatsAppResult {
-        if (startInWhatsApp(context) { imageIntent(image, mimeType, message).setPackage(it) }) return WhatsAppResult.WHATSAPP
-        val chooser = Intent.createChooser(imageIntent(image, mimeType, message), chooserTitle)
-        return if (start(context, chooser)) WhatsAppResult.OTHER_APP else WhatsAppResult.FAILED
-    }
-
     /** Android share sheet with plain text (WhatsApp, SMS, Messenger, ...). */
     fun shareText(context: Context, message: String, chooserTitle: String): Boolean {
         val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, message)

@@ -122,7 +122,6 @@
     <string name="tokens_printed">ٹوکن پرنٹ ہو گیا</string>
     <string name="tokens_name">گاہک کا نام</string>
     <string name="tokens_phone">واٹس ایپ / فون (اختیاری)</string>
-    <string name="tokens_service">سروس (اختیاری)</string>
     <string name="tokens_date">تاریخ</string>
     <string name="tokens_time">وقت</string>
     <string name="tokens_slip_title">آپ کا ٹوکن</string>
@@ -138,7 +137,5 @@
     <string name="tokens_preview_hint">پرنٹر بالکل یہی پرنٹ کرے گا۔</string>
     <string name="tokens_send_title">کسٹمر کو بھیجیں</string>
     <string name="tokens_send_wa_text">واٹس ایپ پیغام</string>
-    <string name="tokens_send_wa_image">واٹس ایپ تصویر</string>
     <string name="tokens_send_sms">SMS</string>
-    <string name="tokens_send_share">شیئر…</string>
 </resources>

@@ -3,7 +3,6 @@ package com.dtpos.salonmanager.presentation.common
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.net.Uri
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -38,10 +37,12 @@ fun Context.showWhatsAppResult(result: WhatsAppResult, message: String? = null) 
 }
 
 /**
- * Every WhatsApp button goes through this. It opens WhatsApp and then checks that WhatsApp really
- * came to the front: some phones silently ignore a direct hand-off, so the button seemed to do
- * nothing. When nothing opened within [OPEN_CHECK_MS], the Android share sheet opens with the
- * same message / picture (WhatsApp is in that list) and the owner is told why.
+ * Every WhatsApp button goes through this. It opens WhatsApp with the message and then checks
+ * that WhatsApp really came to the front: some phones silently ignore a direct hand-off, so the
+ * button seemed to do nothing. When nothing opened within [OPEN_CHECK_MS], the Android share
+ * sheet opens with the same message (WhatsApp is in that list) and the owner is told why.
+ * Pictures go through Share only: sending a picture straight to WhatsApp did not work on
+ * salons' phones.
  */
 class WhatsAppLauncher(private val context: Context, private val scope: CoroutineScope) {
 
@@ -51,16 +52,6 @@ class WhatsAppLauncher(private val context: Context, private val scope: Coroutin
         open = { ExternalApps.whatsAppText(context, phone, message, title) },
         fallback = { ExternalApps.shareText(context, message, title) },
     )
-
-    /** A picture (receipt, slip, token) with [message] as caption; without a picture, the message alone. */
-    fun image(image: Uri?, phone: String?, message: String, title: String = "WhatsApp"): WhatsAppResult {
-        if (image == null) return text(phone, message, title)
-        return run(
-            message,
-            open = { ExternalApps.whatsAppImage(context, image, "image/png", phone, message, title) },
-            fallback = { ExternalApps.shareImage(context, image, "image/png", message, title) },
-        )
-    }
 
     private fun run(message: String, open: () -> WhatsAppResult, fallback: () -> Boolean): WhatsAppResult {
         val screen = ExternalApps.activityOf(context) as? LifecycleOwner

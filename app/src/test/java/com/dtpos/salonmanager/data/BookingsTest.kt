@@ -57,6 +57,42 @@ class BookingsTest {
     }
 
     @Test
+    fun `booking for a saved customer with several services, then a quick walk-in token`() = runTest {
+        env.setUp()
+        val customerId = (
+            env.customers.save(
+                com.dtpos.salonmanager.data.repository.CustomerInput("Usman Ali", "0300-7654321", com.dtpos.salonmanager.domain.model.Gender.MALE, null, null, null),
+            ) as DataResult.Success
+            ).data
+
+        // The name and phone fields find the customer by name or by part of the number.
+        assertEquals(listOf(customerId), env.customers.search("usm", 5).first().map { it.customer.id })
+        assertEquals(listOf(customerId), env.customers.search("0300-765", 5).first().map { it.customer.id })
+        assertTrue(env.customers.search("Zz", 5).first().isEmpty())
+
+        val services = com.dtpos.salonmanager.presentation.tokens.TokenDraft.joinServices(listOf("Hair cut", "Beard", "hair cut", " Facial "))
+        assertEquals("Hair cut, Beard, Facial", services)
+        val booked = (bookings.issue(today.plusDays(1), "Usman Ali", "0300-7654321", services, 17 * 60, customerId = customerId) as DataResult.Success).data
+        val saved = bookings.observeDay(today.plusDays(1)).first().single()
+        assertEquals(booked.id, saved.id)
+        assertEquals(customerId, saved.customerId)
+        assertEquals("Usman Ali", saved.customerName)
+        assertEquals("0300-7654321", saved.customerPhone)
+        assertEquals("Hair cut, Beard, Facial", saved.service)
+        assertEquals(17 * 60, saved.timeMinutes)
+        assertEquals(1, saved.tokenNumber)
+
+        // A walk-in today stays separate (no time, its own day's numbers), even with nothing typed.
+        val walkIn = (bookings.issue(today, "", "", "", null) as DataResult.Success).data
+        assertEquals(1, walkIn.tokenNumber)
+        assertNull(walkIn.timeMinutes)
+        assertNull(walkIn.service)
+        assertNull(walkIn.customerPhone)
+        assertEquals("#1", walkIn.customerName)
+        assertEquals(1, bookings.observeDay(today.plusDays(1)).first().size)
+    }
+
+    @Test
     fun `invalid times are refused`() = runTest {
         env.setUp()
         assertTrue(bookings.issue(today, "Ali", null, null, timeMinutes = 25 * 60) is DataResult.Failure)

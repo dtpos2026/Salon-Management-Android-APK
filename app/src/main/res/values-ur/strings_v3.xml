@@ -177,12 +177,6 @@
     <string name="dues_history">وصول شدہ ادائیگیاں</string>
     <string name="dues_save_payment">ادائیگی محفوظ کریں</string>
     <string name="staff_slip_failed">پرچی نہیں بن سکی</string>
-    <string name="receipt_wa_title">واٹس ایپ پر بھیجیں</string>
-    <string name="receipt_wa_text_customer">کسٹمر کی چیٹ میں پیغام</string>
-    <string name="receipt_wa_text_choose">پیغام (چیٹ خود چنیں)</string>
-    <string name="receipt_wa_picture">رسید کی تصویر + پیغام</string>
-    <string name="receipt_wa_hint">پیغام سیدھا کسٹمر کی چیٹ میں کھلتا ہے۔ تصویر کے لیے واٹس ایپ میں کسٹمر کی چیٹ پر ٹیپ کریں۔</string>
-    <string name="receipt_wa_hint_no_phone">اس رسید پر فون نمبر نہیں: واٹس ایپ میں چیٹ چنیں۔</string>
     <string name="dashboard_day_closed_report">رپورٹ</string>
     <string name="close_backup_title">آج کے ڈیٹا کی کاپی رکھیں</string>
     <string name="close_backup_hint">دن بند ہو گیا۔ ابھی بیک اپ بنائیں تاکہ فون گم ہونے پر بھی سیل، اُدھار اور اسٹاف ادائیگیاں محفوظ رہیں۔</string>
@@ -193,9 +187,8 @@
     <string name="slip_preview_hint">پرنٹر %1$s کاغذ پر بالکل یہی پرنٹ کرے گا۔</string>
     <string name="slip_print">پرنٹ کریں</string>
     <string name="slip_printed">پرنٹر کو بھیج دیا گیا۔</string>
-    <string name="slip_wa_picture">واٹس ایپ: تصویر + پیغام</string>
-    <string name="slip_wa_text">واٹس ایپ: صرف پیغام</string>
-    <string name="slip_share">شیئر کریں (کوئی بھی ایپ)</string>
+    <string name="slip_wa_text">واٹس ایپ پیغام</string>
+    <string name="slip_share">تصویر شیئر کریں (واٹس ایپ، کوئی بھی ایپ)</string>
     <string name="slip_no_phone">فون نمبر محفوظ نہیں: واٹس ایپ میں چیٹ خود چنیں۔</string>
     <string name="slip_phone">واٹس ایپ %1$s کی چیٹ کھولے گا۔</string>
     <string name="whatsapp_not_opened">اس فون پر واٹس ایپ نہیں کھلا، اس لیے شیئر لسٹ کھولی گئی ہے: اس میں واٹس ایپ دبائیں۔</string>
@@ -209,4 +202,12 @@
     <string name="due_paid_thanks">شکریہ!</string>
     <string name="dues_paid_receipt">ادائیگی کی رسید</string>
     <string name="dues_no_receipt">اس ادھار کی کوئی ادائیگی ابھی درج نہیں۔</string>
+    <string name="tokens_customer_list">محفوظ کسٹمر چنیں</string>
+    <string name="tokens_customer_saved">محفوظ کسٹمر · %1$d بار آئے</string>
+    <string name="tokens_customer_unlink">یہ کسٹمر نہیں</string>
+    <string name="tokens_customer_search">نام یا فون تلاش کریں</string>
+    <string name="tokens_customer_none">کوئی محفوظ کسٹمر نہیں ملا۔ اسے بند کر کے نام لکھیں: نام ٹوکن پر محفوظ ہو جائے گا۔</string>
+    <string name="tokens_services">سروسز</string>
+    <string name="tokens_service_search">سروس تلاش کریں یا لکھیں (اختیاری)</string>
+    <string name="tokens_service_add">\"%1$s\" شامل کریں</string>
 </resources>

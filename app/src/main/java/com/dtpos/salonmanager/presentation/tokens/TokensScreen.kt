@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ConfirmationNumber
 import androidx.compose.material.icons.filled.Print
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -59,8 +60,6 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -77,10 +76,7 @@ import com.dtpos.salonmanager.presentation.common.BaseViewModel
 import com.dtpos.salonmanager.presentation.common.appViewModel
 import com.dtpos.salonmanager.presentation.common.messageRes
 import com.dtpos.salonmanager.presentation.components.ContentCard
-import com.dtpos.salonmanager.presentation.components.DateField
-import com.dtpos.salonmanager.presentation.components.DropdownField
 import com.dtpos.salonmanager.presentation.components.EmptyState
-import com.dtpos.salonmanager.presentation.components.FormTextField
 import com.dtpos.salonmanager.presentation.components.MessageEffect
 import com.dtpos.salonmanager.presentation.components.SalonTopBar
 import com.dtpos.salonmanager.presentation.messages.WhatsAppGreen
@@ -124,8 +120,31 @@ class TokensViewModel(private val container: AppContainer) : BaseViewModel() {
 
     fun shiftDay(days: Long) { date.value = date.value.plusDays(days) }
 
-    fun issue(day: LocalDate, name: String, phone: String, service: String, timeMinutes: Int?, onDone: () -> Unit) = launchSafe {
-        when (val r = container.bookingRepository.issue(day, name, phone, service, timeMinutes)) {
+    /** Saved customers matching what is typed in the name or phone field (live suggestions). */
+    val customerQuery = MutableStateFlow("")
+    val customerSuggestions: StateFlow<List<com.dtpos.salonmanager.data.database.model.CustomerListRow>> = customerQuery
+        .flatMapLatest { q -> if (q.isSuggestable()) container.customerRepository.search(q, limit = 5) else kotlinx.coroutines.flow.flowOf(emptyList()) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** The full customer list (the list icon): searchable by name or phone. */
+    val pickerQuery = MutableStateFlow("")
+    val pickerResults: StateFlow<List<com.dtpos.salonmanager.data.database.model.CustomerListRow>> = pickerQuery
+        .flatMapLatest { q -> container.customerRepository.search(q, limit = 100) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Services of the menu, for the service suggestions. */
+    val services: StateFlow<List<com.dtpos.salonmanager.data.database.entities.ServiceEntity>> = container.serviceRepository.observeActive()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /**
+     * Issues a walk-in token ([timeMinutes] null) or an advance booking. [services] are the
+     * chosen menu services and any typed ones; [customerId] links a saved customer.
+     */
+    fun issue(day: LocalDate, draft: TokenDraft, timeMinutes: Int?, onDone: () -> Unit) = launchSafe {
+        val r = container.bookingRepository.issue(
+            day, draft.name, draft.phone, TokenDraft.joinServices(draft.services), timeMinutes, customerId = draft.customerId,
+        )
+        when (r) {
             is DataResult.Success -> {
                 date.value = day
                 container.soundEffects.success()
@@ -276,7 +295,8 @@ fun TokensScreen(onBack: () -> Unit) {
             booking = booking,
             initialDate = if (booking) date.plusDays(if (date == DateTimeUtils.today()) 1 else 0) else DateTimeUtils.today(),
             onDismiss = { creating = null },
-            onSave = { day, name, phone, service, time -> vm.issue(day, name, phone, service, time) { creating = null } },
+            vm = vm,
+            onSave = { day, draft, time -> vm.issue(day, draft, time) { creating = null } },
         )
     }
     preview?.let { p ->
@@ -363,29 +383,28 @@ private fun TokenPreviewDialog(
                     }
                 }
                 Text(stringResource(R.string.tokens_send_title), style = MaterialTheme.typography.labelLarge)
+                // WhatsApp gets the message (the picture goes through Share: WhatsApp is in that list).
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(
                         onClick = { whatsApp.text(b.customerPhone, message, chooser) },
                         modifier = Modifier.weight(1f),
                     ) { Text(stringResource(R.string.tokens_send_wa_text), color = WhatsAppGreen) }
                     OutlinedButton(
-                        onClick = { whatsApp.image(pictureUri(), b.customerPhone, message, chooser) },
-                        modifier = Modifier.weight(1f),
-                    ) { Text(stringResource(R.string.tokens_send_wa_image), color = WhatsAppGreen) }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(
                         onClick = { if (!ExternalApps.sms(context, b.customerPhone, message)) context.showWhatsAppResult(com.dtpos.salonmanager.services.export.WhatsAppResult.FAILED, message) },
                         modifier = Modifier.weight(1f),
                     ) { Text(stringResource(R.string.tokens_send_sms)) }
-                    OutlinedButton(
-                        onClick = {
-                            val uri = pictureUri()
-                            val ok = if (uri != null) ExternalApps.shareImage(context, uri, "image/png", message, chooser) else ExternalApps.shareText(context, message, chooser)
-                            if (!ok) context.showWhatsAppResult(com.dtpos.salonmanager.services.export.WhatsAppResult.FAILED, message)
-                        },
-                        modifier = Modifier.weight(1f),
-                    ) { Text(stringResource(R.string.tokens_send_share)) }
+                }
+                OutlinedButton(
+                    onClick = {
+                        val uri = pictureUri()
+                        val ok = if (uri != null) ExternalApps.shareImage(context, uri, "image/png", message, chooser) else ExternalApps.shareText(context, message, chooser)
+                        if (!ok) context.showWhatsAppResult(com.dtpos.salonmanager.services.export.WhatsAppResult.FAILED, message)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.slip_share))
                 }
             }
         },
@@ -443,35 +462,3 @@ private fun statusLabel(status: BookingStatus): Int = when (status) {
     BookingStatus.CANCELLED -> R.string.tokens_status_cancelled
 }
 
-private val SLOTS: List<Int> = (8 * 60 until 24 * 60 step 15).toList()
-
-@Composable
-private fun NewTokenDialog(
-    booking: Boolean,
-    initialDate: LocalDate,
-    onDismiss: () -> Unit,
-    onSave: (LocalDate, String, String, String, Int?) -> Unit,
-) {
-    var name by remember { mutableStateOf("") }
-    var phone by remember { mutableStateOf("") }
-    var service by remember { mutableStateOf("") }
-    var day by remember { mutableStateOf(initialDate) }
-    var slot by remember { mutableStateOf(17 * 60) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(if (booking) R.string.tokens_book else R.string.tokens_new)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                FormTextField(name, { name = it }, stringResource(R.string.tokens_name), capitalization = KeyboardCapitalization.Words)
-                FormTextField(phone, { phone = it }, stringResource(R.string.tokens_phone), keyboardType = KeyboardType.Phone)
-                FormTextField(service, { service = it }, stringResource(R.string.tokens_service))
-                if (booking) {
-                    DateField(stringResource(R.string.tokens_date), day, { it?.let { d -> day = d } })
-                    DropdownField(stringResource(R.string.tokens_time), SLOTS, slot, { formatSlot(it) }, { slot = it })
-                }
-            }
-        },
-        confirmButton = { Button(onClick = { onSave(if (booking) day else DateTimeUtils.today(), name, phone, service, if (booking) slot else null) }) { Text(stringResource(R.string.action_save)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
-    )
-}

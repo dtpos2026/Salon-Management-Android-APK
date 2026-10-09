@@ -25,7 +25,7 @@
 - After saving, the payment receipt opens (58 / 80 mm as your printer): Print, WhatsApp the thank-you message with the remaining balance (or "fully paid") to the customer's number, or Share. "Paid receipt" on the bill opens it again.
 
 ## Receipt: print, WhatsApp, picture
-- After a sale the receipt opens. Print it, save PNG / JPEG, share it or send it on WhatsApp.
+- After a sale the receipt opens. Print it, save PNG / JPEG, send the message on WhatsApp, or Share the picture (pick WhatsApp in the list).
 - Turn on Auto print in Printer settings to print every bill at once.
 
 ## Correct a wrong bill
@@ -40,7 +40,8 @@
 ## Tokens and advance booking
 - Settings > Tokens and bookings: turn it on.
 - New token gives the next number for today; Book gives a token for a date and time.
-- After a token is made the print preview opens: exactly what the printer prints. Print, send WhatsApp text, WhatsApp picture, SMS or Share.
+- Type 2 letters of the name or 3 digits of the phone: saved customers are suggested; the list icon shows all customers. Pick services from the menu (more than one is fine) or type your own.
+- After a token is made the print preview opens: exactly what the printer prints. Print, WhatsApp message, SMS, or Share picture (pick WhatsApp in the list to send the picture).
 - Call next moves the queue. Today's tokens also show on the dashboard.
 
 ## Printer (Bluetooth or LAN)

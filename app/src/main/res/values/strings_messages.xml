@@ -122,7 +122,6 @@
     <string name="tokens_printed">Token printed</string>
     <string name="tokens_name">Customer name</string>
     <string name="tokens_phone">WhatsApp / phone (optional)</string>
-    <string name="tokens_service">Service (optional)</string>
     <string name="tokens_date">Date</string>
     <string name="tokens_time">Time</string>
     <string name="tokens_slip_title">YOUR TOKEN</string>
@@ -137,8 +136,6 @@ Your turn is coming: token #%2$d at %3$s. Please come now. Thank you!</string>
     <string name="tokens_preview_title">Token #%1$d — print preview</string>
     <string name="tokens_preview_hint">This is exactly what the printer will print.</string>
     <string name="tokens_send_title">Send to customer</string>
-    <string name="tokens_send_wa_text">WhatsApp text</string>
-    <string name="tokens_send_wa_image">WhatsApp picture</string>
+    <string name="tokens_send_wa_text">WhatsApp message</string>
     <string name="tokens_send_sms">SMS</string>
-    <string name="tokens_send_share">Share…</string>
 </resources>

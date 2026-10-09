@@ -153,7 +153,7 @@ object Slips {
             payment.paymentAccountName ?: res.getString(ReceiptPrinter.paymentMethodLabel(payment.paymentMethod)),
         )
         lines += PrintLine.Separator()
-        lines += PrintLine.Columns(res.getString(R.string.due_paid_received), money.format(payment.amountMinor), bold = true, large = true)
+        lines += PrintLine.Columns(res.getString(R.string.due_paid_received), money.format(payment.amountMinor), bold = true)
         lines += PrintLine.Separator()
         lines += PrintLine.Columns(res.getString(R.string.share_bill), money.plain(due.amountMinor))
         lines += PrintLine.Columns(res.getString(R.string.due_paid_total), money.plain(paidSoFarMinor))

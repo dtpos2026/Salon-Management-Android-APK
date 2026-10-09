@@ -177,12 +177,6 @@
     <string name="dues_history">Payments received</string>
     <string name="dues_save_payment">Save payment</string>
     <string name="staff_slip_failed">Could not make the slip</string>
-    <string name="receipt_wa_title">Send on WhatsApp</string>
-    <string name="receipt_wa_text_customer">Message to customer\'s chat</string>
-    <string name="receipt_wa_text_choose">Message (choose the chat)</string>
-    <string name="receipt_wa_picture">Receipt picture + message</string>
-    <string name="receipt_wa_hint">The message opens straight in the customer\'s chat. For the picture, WhatsApp asks you to tap the customer\'s chat.</string>
-    <string name="receipt_wa_hint_no_phone">No phone number on this receipt: choose the chat in WhatsApp.</string>
     <string name="dashboard_day_closed_report">Report</string>
     <string name="close_backup_title">Keep a copy of today</string>
     <string name="close_backup_hint">The day is closed. Back up now so all sales, udhaar and staff payments are safe if the phone is lost.</string>
@@ -193,9 +187,8 @@
     <string name="slip_preview_hint">Exactly what the printer prints on %1$s paper.</string>
     <string name="slip_print">Print</string>
     <string name="slip_printed">Sent to the printer.</string>
-    <string name="slip_wa_picture">WhatsApp: picture + message</string>
-    <string name="slip_wa_text">WhatsApp: message only</string>
-    <string name="slip_share">Share (any app)</string>
+    <string name="slip_wa_text">WhatsApp message</string>
+    <string name="slip_share">Share picture (WhatsApp, any app)</string>
     <string name="slip_no_phone">No phone number saved: WhatsApp lets you choose the chat.</string>
     <string name="slip_phone">WhatsApp opens the chat of %1$s.</string>
     <string name="whatsapp_not_opened">WhatsApp did not open on this phone, so the share list opened: tap WhatsApp in it.</string>
@@ -209,4 +202,12 @@
     <string name="due_paid_thanks">Thank you!</string>
     <string name="dues_paid_receipt">Paid receipt</string>
     <string name="dues_no_receipt">No payment record for this udhaar yet.</string>
+    <string name="tokens_customer_list">Choose a saved customer</string>
+    <string name="tokens_customer_saved">Saved customer · %1$d visits</string>
+    <string name="tokens_customer_unlink">Not this customer</string>
+    <string name="tokens_customer_search">Search name or phone</string>
+    <string name="tokens_customer_none">No saved customer found. Close this and type the name: it is saved on the token.</string>
+    <string name="tokens_services">Services</string>
+    <string name="tokens_service_search">Search or type a service (optional)</string>
+    <string name="tokens_service_add">Add \"%1$s\"</string>
 </resources>

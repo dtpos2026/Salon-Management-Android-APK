@@ -25,7 +25,7 @@
 - Save karne ke baad adaigi ki raseed khulti hai (printer ke mutabiq 58 / 80 mm): Print, customer ke number par shukriya ka WhatsApp paigham baqi raqam ke saath (ya "mukammal ada"), ya Share. Bill par "Adaigi ki raseed" usay dobara kholti hai.
 
 ## Raseed: print, WhatsApp, tasveer
-- Sale ke baad raseed khulti hai. Print karein, PNG / JPEG save karein, share karein ya WhatsApp par bhejein.
+- Sale ke baad raseed khulti hai. Print karein, PNG / JPEG save karein, WhatsApp par paigham bhejein, ya tasveer Share karein (list mein WhatsApp chunein).
 - Printer settings mein Auto print on karein to har bill khud print hoga.
 
 ## Galat bill theek karein
@@ -40,7 +40,8 @@
 ## Token aur advance booking
 - Settings > Token aur booking: on karein.
 - Naya token aaj ka agla number deta hai; Booking kisi tareekh aur waqt ka token deti hai.
-- Token bante hi print preview khulta hai: bilkul wohi jo printer chhapega. Print, WhatsApp text, WhatsApp tasveer, SMS ya Share.
+- Naam ke 2 huroof ya phone ke 3 hindse likhein: mehfooz customer neeche aa jate hain; list ka nishan sab customer dikhata hai. Services menu se chunein (aik se zyada bhi) ya khud likhein.
+- Token bante hi print preview khulta hai: bilkul wohi jo printer chhapega. Print, WhatsApp paigham, SMS, ya tasveer Share karein (list mein WhatsApp chun kar tasveer bhejein).
 - "Agla bulayein" se baari aage barhti hai. Aaj ke token dashboard par bhi nazar aate hain.
 
 ## Printer (Bluetooth ya LAN)

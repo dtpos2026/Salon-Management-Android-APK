@@ -8,7 +8,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
-import android.net.Uri
 import android.view.ContextThemeWrapper
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.lifecycleScope
@@ -121,23 +120,6 @@ class ExternalAppsTest {
         val clipboard = app.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         assertEquals(message, clipboard.primaryClip?.getItemAt(0)?.text?.toString())
         assertEquals(app.getString(R.string.whatsapp_copied), ShadowToast.getTextOfLatestToast())
-    }
-
-    @Test
-    fun `receipt picture opens WhatsApp's Send screen with the message as caption`() {
-        installApp("com.whatsapp", IntentFilter(Intent.ACTION_SEND).apply { addDataType("image/*") })
-        val picture = Uri.parse("content://com.dtpos.salonmanager.files/receipts/SAL-000123.png")
-        val result = ExternalApps.whatsAppImage(app, picture, "image/png", "03001234567", message)
-        assertEquals(WhatsAppResult.WHATSAPP, result)
-        val intent = shadowOf(app).nextStartedActivity
-        assertEquals(Intent.ACTION_SEND, intent.action)
-        assertEquals("com.whatsapp", intent.`package`)
-        assertEquals("image/png", intent.type)
-        @Suppress("DEPRECATION")
-        assertEquals(picture, intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))
-        assertEquals(message, intent.getStringExtra(Intent.EXTRA_TEXT))
-        assertEquals(null, intent.getStringExtra("jid"))
-        assertTrue((intent.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION) != 0)
     }
 
     @Test

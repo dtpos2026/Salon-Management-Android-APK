@@ -129,7 +129,6 @@ class SaleDetailViewModel(
     /** Image actions the screen performs with an Activity context. */
     sealed interface ImageAction {
         data class Share(val file: File) : ImageAction
-        data class WhatsApp(val file: File, val phone: String?, val message: String) : ImageAction
         data class RequestPermission(val format: ReceiptImageFormat) : ImageAction
     }
 
@@ -173,11 +172,6 @@ class SaleDetailViewModel(
     fun shareImage() = export { data ->
         val file = container.receiptExporter.cacheFile(data)
         if (file == null) showMessage(R.string.receipt_image_failed) else imageActions.tryEmit(ImageAction.Share(file))
-    }
-
-    fun sendWhatsApp(message: String) = export { data ->
-        val file = container.receiptExporter.cacheFile(data)
-        if (file == null) showMessage(R.string.receipt_image_failed) else imageActions.tryEmit(ImageAction.WhatsApp(file, data.customerPhone, message))
     }
 
     init {
@@ -244,7 +238,6 @@ fun SaleDetailScreen(
     val context = LocalContext.current
     var showVoid by remember { mutableStateOf(false) }
     /** WhatsApp choice for this receipt: the message text (and phone) when the dialog is open. */
-    var whatsAppChoice by remember { mutableStateOf<Pair<String, String?>?>(null) }
     MessageEffect(vm.messages, snackbar)
     val shareTitle = stringResource(R.string.share_receipt)
     LaunchedEffect(vm) {
@@ -263,8 +256,6 @@ fun SaleDetailScreen(
         vm.imageActions.collect { action ->
             when (action) {
                 is SaleDetailViewModel.ImageAction.Share -> ShareHelper.shareFile(context, action.file, "image/png", shareImageTitle)
-                is SaleDetailViewModel.ImageAction.WhatsApp ->
-                    whatsApp.image(ShareHelper.uriFor(context, action.file), action.phone, action.message, shareImageTitle)
                 is SaleDetailViewModel.ImageAction.RequestPermission -> {
                     pendingFormat = action.format
                     storagePermission.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -351,7 +342,8 @@ fun SaleDetailScreen(
                 onPng = { vm.saveImage(ReceiptImageFormat.PNG) },
                 onJpeg = { vm.saveImage(ReceiptImageFormat.JPEG) },
                 onShare = vm::shareImage,
-                onWhatsApp = { whatsAppChoice = whatsappMessage to data.customerPhone },
+                // The message opens in the customer's chat (or WhatsApp's chat picker without a number).
+                onWhatsApp = { whatsApp.text(data.customerPhone, whatsappMessage, shareImageTitle) },
                 modifier = Modifier.widthIn(max = 420.dp).fillMaxWidth(),
             )
             Row(Modifier.widthIn(max = 420.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -394,39 +386,6 @@ fun SaleDetailScreen(
         )
     }
 
-    whatsAppChoice?.let { (message, phone) ->
-        val number = com.dtpos.salonmanager.core.util.PhoneNumbers.toWhatsApp(phone)
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = { whatsAppChoice = null },
-            icon = { Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null, tint = com.dtpos.salonmanager.presentation.messages.WhatsAppGreen) },
-            title = { Text(stringResource(R.string.receipt_wa_title)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Button(
-                        onClick = {
-                            whatsAppChoice = null
-                            whatsApp.text(phone, message, shareImageTitle)
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = com.dtpos.salonmanager.presentation.messages.WhatsAppGreen, contentColor = androidx.compose.ui.graphics.Color.White),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) { Text(stringResource(if (number != null) R.string.receipt_wa_text_customer else R.string.receipt_wa_text_choose)) }
-                    OutlinedButton(
-                        onClick = {
-                            whatsAppChoice = null
-                            vm.sendWhatsApp(message)
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) { Text(stringResource(R.string.receipt_wa_picture)) }
-                    Text(
-                        stringResource(if (number != null) R.string.receipt_wa_hint else R.string.receipt_wa_hint_no_phone),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            },
-            confirmButton = { TextButton(onClick = { whatsAppChoice = null }) { Text(stringResource(R.string.action_cancel)) } },
-        )
-    }
     if (showVoid) {
         var reason by remember { mutableStateOf("") }
         AlertDialog(

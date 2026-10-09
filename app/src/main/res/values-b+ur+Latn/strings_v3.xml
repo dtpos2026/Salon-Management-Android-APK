@@ -177,12 +177,6 @@
     <string name="dues_history">Wasool shuda payments</string>
     <string name="dues_save_payment">Payment save karein</string>
     <string name="staff_slip_failed">Parchi nahi ban saki</string>
-    <string name="receipt_wa_title">WhatsApp par bhejein</string>
-    <string name="receipt_wa_text_customer">Customer ki chat mein message</string>
-    <string name="receipt_wa_text_choose">Message (chat khud chunein)</string>
-    <string name="receipt_wa_picture">Raseed ki tasveer + message</string>
-    <string name="receipt_wa_hint">Message seedha customer ki chat mein khulta hai. Tasveer ke liye WhatsApp mein customer ki chat par tap karein.</string>
-    <string name="receipt_wa_hint_no_phone">Is raseed par phone number nahi: WhatsApp mein chat chunein.</string>
     <string name="dashboard_day_closed_report">Report</string>
     <string name="close_backup_title">Aaj ke data ki copy rakhein</string>
     <string name="close_backup_hint">Din band ho gaya. Abhi backup banayein taake phone gum hone par bhi sale, udhaar aur staff payments mehfooz rahein.</string>
@@ -193,9 +187,8 @@
     <string name="slip_preview_hint">Printer %1$s kaghaz par bilkul yehi print karega.</string>
     <string name="slip_print">Print karein</string>
     <string name="slip_printed">Printer ko bhej diya gaya.</string>
-    <string name="slip_wa_picture">WhatsApp: tasveer + paigham</string>
-    <string name="slip_wa_text">WhatsApp: sirf paigham</string>
-    <string name="slip_share">Share karein (koi bhi app)</string>
+    <string name="slip_wa_text">WhatsApp paigham</string>
+    <string name="slip_share">Tasveer share karein (WhatsApp, koi bhi app)</string>
     <string name="slip_no_phone">Phone number save nahi: WhatsApp mein chat khud chunein.</string>
     <string name="slip_phone">WhatsApp %1$s ki chat kholega.</string>
     <string name="whatsapp_not_opened">Is phone par WhatsApp nahi khula, is liye share list kholi gayi hai: us mein WhatsApp dabayein.</string>
@@ -209,4 +202,12 @@
     <string name="due_paid_thanks">Shukriya!</string>
     <string name="dues_paid_receipt">Adaigi ki raseed</string>
     <string name="dues_no_receipt">Is udhaar ki koi adaigi abhi darj nahi.</string>
+    <string name="tokens_customer_list">Mehfooz customer chunein</string>
+    <string name="tokens_customer_saved">Mehfooz customer · %1$d baar aaye</string>
+    <string name="tokens_customer_unlink">Yeh customer nahi</string>
+    <string name="tokens_customer_search">Naam ya phone talash karein</string>
+    <string name="tokens_customer_none">Koi mehfooz customer nahi mila. Isay band kar ke naam likhein: naam token par mehfooz ho jayega.</string>
+    <string name="tokens_services">Services</string>
+    <string name="tokens_service_search">Service talash karein ya likhein (ikhtiyari)</string>
+    <string name="tokens_service_add">\"%1$s\" shamil karein</string>
 </resources>

@@ -122,7 +122,6 @@
     <string name="tokens_printed">Token print ho gaya</string>
     <string name="tokens_name">Customer ka naam</string>
     <string name="tokens_phone">WhatsApp / phone (ikhtiyari)</string>
-    <string name="tokens_service">Service (ikhtiyari)</string>
     <string name="tokens_date">Tareekh</string>
     <string name="tokens_time">Waqt</string>
     <string name="tokens_slip_title">AAP KA TOKEN</string>
@@ -137,8 +136,6 @@ Aap ki baari aa rahi hai: token #%2$d, %3$s. Barah-e-karam abhi tashreef layein.
     <string name="tokens_preview_title">Token #%1$d — print preview</string>
     <string name="tokens_preview_hint">Printer bilkul yahi print karega.</string>
     <string name="tokens_send_title">Customer ko bhejein</string>
-    <string name="tokens_send_wa_text">WhatsApp text</string>
-    <string name="tokens_send_wa_image">WhatsApp tasveer</string>
+    <string name="tokens_send_wa_text">WhatsApp paigham</string>
     <string name="tokens_send_sms">SMS</string>
-    <string name="tokens_send_share">Share…</string>
 </resources>

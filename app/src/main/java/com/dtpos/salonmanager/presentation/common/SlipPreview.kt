@@ -19,10 +19,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -139,8 +138,9 @@ class SlipPreviews(private val printer: ReceiptPrinter, private val app: Context
 }
 
 /**
- * The slip as it prints, with Print, WhatsApp (picture or message, to the saved number) and
- * Share. Print errors (no printer set up, printer off) show here, not behind the dialog.
+ * The slip as it prints, with Print, WhatsApp (the message, to the saved number) and Share
+ * (the picture to WhatsApp or any app). Print errors (no printer set up, printer off) show
+ * here, not behind the dialog.
  */
 @Composable
 fun SlipPreviewDialog(previews: SlipPreviews) {
@@ -189,18 +189,13 @@ fun SlipPreviewDialog(previews: SlipPreviews) {
                     null -> Unit
                 }
                 Button(
-                    onClick = { whatsApp.image(uri, p.phone, p.message, title) },
+                    onClick = { whatsApp.text(p.phone, p.message, title) },
                     colors = ButtonDefaults.buttonColors(containerColor = WhatsAppGreen, contentColor = androidx.compose.ui.graphics.Color.White),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Icon(Icons.Filled.Image, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text(stringResource(R.string.slip_wa_picture))
-                }
-                OutlinedButton(onClick = { whatsApp.text(p.phone, p.message, title) }, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Filled.Sms, contentDescription = null, modifier = Modifier.size(18.dp), tint = WhatsAppGreen)
-                    Spacer(Modifier.width(6.dp))
-                    Text(stringResource(R.string.slip_wa_text), color = WhatsAppGreen)
+                    Text(stringResource(R.string.slip_wa_text))
                 }
                 OutlinedButton(
                     onClick = {
