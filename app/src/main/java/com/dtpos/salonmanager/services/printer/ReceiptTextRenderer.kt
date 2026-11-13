@@ -50,11 +50,17 @@ object ReceiptTextRenderer {
         val columns = table.header.size
         val all = listOf(table.header) + table.rows.map { it.cells }
         val numberWidths = (1 until columns).map { c -> all.maxOf { it.getOrElse(c) { "" }.length } }
-        val firstWidth = width - numberWidths.sum() - (columns - 1)
+        val plainFirst = width - numberWidths.sum() - (columns - 1)
+        // Two numbers side by side ("1 1,500") read as one: one more space between the second
+        // and third column when the names still get a reasonable width.
+        val extra = if (columns > 2 && plainFirst - 1 >= 14) 1 else 0
+        val firstWidth = plainFirst - extra
         val out = mutableListOf<RenderedLine>()
 
         fun numbers(cells: List<String>): String =
-            (1 until columns).joinToString("") { c -> " " + cells.getOrElse(c) { "" }.padStart(numberWidths[c - 1]) }
+            (1 until columns).joinToString("") { c ->
+                (if (c == 2) " ".repeat(1 + extra) else " ") + cells.getOrElse(c) { "" }.padStart(numberWidths[c - 1])
+            }
 
         /** First cell wrapped to [w], keeping its leading spaces (indented discount rows). */
         fun name(cell: String, w: Int): List<String> {
