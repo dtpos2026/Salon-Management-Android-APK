@@ -210,4 +210,22 @@
     <string name="tokens_services">Services</string>
     <string name="tokens_service_search">Service talash karein ya likhein (ikhtiyari)</string>
     <string name="tokens_service_add">\"%1$s\" shamil karein</string>
+    <string name="receipt_style_plain">Saada (Text print jaisi)</string>
+    <string name="receipt_style_bold">Bold (bare huroof)</string>
+    <string name="token_style">Token ka design</string>
+    <string name="token_style_hint">Token aise hi print aur share hoga.</string>
+    <string name="token_style_classic">Classic</string>
+    <string name="token_style_big">Bara number</string>
+    <string name="token_style_ticket">Ticket</string>
+    <string name="token_style_compact">Mukhtasar (kaghaz bachaye)</string>
+    <string name="printer_speed">Print ki raftar</string>
+    <string name="printer_speed_fast">Tez</string>
+    <string name="printer_speed_standard">Aam</string>
+    <string name="printer_speed_safe">Mehfooz</string>
+    <string name="printer_speed_fast_hint">Tez: data baghair ruke jata hai aur printer bills ke darmiyan jura rehta hai, is liye agla bill foran shuru hota hai. Un printers ke liye jo saaf chhaapte hain.</string>
+    <string name="printer_speed_standard_hint">Aam: zyada tar printers ke saath chalti hai.</string>
+    <string name="printer_speed_safe_hint">Mehfooz: aahista aur mustahkam, tasveer patli pattiyon mein. Agar bill kharab, adhoore ya aik doosre ke upar chhapein to yeh chunein.</string>
+    <string name="login_feature_offline">Offline chalti hai</string>
+    <string name="login_feature_print">58 / 80 mm print</string>
+    <string name="login_feature_language">اردو · English</string>
 </resources>

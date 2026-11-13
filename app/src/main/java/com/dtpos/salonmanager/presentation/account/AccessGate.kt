@@ -43,6 +43,8 @@ import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material.icons.filled.HourglassTop
 import androidx.compose.material.icons.filled.Language
@@ -76,6 +78,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.runtime.LaunchedEffect
+import com.dtpos.salonmanager.presentation.components.GlassPill
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -153,16 +158,23 @@ fun AccessGate(content: @Composable () -> Unit) {
     val vm = appViewModel { AccessViewModel(it) }
     val state by vm.state.collectAsStateWithLifecycle()
     val fast by com.dtpos.salonmanager.presentation.common.LocalAppContainer.current.uiPreferences.fastMode.collectAsStateWithLifecycle()
-    // Fast mode skips the brand intro animation.
-    var introDone by rememberSaveable { mutableStateOf(IntroState.shown || fast) }
-    if (!introDone) {
-        SystemBarIcons(lightBackground = false)
-        IntroSplash(onFinished = {
-            IntroState.shown = true
-            introDone = true
-        })
-        return
+    // The brand intro plays once per app start (a short one in Fast mode), then fades into the app.
+    var introDone by rememberSaveable { mutableStateOf(IntroState.shown) }
+    androidx.compose.animation.Crossfade(targetState = introDone, animationSpec = tween(if (fast) 150 else 450), label = "intro") { done ->
+        if (!done) {
+            SystemBarIcons(lightBackground = false)
+            IntroSplash(fast = fast, onFinished = {
+                IntroState.shown = true
+                introDone = true
+            })
+        } else {
+            GateScreens(vm, state, fast, content)
+        }
     }
+}
+
+@Composable
+private fun GateScreens(vm: AccessViewModel, state: AccessState, fast: Boolean, content: @Composable () -> Unit) {
     AnimatedContent(
         targetState = state,
         contentKey = { it::class },
@@ -320,6 +332,7 @@ private fun InfoText(info: UiText?) {
 }
 
 /** Email + password: sign in, or create a new login (the salon details form follows). */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun LoginScreen(vm: AccessViewModel) {
     val busy by vm.busy.collectAsStateWithLifecycle()
@@ -330,12 +343,40 @@ private fun LoginScreen(vm: AccessViewModel) {
     var email by rememberSaveable { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirm by remember { mutableStateOf("") }
+    // The logo settles in from above and the card rises in after it.
+    val appear = remember { androidx.compose.animation.core.Animatable(0f) }
+    LaunchedEffect(Unit) { appear.animateTo(1f, tween(700, easing = androidx.compose.animation.core.FastOutSlowInEasing)) }
+    fun part(start: Float): Float = ((appear.value - start) / (1f - start)).coerceIn(0f, 1f)
     GlassPage {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) { LanguageMenu() }
         Spacer(Modifier.height(20.dp))
-        BrandHeader(stringResource(R.string.brand_tagline), compact = creating)
-        Spacer(Modifier.height(28.dp))
-        GlassCard(Modifier.fillMaxWidth()) {
+        BrandHeader(
+            stringResource(R.string.brand_tagline),
+            compact = creating,
+            modifier = Modifier.graphicsLayer {
+                alpha = part(0f)
+                translationY = (1f - part(0f)) * -18.dp.toPx()
+            },
+        )
+        if (!creating) {
+            Spacer(Modifier.height(16.dp))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth().graphicsLayer { alpha = part(0.3f) },
+            ) {
+                GlassPill(stringResource(R.string.login_feature_offline), Icons.Filled.CloudOff)
+                GlassPill(stringResource(R.string.login_feature_print), Icons.Filled.Print)
+                GlassPill(stringResource(R.string.login_feature_language), Icons.Filled.Language)
+            }
+        }
+        Spacer(Modifier.height(24.dp))
+        GlassCard(
+            Modifier.fillMaxWidth().graphicsLayer {
+                alpha = part(0.2f)
+                translationY = (1f - part(0.2f)) * 40.dp.toPx()
+            },
+        ) {
             Text(
                 stringResource(if (creating) R.string.login_create_title else R.string.login_welcome),
                 color = Glass.TextPrimary,
@@ -349,12 +390,12 @@ private fun LoginScreen(vm: AccessViewModel) {
                 fontSize = 15.sp,
             )
             Spacer(Modifier.height(18.dp))
-            GlassTextField(email, { email = it.trim() }, stringResource(R.string.login_email), keyboardType = KeyboardType.Email)
+            GlassTextField(email, { email = it.trim() }, stringResource(R.string.login_email), keyboardType = KeyboardType.Email, leadingIcon = Icons.Filled.Email)
             Spacer(Modifier.height(10.dp))
-            GlassTextField(password, { password = it }, stringResource(R.string.login_password), password = true)
+            GlassTextField(password, { password = it }, stringResource(R.string.login_password), password = true, leadingIcon = Icons.Filled.Lock)
             if (creating) {
                 Spacer(Modifier.height(10.dp))
-                GlassTextField(confirm, { confirm = it }, stringResource(R.string.login_confirm_password), password = true)
+                GlassTextField(confirm, { confirm = it }, stringResource(R.string.login_confirm_password), password = true, leadingIcon = Icons.Filled.Lock)
             }
             Spacer(Modifier.height(18.dp))
             if (creating) {

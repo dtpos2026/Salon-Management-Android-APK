@@ -279,6 +279,7 @@ fun GlassTextField(
     singleLine: Boolean = true,
     /** Hidden input with a show/hide eye button. */
     password: Boolean = false,
+    leadingIcon: ImageVector? = null,
 ) {
     val accent = SalonTheme.glass.accent
     var visible by rememberSaveable { mutableStateOf(false) }
@@ -287,6 +288,7 @@ fun GlassTextField(
         onValueChange = onValueChange,
         label = { Text(label) },
         singleLine = singleLine,
+        leadingIcon = leadingIcon?.let { icon -> { androidx.compose.material3.Icon(icon, contentDescription = null, tint = Glass.TextSecondary) } },
         keyboardOptions = KeyboardOptions(keyboardType = if (password) KeyboardType.Password else keyboardType),
         visualTransformation = if (password && !visible) PasswordVisualTransformation() else VisualTransformation.None,
         trailingIcon = if (!password) null else {
@@ -315,6 +317,24 @@ fun GlassTextField(
         ),
         modifier = modifier.fillMaxWidth(),
     )
+}
+
+/** Small glass pill with an icon: highlights on the sign-in screen. */
+@Composable
+fun GlassPill(text: String, icon: ImageVector, modifier: Modifier = Modifier) {
+    val shape = RoundedCornerShape(50)
+    Row(
+        modifier
+            .clip(shape)
+            .background(Glass.Fill)
+            .border(BorderStroke(1.dp, Glass.Border), shape)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        androidx.compose.material3.Icon(icon, contentDescription = null, tint = SalonTheme.glass.accent, modifier = Modifier.size(15.dp))
+        Spacer(Modifier.width(6.dp))
+        Text(text, color = Glass.TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+    }
 }
 
 /** Small "By Digital Target" footer. */

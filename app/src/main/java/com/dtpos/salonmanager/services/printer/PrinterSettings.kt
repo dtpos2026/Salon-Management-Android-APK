@@ -19,6 +19,22 @@ enum class PaperWidth(val chars: Int, val dots: Int) {
  */
 enum class PrintMode { TEXT, IMAGE }
 
+/**
+ * How fast data goes to the printer.
+ * - FAST: big blocks without pauses, and the Bluetooth connection stays open between prints, so
+ *   the next bill starts at once (no new connection). For good printers.
+ * - STANDARD: medium blocks with short pauses (most printers).
+ * - SAFE: small blocks sent slowly and pictures in thin strips, for printers that print
+ *   pictures garbled, cut short or on top of each other.
+ * [msPerRow] is about how long the printer takes per dot row (8 rows per mm); the next print
+ * waits until the previous one has had that time.
+ */
+enum class PrintSpeed(val chunkBytes: Int, val pauseMs: Long, val bandRows: Int, val msPerRow: Float, val keepConnection: Boolean) {
+    FAST(chunkBytes = 4096, pauseMs = 0, bandRows = 256, msPerRow = 1.6f, keepConnection = true),
+    STANDARD(chunkBytes = 1024, pauseMs = 8, bandRows = 128, msPerRow = 2.6f, keepConnection = false),
+    SAFE(chunkBytes = 256, pauseMs = 30, bandRows = 24, msPerRow = 4.2f, keepConnection = false),
+}
+
 /** Which printer prints: a Bluetooth printer (paired) or a network printer (IP and port). */
 enum class PrinterConnection { BLUETOOTH, LAN }
 
@@ -36,6 +52,8 @@ data class PrinterSettings(
     val connection: PrinterConnection = PrinterConnection.BLUETOOTH,
     val lanHost: String? = null,
     val lanPort: Int = LanPrinterService.DEFAULT_PORT,
+    val speed: PrintSpeed = PrintSpeed.STANDARD,
+    val tokenStyle: com.dtpos.salonmanager.services.export.TokenStyle = com.dtpos.salonmanager.services.export.TokenStyle.CLASSIC,
 ) {
     val isConfigured: Boolean
         get() = when (connection) {
@@ -72,6 +90,8 @@ class PrinterSettingsStore(private val settings: SettingsRepository) {
         settings.putString(SettingKeys.PRINTER_CONNECTION, value.connection.name)
         settings.putString(SettingKeys.PRINTER_LAN_HOST, value.lanHost?.trim()?.ifEmpty { null })
         settings.putInt(SettingKeys.PRINTER_LAN_PORT, value.lanPort.coerceIn(1, 65535))
+        settings.putString(SettingKeys.PRINTER_SPEED, value.speed.name)
+        settings.putString(SettingKeys.PRINTER_TOKEN_STYLE, value.tokenStyle.name)
     }
 
     private fun parse(map: Map<String, String>) = PrinterSettings(
@@ -88,5 +108,8 @@ class PrinterSettingsStore(private val settings: SettingsRepository) {
         connection = map[SettingKeys.PRINTER_CONNECTION]?.let { v -> PrinterConnection.entries.firstOrNull { it.name == v } } ?: PrinterConnection.BLUETOOTH,
         lanHost = map[SettingKeys.PRINTER_LAN_HOST]?.takeIf { it.isNotBlank() },
         lanPort = map[SettingKeys.PRINTER_LAN_PORT]?.toIntOrNull()?.takeIf { it in 1..65535 } ?: LanPrinterService.DEFAULT_PORT,
+        speed = map[SettingKeys.PRINTER_SPEED]?.let { v -> PrintSpeed.entries.firstOrNull { it.name == v } } ?: PrintSpeed.STANDARD,
+        tokenStyle = map[SettingKeys.PRINTER_TOKEN_STYLE]?.let { v -> com.dtpos.salonmanager.services.export.TokenStyle.entries.firstOrNull { it.name == v } }
+            ?: com.dtpos.salonmanager.services.export.TokenStyle.CLASSIC,
     )
 }

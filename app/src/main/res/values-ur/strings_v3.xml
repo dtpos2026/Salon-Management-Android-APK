@@ -210,4 +210,22 @@
     <string name="tokens_services">سروسز</string>
     <string name="tokens_service_search">سروس تلاش کریں یا لکھیں (اختیاری)</string>
     <string name="tokens_service_add">\"%1$s\" شامل کریں</string>
+    <string name="receipt_style_plain">سادہ (ٹیکسٹ پرنٹ جیسی)</string>
+    <string name="receipt_style_bold">بولڈ (بڑے حروف)</string>
+    <string name="token_style">ٹوکن کا ڈیزائن</string>
+    <string name="token_style_hint">ٹوکن ایسے ہی پرنٹ اور شیئر ہوگا۔</string>
+    <string name="token_style_classic">کلاسک</string>
+    <string name="token_style_big">بڑا نمبر</string>
+    <string name="token_style_ticket">ٹکٹ</string>
+    <string name="token_style_compact">مختصر (کاغذ بچائے)</string>
+    <string name="printer_speed">پرنٹ کی رفتار</string>
+    <string name="printer_speed_fast">تیز</string>
+    <string name="printer_speed_standard">عام</string>
+    <string name="printer_speed_safe">محفوظ</string>
+    <string name="printer_speed_fast_hint">تیز: ڈیٹا بغیر رکے جاتا ہے اور پرنٹر بلوں کے درمیان جڑا رہتا ہے، اس لیے اگلا بل فوراً شروع ہوتا ہے۔ ان پرنٹرز کے لیے جو صاف چھاپتے ہیں۔</string>
+    <string name="printer_speed_standard_hint">عام: زیادہ تر پرنٹرز کے ساتھ چلتی ہے۔</string>
+    <string name="printer_speed_safe_hint">محفوظ: آہستہ اور مستحکم، تصویر پتلی پٹیوں میں۔ اگر بل خراب، ادھورے یا ایک دوسرے کے اوپر چھپیں تو یہ چنیں۔</string>
+    <string name="login_feature_offline">آف لائن چلتی ہے</string>
+    <string name="login_feature_print">58 / 80 ملی میٹر پرنٹ</string>
+    <string name="login_feature_language">اردو · English</string>
 </resources>

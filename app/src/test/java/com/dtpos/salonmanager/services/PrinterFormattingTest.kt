@@ -9,6 +9,7 @@ import com.dtpos.salonmanager.services.printer.EscPosBuilder
 import com.dtpos.salonmanager.services.printer.MonochromeImage
 import com.dtpos.salonmanager.services.printer.PrintAlign
 import com.dtpos.salonmanager.services.printer.PrintLine
+import com.dtpos.salonmanager.services.printer.PrintSpeed
 import com.dtpos.salonmanager.services.printer.ReceiptLabels
 import com.dtpos.salonmanager.services.printer.ReceiptLayout
 import com.dtpos.salonmanager.services.printer.ReceiptTextRenderer
@@ -91,13 +92,39 @@ class PrinterFormattingTest {
     }
 
     @Test
-    fun `escpos stream starts with init and ends with cut`() {
+    fun `a job resets styles without ESC @ and ends with a cut`() {
         val rendered = ReceiptTextRenderer.render(ReceiptLayout.build(receipt, labels), 32)
-        val bytes = EscPos.encodeText(rendered, logo = null, feedLines = 3, cut = true)
-        assertEquals(0x1B, bytes[0].toInt())
-        assertEquals('@'.code, bytes[1].toInt())
-        val tail = bytes.takeLast(4).map { it.toInt() and 0xFF }
-        assertEquals(listOf(0x1D, 'V'.code, 66, 0), tail)
+        val bytes = EscPos.encodeText(rendered, logo = null, feedLines = 3, cut = true).map { it.toInt() and 0xFF }
+        // Bold off, normal size, left: the previous bill's settings never carry over.
+        assertEquals(listOf(0x1B, 'E'.code, 0, 0x1D, '!'.code, 0, 0x1B, 'a'.code, 0), bytes.take(9))
+        // No ESC @: it clears the printer's buffer, so a bill still printing was printed over.
+        assertTrue(bytes.windowed(2).none { it == listOf(0x1B, '@'.code) })
+        assertEquals(listOf(0x1D, 'V'.code, 66, 0), bytes.takeLast(4))
+    }
+
+    @Test
+    fun `pictures go in strips of the print speed and paper rows are estimated`() {
+        val image = MonochromeImage(16, 100, BooleanArray(16 * 100))
+        fun strips(speed: PrintSpeed): Int {
+            val bytes = EscPos.encodeImage(image, feedLines = 2, cut = false, bandRows = speed.bandRows).map { it.toInt() and 0xFF }
+            return bytes.windowed(3).count { it == listOf(0x1D, 'v'.code, '0'.code) }
+        }
+        assertEquals(5, strips(PrintSpeed.SAFE)) // 24 + 24 + 24 + 24 + 4 rows
+        assertEquals(1, strips(PrintSpeed.STANDARD))
+        assertEquals(1, strips(PrintSpeed.FAST))
+        assertEquals(100 + 2 * 30, EscPos.imageRows(image, feedLines = 2))
+        val rendered = ReceiptTextRenderer.render(ReceiptLayout.build(receipt, labels), 32)
+        assertTrue(EscPos.textRows(rendered, null, 3) >= rendered.size * 30 + 90)
+        // Safe is slowest and gives the printer the most time; Fast keeps the connection.
+        assertTrue(PrintSpeed.SAFE.msPerRow > PrintSpeed.STANDARD.msPerRow && PrintSpeed.STANDARD.msPerRow > PrintSpeed.FAST.msPerRow)
+        assertTrue(PrintSpeed.FAST.keepConnection && !PrintSpeed.STANDARD.keepConnection && !PrintSpeed.SAFE.keepConnection)
+    }
+
+    @Test
+    fun `darker threshold turns light grey edges of letters black`() {
+        val grey = 0xFF9A9A9A.toInt() // luminance 154: between 128 and 168
+        assertTrue(!MonochromeImage.fromArgb(intArrayOf(grey), 1, 1, dither = false).isBlack(0, 0))
+        assertTrue(MonochromeImage.fromArgb(intArrayOf(grey), 1, 1, dither = false, threshold = 168f).isBlack(0, 0))
     }
 
     @Test

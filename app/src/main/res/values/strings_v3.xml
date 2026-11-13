@@ -210,4 +210,22 @@
     <string name="tokens_services">Services</string>
     <string name="tokens_service_search">Search or type a service (optional)</string>
     <string name="tokens_service_add">Add \"%1$s\"</string>
+    <string name="receipt_style_plain">Plain (like Text print)</string>
+    <string name="receipt_style_bold">Bold (big letters)</string>
+    <string name="token_style">Token design</string>
+    <string name="token_style_hint">The token as it prints and as it is shared.</string>
+    <string name="token_style_classic">Classic</string>
+    <string name="token_style_big">Big number</string>
+    <string name="token_style_ticket">Ticket</string>
+    <string name="token_style_compact">Compact (saves paper)</string>
+    <string name="printer_speed">Print speed</string>
+    <string name="printer_speed_fast">Fast</string>
+    <string name="printer_speed_standard">Standard</string>
+    <string name="printer_speed_safe">Safe</string>
+    <string name="printer_speed_fast_hint">Fast: data goes without pauses and the printer stays connected between bills, so the next bill starts at once. For printers that print cleanly.</string>
+    <string name="printer_speed_standard_hint">Standard: works with most printers.</string>
+    <string name="printer_speed_safe_hint">Safe: slow and steady, pictures in thin strips. Use it if bills print garbled, cut short or on top of each other.</string>
+    <string name="login_feature_offline">Works offline</string>
+    <string name="login_feature_print">58 / 80 mm printing</string>
+    <string name="login_feature_language">اردو · English</string>
 </resources>

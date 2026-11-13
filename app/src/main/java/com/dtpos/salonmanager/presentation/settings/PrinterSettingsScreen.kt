@@ -76,6 +76,8 @@ import com.dtpos.salonmanager.presentation.theme.SalonTheme
 import com.dtpos.salonmanager.services.printer.PaperWidth
 import com.dtpos.salonmanager.services.printer.PrintMode
 import com.dtpos.salonmanager.services.printer.ReceiptStyle
+import com.dtpos.salonmanager.services.printer.PrintSpeed
+import com.dtpos.salonmanager.services.export.TokenStyle
 import com.dtpos.salonmanager.services.printer.PrintResult
 import com.dtpos.salonmanager.services.printer.PrinterDevice
 import com.dtpos.salonmanager.services.printer.PrinterSettings
@@ -388,6 +390,19 @@ fun PrinterSettingsScreen(onBack: () -> Unit) {
                     }
                     Text(stringResource(R.string.receipt_style_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(12.dp))
+                    Text(stringResource(R.string.token_style), style = MaterialTheme.typography.titleSmall)
+                    Spacer(Modifier.height(6.dp))
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TokenStyle.entries.forEach { style ->
+                            FilterChip(
+                                selected = settings.tokenStyle == style,
+                                onClick = { vm.updateOptions { it.copy(tokenStyle = style) } },
+                                label = { Text(stringResource(tokenStyleName(style))) },
+                            )
+                        }
+                    }
+                    Text(stringResource(R.string.token_style_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(12.dp))
                     Text(stringResource(R.string.printer_mode), style = MaterialTheme.typography.titleSmall)
                     Spacer(Modifier.height(6.dp))
                     SegmentedChoice(
@@ -397,6 +412,34 @@ fun PrinterSettingsScreen(onBack: () -> Unit) {
                         onSelect = { m -> vm.updateOptions { it.copy(mode = m) } },
                     )
                     Text(stringResource(R.string.printer_mode_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(12.dp))
+                    Text(stringResource(R.string.printer_speed), style = MaterialTheme.typography.titleSmall)
+                    Spacer(Modifier.height(6.dp))
+                    SegmentedChoice(
+                        options = PrintSpeed.entries.toList(),
+                        selected = settings.speed,
+                        label = {
+                            stringResource(
+                                when (it) {
+                                    PrintSpeed.FAST -> R.string.printer_speed_fast
+                                    PrintSpeed.STANDARD -> R.string.printer_speed_standard
+                                    PrintSpeed.SAFE -> R.string.printer_speed_safe
+                                },
+                            )
+                        },
+                        onSelect = { v -> vm.updateOptions { it.copy(speed = v) } },
+                    )
+                    Text(
+                        stringResource(
+                            when (settings.speed) {
+                                PrintSpeed.FAST -> R.string.printer_speed_fast_hint
+                                PrintSpeed.STANDARD -> R.string.printer_speed_standard_hint
+                                PrintSpeed.SAFE -> R.string.printer_speed_safe_hint
+                            },
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                     Spacer(Modifier.height(8.dp))
                     ToggleRow(stringResource(R.string.printer_auto_print), settings.autoPrint, stringResource(R.string.printer_auto_print_hint)) { v ->
                         vm.updateOptions { it.copy(autoPrint = v) }
@@ -471,4 +514,13 @@ fun receiptStyleName(style: ReceiptStyle): Int = when (style) {
     ReceiptStyle.ELEGANT -> R.string.receipt_style_elegant
     ReceiptStyle.MONO -> R.string.receipt_style_mono
     ReceiptStyle.TABLE -> R.string.receipt_style_table
+    ReceiptStyle.PLAIN -> R.string.receipt_style_plain
+    ReceiptStyle.BOLD -> R.string.receipt_style_bold
+}
+
+fun tokenStyleName(style: TokenStyle): Int = when (style) {
+    TokenStyle.CLASSIC -> R.string.token_style_classic
+    TokenStyle.BIG -> R.string.token_style_big
+    TokenStyle.TICKET -> R.string.token_style_ticket
+    TokenStyle.COMPACT -> R.string.token_style_compact
 }

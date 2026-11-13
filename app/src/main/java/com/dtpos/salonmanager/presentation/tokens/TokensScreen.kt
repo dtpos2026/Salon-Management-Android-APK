@@ -168,7 +168,7 @@ class TokensViewModel(private val container: AppContainer) : BaseViewModel() {
     /** Renders the slip at the printer's paper width and shows it before printing or sending. */
     fun openPreview(booking: BookingEntity, turn: Boolean) = launchSafe {
         val slip = container.receiptPrinter.tokenSlip(booking, profile.value?.name.orEmpty())
-        preview.value = TokenPreview(booking, slip, turn)
+        preview.value = TokenPreview(booking, slip, turn, container.receiptPrinter.tokenStyle())
     }
 
     fun closePreview() {
@@ -193,7 +193,12 @@ class TokensViewModel(private val container: AppContainer) : BaseViewModel() {
 }
 
 /** A token slip ready to print or send; [turn] picks the "your turn" message instead of the confirmation. */
-class TokenPreview(val booking: BookingEntity, val slip: android.graphics.Bitmap, val turn: Boolean)
+class TokenPreview(
+    val booking: BookingEntity,
+    val slip: android.graphics.Bitmap,
+    val turn: Boolean,
+    val style: com.dtpos.salonmanager.services.export.TokenStyle = com.dtpos.salonmanager.services.export.TokenStyle.CLASSIC,
+)
 
 @Composable
 fun TokensScreen(onBack: () -> Unit) {
@@ -351,6 +356,7 @@ private fun TokenPreviewDialog(
             service = b.service,
             footer = context.getString(R.string.tokens_slip_wait),
             accent = accent,
+            style = preview.style,
         )
         return TokenImage.cacheFile(context, image, b.tokenNumber)?.let { ShareHelper.uriFor(context, it) }
     }

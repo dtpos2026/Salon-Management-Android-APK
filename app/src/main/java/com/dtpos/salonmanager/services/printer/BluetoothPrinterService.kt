@@ -62,6 +62,12 @@ class BluetoothPrinterService(private val context: Context) {
 
     private val mutex = Mutex()
 
+    /** FAST speed keeps the printer connected between bills; closed after [KEEP_ALIVE_MS] unused. */
+    private var kept: BluetoothSocket? = null
+    private var keptAddress: String? = null
+    private val closer = Executors.newSingleThreadScheduledExecutor()
+    private var closeTask: java.util.concurrent.ScheduledFuture<*>? = null
+
     private val adapter: BluetoothAdapter?
         get() = try {
             context.getSystemService(BluetoothManager::class.java)?.adapter
@@ -166,9 +172,12 @@ class BluetoothPrinterService(private val context: Context) {
         false
     }
 
-    /** Sends raw ESC/POS bytes to the printer, retrying the connection with fallbacks. */
+    /**
+     * Sends raw ESC/POS bytes to the printer, retrying the connection with fallbacks. [speed] sets
+     * the block size and pauses; with FAST the connection stays open for the next bill.
+     */
     @SuppressLint("MissingPermission")
-    suspend fun send(address: String?, data: ByteArray, copies: Int = 1): PrintResult = withContext(Dispatchers.IO) {
+    suspend fun send(address: String?, data: ByteArray, copies: Int = 1, speed: PrintSpeed = PrintSpeed.STANDARD): PrintResult = withContext(Dispatchers.IO) {
         mutex.withLock {
             val bt = adapter ?: return@withLock PrintResult.Failure(PrinterError.BLUETOOTH_UNSUPPORTED)
             if (!hasPermissions(connectPermissions())) return@withLock PrintResult.Failure(PrinterError.PERMISSION_DENIED)
@@ -188,6 +197,22 @@ class BluetoothPrinterService(private val context: Context) {
                 return@withLock PrintResult.Failure(PrinterError.PERMISSION_DENIED)
             }
 
+            // FAST: reuse the open connection to this printer (no new connection wait).
+            val reusable = kept?.takeIf { speed.keepConnection && keptAddress == address && it.isConnected }
+            if (reusable != null) {
+                cancelClose()
+                try {
+                    repeat(copies.coerceIn(1, 3)) { write(reusable, data, speed, closing = false) }
+                    keepOpen(reusable, address)
+                    return@withLock PrintResult.Success
+                } catch (e: IOException) {
+                    // The printer was switched off or went out of range: connect afresh below.
+                    dropKept()
+                }
+            } else {
+                dropKept()
+            }
+
             var lastError = PrinterError.CONNECTION_FAILED
             repeat(MAX_ATTEMPTS) { attempt ->
                 val socket = try {
@@ -199,13 +224,18 @@ class BluetoothPrinterService(private val context: Context) {
                     null
                 }
                 if (socket != null) {
+                    var keep = false
                     try {
-                        repeat(copies.coerceIn(1, 3)) { write(socket, data) }
+                        repeat(copies.coerceIn(1, 3)) { write(socket, data, speed, closing = !speed.keepConnection) }
+                        if (speed.keepConnection) {
+                            keepOpen(socket, address)
+                            keep = true
+                        }
                         return@withLock PrintResult.Success
                     } catch (e: IOException) {
                         lastError = PrinterError.WRITE_FAILED
                     } finally {
-                        closeQuietly(socket)
+                        if (!keep) closeQuietly(socket)
                     }
                 }
                 if (attempt < MAX_ATTEMPTS - 1) delay(RETRY_DELAY_MS)
@@ -255,19 +285,43 @@ class BluetoothPrinterService(private val context: Context) {
         }
     }
 
-    private fun write(socket: BluetoothSocket, data: ByteArray) {
+    private fun write(socket: BluetoothSocket, data: ByteArray, speed: PrintSpeed, closing: Boolean) {
         val out = socket.outputStream
         var offset = 0
         while (offset < data.size) {
-            val length = minOf(CHUNK_SIZE, data.size - offset)
+            val length = minOf(speed.chunkBytes, data.size - offset)
             out.write(data, offset, length)
             out.flush()
             offset += length
-            // Small pause so printers with tiny input buffers do not drop data.
-            Thread.sleep(CHUNK_PAUSE_MS)
+            // Pause so printers with small input buffers do not drop data (none in FAST).
+            if (speed.pauseMs > 0) Thread.sleep(speed.pauseMs)
         }
-        // Give the printer time to finish before the socket closes.
-        Thread.sleep((data.size / 20L).coerceIn(300L, 2_500L))
+        // Before the connection closes, let the last bytes reach the printer.
+        if (closing) {
+            val wait = if (speed == PrintSpeed.SAFE) (data.size / 8L).coerceIn(600L, 6_000L) else (data.size / 20L).coerceIn(300L, 2_500L)
+            Thread.sleep(wait)
+        }
+    }
+
+    private fun keepOpen(socket: BluetoothSocket, address: String) {
+        kept = socket
+        keptAddress = address
+        cancelClose()
+        closeTask = closer.schedule({
+            kotlinx.coroutines.runBlocking { mutex.withLock { if (kept === socket) dropKept() } }
+        }, KEEP_ALIVE_MS, TimeUnit.MILLISECONDS)
+    }
+
+    private fun cancelClose() {
+        closeTask?.cancel(false)
+        closeTask = null
+    }
+
+    private fun dropKept() {
+        cancelClose()
+        closeQuietly(kept)
+        kept = null
+        keptAddress = null
     }
 
     private fun closeQuietly(socket: BluetoothSocket?) {
@@ -307,7 +361,7 @@ class BluetoothPrinterService(private val context: Context) {
         private const val MAX_ATTEMPTS = 2
         private const val RETRY_DELAY_MS = 800L
         private const val CONNECT_TIMEOUT_MS = 12_000L
-        private const val CHUNK_SIZE = 512
-        private const val CHUNK_PAUSE_MS = 20L
+        /** How long FAST keeps an unused printer connection open. */
+        private const val KEEP_ALIVE_MS = 45_000L
     }
 }

@@ -16,8 +16,9 @@ class MonochromeImage(val width: Int, val height: Int, private val pixels: Boole
         /**
          * Converts ARGB pixels to black/white with Floyd-Steinberg dithering, which keeps
          * logos and photos recognisable on thermal paper. Transparent pixels become white.
+         * Without dithering, pixels darker than [threshold] (0-255) print black.
          */
-        fun fromArgb(argb: IntArray, width: Int, height: Int, dither: Boolean = true): MonochromeImage {
+        fun fromArgb(argb: IntArray, width: Int, height: Int, dither: Boolean = true, threshold: Float = 128f): MonochromeImage {
             require(argb.size == width * height) { "pixel count mismatch" }
             val luminance = FloatArray(argb.size) { i ->
                 val c = argb[i]
@@ -34,7 +35,7 @@ class MonochromeImage(val width: Int, val height: Int, private val pixels: Boole
                 for (x in 0 until width) {
                     val i = y * width + x
                     val old = luminance[i]
-                    val black = old < 128f
+                    val black = old < (if (dither) 128f else threshold)
                     out[i] = black
                     if (!dither) continue
                     val error = old - if (black) 0f else 255f

@@ -34,7 +34,8 @@
 - Void raseed ko poora cancel karta hai (history mein VOID likha rehta hai).
 
 ## Raseed design aur bold
-- Printer settings > Raseed design: Classic, Modern, Minimal, Elegant, Mono (saada parchi) ya Mono table.
+- Printer settings > Raseed design: Classic, Modern, Minimal, Elegant, Mono (saada parchi), Mono table, Saada (Text print jaisi, Urdu bhi) ya Bold (bare huroof, 58 mm par sab se saaf).
+- Token design: Classic, Bara number, Ticket ya Mukhtasar (kaghaz bachaye).
 - Services mein kisi service ka "Naam bold" ya "Qeemat bold" on karein to raseed par numayan hogi.
 
 ## Token aur advance booking
@@ -46,6 +47,7 @@
 
 ## Printer (Bluetooth ya LAN)
 - Settings > Printer. Bluetooth chunein (printer pair kar ke select) ya LAN / Wi-Fi (printer ka IP aur port, aksar 9100).
+- Print ki raftar: Tez (baghair ruke, jura rehta hai: agla bill foran), Aam (zyada tar printers) ya Mehfooz (aahista: agar bill kharab ya aik doosre ke upar chhapein).
 - Connection check aur Test print dabayein. 58 mm ya 80 mm kaghaz chunein.
 - Urdu Image mode mein sahi chhapti hai. Text mode sab se tez hai magar sirf English haroof.
 
@@ -82,7 +84,7 @@
 
 ## Zubaan, theme, awaz, tez mode
 - Settings > App preferences: English, Urdu ya Roman Urdu; light ya dark; rang ka theme; awaz on ya off.
-- Tez mode: purane phone aur rush ke waqt ke liye (shuru ki animation aur screen fade band).
+- Tez mode: purane phone aur rush ke waqt ke liye (shuru ki animation mukhtasar, screen fade band).
 
 ## Account aur phone
 - Aap ka account DT approve karta hai. Naya phone Super Admin se ijazat maangta hai.

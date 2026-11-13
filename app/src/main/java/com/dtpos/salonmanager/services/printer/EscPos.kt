@@ -13,6 +13,17 @@ class EscPosBuilder {
 
     fun initialize() = apply { bytes(ESC, '@'.code) }
 
+    /**
+     * Back to plain left-aligned text, without ESC @. ESC @ also clears the printer's buffer: sent
+     * while the previous bill was still printing, some printers then printed the next picture
+     * on top of the first one. Jobs therefore start with this instead.
+     */
+    fun resetModes() = apply {
+        bytes(ESC, 'E'.code, 0)
+        bytes(GS, '!'.code, 0)
+        bytes(ESC, 'a'.code, 0)
+    }
+
     fun align(align: PrintAlign) = apply {
         bytes(ESC, 'a'.code, when (align) { PrintAlign.LEFT -> 0; PrintAlign.CENTER -> 1; PrintAlign.RIGHT -> 2 })
     }
@@ -93,16 +104,21 @@ object EscPos {
         return sb.toString().toByteArray(Charsets.US_ASCII)
     }
 
+    /** Dot rows a text line takes on paper (24-dot font + line spacing; double height when large). */
+    private const val TEXT_ROW = 30
+    private const val LARGE_ROW = 54
+
     /** Encodes rendered text lines (text print mode). */
     fun encodeText(
         lines: List<RenderedLine>,
         logo: MonochromeImage?,
         feedLines: Int,
         cut: Boolean,
+        bandRows: Int = 128,
     ): ByteArray {
-        val b = EscPosBuilder().initialize()
+        val b = EscPosBuilder().resetModes()
         if (logo != null) {
-            b.align(PrintAlign.CENTER).raster(logo).newLine()
+            b.align(PrintAlign.CENTER).raster(logo, bandRows).newLine()
         }
         for (line in lines) {
             b.align(PrintAlign.LEFT).bold(line.bold).large(line.large)
@@ -115,11 +131,18 @@ object EscPos {
         return b.build()
     }
 
-    /** Encodes a fully rendered receipt image (image print mode, any language). */
-    fun encodeImage(image: MonochromeImage, feedLines: Int, cut: Boolean): ByteArray {
-        val b = EscPosBuilder().initialize().align(PrintAlign.CENTER).raster(image).align(PrintAlign.LEFT)
+    /** Encodes a fully rendered receipt image (image print mode, any language) in strips of [bandRows]. */
+    fun encodeImage(image: MonochromeImage, feedLines: Int, cut: Boolean, bandRows: Int = 128): ByteArray {
+        val b = EscPosBuilder().resetModes().align(PrintAlign.CENTER).raster(image, bandRows).align(PrintAlign.LEFT)
         b.feed(feedLines)
         if (cut) b.cut()
         return b.build()
     }
+
+    /** About how many dot rows of paper a text job prints (for waiting until it has printed). */
+    fun textRows(lines: List<RenderedLine>, logo: MonochromeImage?, feedLines: Int): Int =
+        lines.sumOf { if (it.large) LARGE_ROW else TEXT_ROW } + (logo?.height ?: 0) + feedLines * TEXT_ROW
+
+    /** Dot rows of paper an image job prints. */
+    fun imageRows(image: MonochromeImage, feedLines: Int): Int = image.height + feedLines * TEXT_ROW
 }

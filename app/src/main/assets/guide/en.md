@@ -34,7 +34,8 @@
 - Void cancels a receipt completely (it stays in history as VOID).
 
 ## Receipt designs and bold items
-- Printer settings > Receipt design: Classic, Modern, Minimal, Elegant, Mono (till slip) or Mono table.
+- Printer settings > Receipt design: Classic, Modern, Minimal, Elegant, Mono (till slip), Mono table, Plain (looks like Text print, Urdu too) or Bold (big letters, easiest to read on 58 mm).
+- Token design: Classic, Big number, Ticket or Compact (saves paper).
 - Services: edit a service and turn on "Bold name" or "Bold price" to make it stand out on receipts.
 
 ## Tokens and advance booking
@@ -46,6 +47,7 @@
 
 ## Printer (Bluetooth or LAN)
 - Settings > Printer. Choose Bluetooth (pair the printer, select it) or LAN / Wi-Fi (enter the printer IP and port, usually 9100).
+- Print speed: Fast (no pauses, stays connected: the next bill starts at once), Standard (most printers) or Safe (slow and steady: use it if bills print garbled or on top of each other).
 - Press Check connection and Test print. Choose 58 mm or 80 mm paper.
 - Urdu prints correctly in Image mode. Text mode is fastest but prints English letters only.
 
@@ -82,7 +84,7 @@
 
 ## Language, theme, sound, fast mode
 - Settings > App preferences: English, Urdu or Roman Urdu; light or dark theme; colour theme; sound on or off.
-- Fast mode: for older phones and rush hours (no intro animation, no screen fades).
+- Fast mode: for older phones and rush hours (short intro animation, no screen fades).
 
 ## Account and phones
 - Your account is approved by DT. A new phone asks the Super Admin for approval.

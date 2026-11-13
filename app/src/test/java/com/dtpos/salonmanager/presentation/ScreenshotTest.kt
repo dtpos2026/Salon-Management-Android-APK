@@ -381,6 +381,49 @@ class ScreenshotTest {
         compose.setContent { Text("ok") }
     }
 
+    /** Every receipt and token design exactly as the 58 mm printer gets it (black and white). */
+    @Test
+    fun printDesigns58mm() {
+        val receipt = ReceiptData(
+            saleId = 3, businessName = "Burewala", businessPhone = "03451873354", businessAddress = "Chichawatni",
+            logoPath = null, headerNote = null, footer = null, currency = CurrencyConfig(), showStaff = true, showLogo = false,
+            receiptNumber = "SAL-000002", createdAtMillis = System.currentTimeMillis(), customerName = null, customerPhone = null,
+            items = listOf(
+                ReceiptItem("Hair Color", "Taimoor", 1, 150_000, 0, 150_000),
+                ReceiptItem("Hair Cut", "Taimoor", 1, 50_000, 0, 50_000),
+                ReceiptItem("Hair Styling", "Taimoor", 1, 40_000, 0, 40_000),
+                ReceiptItem("Kids Hair Cut", "Taimoor", 1, 35_000, 0, 35_000),
+                ReceiptItem("Facial", "Taimoor", 1, 150_000, 0, 150_000),
+            ),
+            subtotalMinor = 425_000, itemDiscountMinor = 0, saleDiscountMinor = 0, totalMinor = 425_000,
+            paymentMethod = PaymentMethod.CASH, amountTenderedMinor = null, changeMinor = 0, isVoided = false, voidReason = null,
+        )
+        val labels = container.receiptPrinter.labels(receipt.paymentMethod)
+        fun printed(bitmap: Bitmap): Bitmap {
+            val mono = com.dtpos.salonmanager.services.printer.ReceiptCanvasRenderer.toMonochrome(
+                bitmap, dither = false, threshold = com.dtpos.salonmanager.services.printer.ReceiptPrinter.PRINT_THRESHOLD,
+            )
+            val pixels = IntArray(mono.width * mono.height) { i -> if (mono.isBlack(i % mono.width, i / mono.width)) android.graphics.Color.BLACK else android.graphics.Color.WHITE }
+            return Bitmap.createBitmap(pixels, mono.width, mono.height, Bitmap.Config.ARGB_8888)
+        }
+        ReceiptStyle.entries.forEach { style ->
+            val bitmap = printed(ReceiptImageRenderer(384, forPrinter = true, style = style).render(receipt, labels, logo = null))
+            assertEquals(384, bitmap.width)
+            FileOutputStream(File(outDir, "30-receipt-58mm-${style.name.lowercase()}.png")).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        }
+        com.dtpos.salonmanager.services.export.TokenStyle.entries.forEach { style ->
+            val token = printed(
+                com.dtpos.salonmanager.services.export.TokenImage.render(
+                    salon = "Burewala", title = "Your token", token = 1, name = "TAIMOOR", whenText = "13 Nov 2026",
+                    service = "Beard, Hair Color, Kids Hair Cut, Hair Styling", footer = "Please wait for your number. Thank you!",
+                    accent = android.graphics.Color.BLACK, width = 384, forPrinter = true, style = style,
+                ),
+            )
+            FileOutputStream(File(outDir, "31-token-58mm-${style.name.lowercase()}.png")).use { token.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        }
+        compose.setContent { Text("ok") }
+    }
+
     /** Salon with today's queue (a walk-in and a booking) and a hand-written udhaar. */
     private fun seedSalonWithQueue() {
         seedSalon()

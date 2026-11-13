@@ -10,15 +10,18 @@ import android.graphics.Typeface
 /**
  * Draws receipt [PrintLine]s with Android fonts onto any Canvas (thermal bitmap or PDF page).
  * Unlike the printer's built-in font this supports every script, including Urdu.
+ * [heavy] (thermal printing): every line in bold and bold lines extra thick, so the picture
+ * prints as dark and sharp as the printer's own font.
  */
 class ReceiptCanvasRenderer(
     private val widthPx: Int,
     textSizePx: Float,
     private val typeface: Typeface = Typeface.MONOSPACE,
+    private val heavy: Boolean = false,
 ) {
-    private val normal = paint(textSizePx, bold = false)
-    private val bold = paint(textSizePx, bold = true)
-    private val largeBold = paint(textSizePx * 1.6f, bold = true)
+    private val normal = paint(textSizePx, bold = heavy)
+    private val bold = paint(textSizePx, bold = true).apply { isFakeBoldText = heavy }
+    private val largeBold = paint(textSizePx * 1.6f, bold = true).apply { isFakeBoldText = heavy }
     private val lineGap = textSizePx * 0.35f
 
     private fun paint(size: Float, bold: Boolean) = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -147,10 +150,10 @@ class ReceiptCanvasRenderer(
             return out
         }
 
-        fun toMonochrome(bitmap: Bitmap, dither: Boolean): MonochromeImage {
+        fun toMonochrome(bitmap: Bitmap, dither: Boolean, threshold: Float = 128f): MonochromeImage {
             val pixels = IntArray(bitmap.width * bitmap.height)
             bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
-            return MonochromeImage.fromArgb(pixels, bitmap.width, bitmap.height, dither)
+            return MonochromeImage.fromArgb(pixels, bitmap.width, bitmap.height, dither, threshold)
         }
     }
 }

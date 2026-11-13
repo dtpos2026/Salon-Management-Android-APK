@@ -59,4 +59,45 @@ class ReceiptImageTest {
         )
         assertTrue(urdu.height > 400)
     }
+
+    @Test
+    fun `every receipt design renders on 58 mm paper, on screen and in Urdu`() {
+        com.dtpos.salonmanager.services.printer.ReceiptStyle.entries.forEach { style ->
+            val printed = ReceiptImageRenderer(384, forPrinter = true, style = style).render(receipt(3), labels, null)
+            assertEquals("$style width", 384, printed.width)
+            assertTrue("$style height ${printed.height}", printed.height > 400)
+            val share = ReceiptImageRenderer(ReceiptImageRenderer.SHARE_WIDTH_PX, style = style).render(receipt(2, voided = true), labels, null)
+            assertEquals(720, share.width)
+            val urdu = ReceiptImageRenderer(384, rtl = true, style = style).render(receipt(1), labels.copy(total = "کل رقم"), null)
+            assertTrue("$style urdu", urdu.height > 300)
+        }
+        // BOLD uses bigger letters than CLASSIC, so the same receipt is taller.
+        val classic = ReceiptImageRenderer(384, forPrinter = true).render(receipt(3), labels, null)
+        val bold = ReceiptImageRenderer(384, forPrinter = true, style = com.dtpos.salonmanager.services.printer.ReceiptStyle.BOLD).render(receipt(3), labels, null)
+        assertTrue("bold ${bold.height} classic ${classic.height}", bold.height > classic.height)
+    }
+
+    @Test
+    fun `every token design renders for the printer and for sharing`() {
+        val heights = com.dtpos.salonmanager.services.export.TokenStyle.entries.associateWith { style ->
+            val printed = com.dtpos.salonmanager.services.export.TokenImage.render(
+                salon = "Burewala", title = "Your token", token = 12, name = "Taimoor",
+                whenText = "13 Nov 2026  ·  5:00 PM", service = "Beard, Hair Color, Kids Hair Cut, Hair Styling",
+                footer = "Please wait for your number. Thank you!", accent = android.graphics.Color.BLACK,
+                width = 384, forPrinter = true, style = style,
+            )
+            assertEquals(384, printed.width)
+            val shared = com.dtpos.salonmanager.services.export.TokenImage.render(
+                salon = "Burewala", title = "Your token", token = 128, name = "Ali", whenText = "13 Nov 2026", service = null,
+                footer = "Thank you!", accent = ReceiptImageRenderer.DEFAULT_ACCENT, style = style,
+            )
+            assertEquals(720, shared.width)
+            printed.height
+        }
+        heights.forEach { (style, h) -> assertTrue("$style height $h", h > 150) }
+        // Compact saves paper.
+        val compact = heights.getValue(com.dtpos.salonmanager.services.export.TokenStyle.COMPACT)
+        val classic = heights.getValue(com.dtpos.salonmanager.services.export.TokenStyle.CLASSIC)
+        assertTrue("compact $compact classic $classic", compact < classic * 0.7)
+    }
 }

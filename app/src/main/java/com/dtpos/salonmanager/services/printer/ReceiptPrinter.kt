@@ -14,6 +14,9 @@ import com.dtpos.salonmanager.presentation.tokens.formatSlot
 import com.dtpos.salonmanager.services.branding.LogoStore
 import com.dtpos.salonmanager.services.export.TokenImage
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.util.Locale
@@ -30,6 +33,8 @@ class ReceiptPrinter(
 
     suspend fun receiptStyle(): ReceiptStyle = settingsStore.current().receiptStyle
 
+    suspend fun tokenStyle(): com.dtpos.salonmanager.services.export.TokenStyle = settingsStore.current().tokenStyle
+
     suspend fun printSale(saleId: Long): PrintResult {
         val receipt = saleRepository.buildReceipt(saleId) ?: return PrintResult.Failure(PrinterError.NOTHING_TO_PRINT)
         return printReceipt(receipt)
@@ -38,20 +43,38 @@ class ReceiptPrinter(
     suspend fun printReceipt(receipt: ReceiptData): PrintResult {
         val settings = settingsStore.current()
         if (!settings.isConfigured) return PrintResult.Failure(PrinterError.NO_PRINTER_SELECTED)
-        val bytes = try {
+        val job = try {
             buildReceiptBytes(receipt, settings)
         } catch (e: Exception) {
             return PrintResult.Failure(PrinterError.NOTHING_TO_PRINT)
         } catch (e: OutOfMemoryError) {
             return PrintResult.Failure(PrinterError.NOTHING_TO_PRINT)
         }
-        return transmit(settings, bytes, settings.copies)
+        return transmit(settings, job, settings.copies)
     }
 
-    /** Sends to the active printer: the paired Bluetooth printer or the network (IP / port) printer. */
-    private suspend fun transmit(settings: PrinterSettings, bytes: ByteArray, copies: Int): PrintResult = when (settings.connection) {
-        PrinterConnection.BLUETOOTH -> bluetooth.send(settings.address, bytes, copies)
-        PrinterConnection.LAN -> lan.send(settings.lanHost, settings.lanPort, bytes, copies)
+    /** ESC/POS bytes and about how many dot rows of paper they print. */
+    private class Job(val bytes: ByteArray, val rows: Int)
+
+    /**
+     * Sends to the active printer (Bluetooth or network), one job at a time. Except at FAST speed,
+     * a job waits until the previous one has had time to print, so bills never mix on paper.
+     */
+    private suspend fun transmit(settings: PrinterSettings, job: Job, copies: Int): PrintResult = queue.withLock {
+        if (settings.speed != PrintSpeed.FAST) {
+            val wait = busyUntil - android.os.SystemClock.elapsedRealtime()
+            if (wait > 0) delay(wait.coerceAtMost(MAX_WAIT_MS))
+        }
+        val started = android.os.SystemClock.elapsedRealtime()
+        val result = when (settings.connection) {
+            PrinterConnection.BLUETOOTH -> bluetooth.send(settings.address, job.bytes, copies, settings.speed)
+            PrinterConnection.LAN -> lan.send(settings.lanHost, settings.lanPort, job.bytes, copies)
+        }
+        if (result is PrintResult.Success) {
+            // Printing runs while the data is still arriving, so count from the start.
+            busyUntil = started + (job.rows * copies.coerceIn(1, 3) * settings.speed.msPerRow).toLong()
+        }
+        result
     }
 
     /** Prints any slip (Close Day report, staff payment) on the active printer. */
@@ -70,7 +93,7 @@ class ReceiptPrinter(
      */
     suspend fun slipBitmap(lines: List<PrintLine>): Bitmap {
         val dots = settingsStore.current().paper.dots
-        return withContext(Dispatchers.Default) { ReceiptCanvasRenderer(dots, textSizePx = dots / 17f).renderBitmap(lines, null) }
+        return withContext(Dispatchers.Default) { ReceiptCanvasRenderer(dots, textSizePx = dots / 17f, heavy = true).renderBitmap(lines, null) }
     }
 
     /**
@@ -103,6 +126,7 @@ class ReceiptPrinter(
                 accent = android.graphics.Color.BLACK,
                 width = settings.paper.dots,
                 forPrinter = true,
+                style = settings.tokenStyle,
             )
         }
     }
@@ -110,10 +134,8 @@ class ReceiptPrinter(
     suspend fun printTokenSlip(slip: Bitmap): PrintResult {
         val settings = settingsStore.current()
         if (!settings.isConfigured) return PrintResult.Failure(PrinterError.NO_PRINTER_SELECTED)
-        val bytes = withContext(Dispatchers.Default) {
-            EscPos.encodeImage(ReceiptCanvasRenderer.toMonochrome(slip, dither = false), settings.feedLines, settings.cut)
-        }
-        return transmit(settings, bytes, copies = 1)
+        val job = withContext(Dispatchers.Default) { imageJob(slip, settings) }
+        return transmit(settings, job, copies = 1)
     }
 
     /** Small queue slip: salon, big token number, name, date / booked time. */
@@ -143,12 +165,12 @@ class ReceiptPrinter(
             PrintLine.Separator('='),
             PrintLine.Text(context.getString(R.string.printer_test_ok), PrintAlign.CENTER, bold = true),
         )
-        val bytes = withContext(Dispatchers.Default) { buildBytes(lines, settings, logoPath = null) }
-        return transmit(settings, bytes, copies = 1)
+        val job = buildBytes(lines, settings, logoPath = null)
+        return transmit(settings, job, copies = 1)
     }
 
     /** Image mode prints the styled receipt; text mode the classic printer-font layout. */
-    private suspend fun buildReceiptBytes(receipt: ReceiptData, settings: PrinterSettings): ByteArray {
+    private suspend fun buildReceiptBytes(receipt: ReceiptData, settings: PrinterSettings): Job {
         if (settings.mode == PrintMode.TEXT) {
             val lines = ReceiptLayout.build(receipt, labels(receipt.paymentMethod, forTextPrinter = true))
             return buildBytes(lines, settings, receipt.logoPath.takeIf { receipt.showLogo })
@@ -159,8 +181,14 @@ class ReceiptPrinter(
                 ?.let { ditheredLogo(it) }
             val bitmap = ReceiptImageRenderer(settings.paper.dots, forPrinter = true, rtl = isRtl(), style = settings.receiptStyle)
                 .render(receipt, labels(receipt.paymentMethod), logo)
-            EscPos.encodeImage(ReceiptCanvasRenderer.toMonochrome(bitmap, dither = false), settings.feedLines, settings.cut)
+            imageJob(bitmap, settings)
         }
+    }
+
+    /** A rendered picture as a print job: darkened to solid black and sent in strips for [PrintSpeed]. */
+    private fun imageJob(bitmap: Bitmap, settings: PrinterSettings): Job {
+        val mono = ReceiptCanvasRenderer.toMonochrome(bitmap, dither = false, threshold = PRINT_THRESHOLD)
+        return Job(EscPos.encodeImage(mono, settings.feedLines, settings.cut, settings.speed.bandRows), EscPos.imageRows(mono, settings.feedLines))
     }
 
     /** Photos and coloured logos look best on thermal paper when dithered once, before layout. */
@@ -175,21 +203,22 @@ class ReceiptPrinter(
 
     fun isRtl(): Boolean = context.resources.configuration.layoutDirection == View.LAYOUT_DIRECTION_RTL
 
-    private suspend fun buildBytes(lines: List<PrintLine>, settings: PrinterSettings, logoPath: String?): ByteArray =
+    private suspend fun buildBytes(lines: List<PrintLine>, settings: PrinterSettings, logoPath: String?): Job =
         withContext(Dispatchers.Default) {
             val logo = logoPath?.takeIf { settings.printLogo }?.let { logoStore.loadBitmap(it) }
                 ?.let { ReceiptCanvasRenderer.scaleLogo(it, maxWidth = settings.paper.dots / 2, maxHeight = 160) }
             when (settings.mode) {
-                PrintMode.TEXT -> EscPos.encodeText(
-                    lines = ReceiptTextRenderer.render(lines, settings.paper.chars),
-                    logo = logo?.let { ReceiptCanvasRenderer.toMonochrome(it, dither = true) },
-                    feedLines = settings.feedLines,
-                    cut = settings.cut,
-                )
+                PrintMode.TEXT -> {
+                    val rendered = ReceiptTextRenderer.render(lines, settings.paper.chars)
+                    val mono = logo?.let { ReceiptCanvasRenderer.toMonochrome(it, dither = true) }
+                    Job(
+                        EscPos.encodeText(rendered, mono, settings.feedLines, settings.cut, settings.speed.bandRows),
+                        EscPos.textRows(rendered, mono, settings.feedLines),
+                    )
+                }
                 PrintMode.IMAGE -> {
-                    val renderer = ReceiptCanvasRenderer(settings.paper.dots, textSizePx = settings.paper.dots / 17f)
-                    val bitmap = renderer.renderBitmap(lines, logo)
-                    EscPos.encodeImage(ReceiptCanvasRenderer.toMonochrome(bitmap, dither = false), settings.feedLines, settings.cut)
+                    val renderer = ReceiptCanvasRenderer(settings.paper.dots, textSizePx = settings.paper.dots / 17f, heavy = true)
+                    imageJob(renderer.renderBitmap(lines, logo), settings)
                 }
             }
         }
@@ -238,6 +267,17 @@ class ReceiptPrinter(
     )
 
     companion object {
+        /** One print job at a time across the whole app, and when the last one should be done. */
+        private val queue = Mutex()
+        @Volatile private var busyUntil = 0L
+        private const val MAX_WAIT_MS = 15_000L
+
+        /**
+         * Grey above which a pixel stays white. Higher than the usual 128, so the soft edges of
+         * letters turn black too: thicker, darker text on thermal paper.
+         */
+        const val PRINT_THRESHOLD = 168f
+
         fun paymentMethodLabel(method: PaymentMethod): Int = when (method) {
             PaymentMethod.CASH -> R.string.payment_cash
             PaymentMethod.CARD -> R.string.payment_card

@@ -29,6 +29,10 @@ enum class ReceiptStyle {
     MONO,
     /** Typewriter font with a proper item table: item, qty, rate, amount. */
     TABLE,
+    /** Same layout as the fast Text print (printer-font look) but as a picture, so Urdu prints too. */
+    PLAIN,
+    /** Big, bold letters with a filled title bar and total: easiest to read on 58 mm paper. */
+    BOLD,
 }
 
 /**
@@ -51,19 +55,31 @@ class ReceiptImageRenderer(
     private val pad = 16f * s
     private val contentWidth = widthPx - 2 * pad
 
+    /** BOLD design: everything bigger and bold. On thermal paper all text is a little larger too. */
+    private val bigStyle = style == ReceiptStyle.BOLD
+    private val textScale = (if (bigStyle) 1.22f else 1f) * (if (forPrinter) PRINTER_TEXT_SCALE else 1f)
+
     private val ink = Color.BLACK
     private val muted = if (forPrinter) Color.BLACK else Color.rgb(0x62, 0x5E, 0x6B)
     private val accent = if (forPrinter) Color.BLACK else accentColor
     private val alert = if (forPrinter) Color.BLACK else Color.rgb(0xC6, 0x28, 0x28)
 
     private fun paint(size: Float, bold: Boolean = false, color: Int = ink, spacing: Float = 0f, serif: Boolean = false) = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-        textSize = size * s
+        textSize = size * s * textScale
         this.color = color
-        typeface = Typeface.create(if (serif) "serif" else "sans-serif", if (bold) Typeface.BOLD else Typeface.NORMAL)
+        val heavy = bold || bigStyle
+        // Thermal paper: regular text in medium weight, so thin strokes do not fade.
+        val family = when {
+            serif -> "serif"
+            forPrinter && !heavy -> "sans-serif-medium"
+            else -> "sans-serif"
+        }
+        typeface = Typeface.create(family, if (heavy) Typeface.BOLD else Typeface.NORMAL)
         letterSpacing = spacing
     }
 
     private val elegant = style == ReceiptStyle.ELEGANT
+    private val filledTotal = style == ReceiptStyle.MODERN || bigStyle
     private val title = paint(if (elegant) 23f else 21f, bold = true, spacing = 0.08f, serif = elegant,
         color = if (style == ReceiptStyle.MODERN) Color.WHITE else ink)
     private val sub = paint(12.5f, color = muted)
@@ -74,8 +90,8 @@ class ReceiptImageRenderer(
     private val header = paint(12f, bold = true, spacing = 0.12f)
     private val itemName = paint(14.5f, bold = true)
     private val itemSub = paint(13f, color = muted)
-    private val totalLabel = paint(19f, bold = true, serif = elegant, color = if (style == ReceiptStyle.MODERN) Color.WHITE else ink)
-    private val totalValue = paint(20f, bold = true, serif = elegant, color = if (style == ReceiptStyle.MODERN) Color.WHITE else ink)
+    private val totalLabel = paint(19f, bold = true, serif = elegant, color = if (filledTotal) Color.WHITE else ink)
+    private val totalValue = paint(20f, bold = true, serif = elegant, color = if (filledTotal) Color.WHITE else ink)
     private val headerSub = paint(12.5f, color = if (style == ReceiptStyle.MODERN) Color.argb(0xDD, 0xFF, 0xFF, 0xFF) else muted)
     private val outlineTitle = paint(15f, bold = true, color = accent, spacing = 0.3f, serif = elegant)
     private val stamp = paint(14f, bold = true, color = accent, spacing = 0.18f)
@@ -97,9 +113,11 @@ class ReceiptImageRenderer(
     // Typewriter (MONO / TABLE) designs.
     private val mono = style == ReceiptStyle.MONO || style == ReceiptStyle.TABLE
     private fun monoPaint(size: Float, bold: Boolean = false, color: Int = ink) = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-        textSize = size * s
+        textSize = size * s * textScale
         this.color = color
-        typeface = Typeface.create(Typeface.MONOSPACE, if (bold) Typeface.BOLD else Typeface.NORMAL)
+        // Thin typewriter strokes fade on thermal paper: printed in bold.
+        typeface = Typeface.create(Typeface.MONOSPACE, if (bold || forPrinter) Typeface.BOLD else Typeface.NORMAL)
+        isFakeBoldText = bold && forPrinter
     }
     private val mTitle = monoPaint(18f, bold = true)
     private val mText = monoPaint(13.5f)
@@ -121,6 +139,7 @@ class ReceiptImageRenderer(
     /** Lays the receipt out; draws when [canvas] is not null. Returns the total height. */
     private fun draw(canvas: Canvas?, r: ReceiptData, labels: ReceiptLabels, logo: Bitmap?): Float {
         if (mono) return drawMono(canvas, r, labels, logo)
+        if (style == ReceiptStyle.PLAIN) return drawPlain(canvas, r, labels, logo)
         val money = CurrencyFormatter(r.currency)
         var y = 20f * s
 
@@ -145,10 +164,10 @@ class ReceiptImageRenderer(
         y += headerText(canvas, r, y)
 
         when (style) {
-            ReceiptStyle.CLASSIC -> {
+            ReceiptStyle.CLASSIC, ReceiptStyle.BOLD -> {
                 // Coloured title bar.
                 y += 12f * s
-                val barHeight = 32f * s
+                val barHeight = (if (bigStyle) 38f else 32f) * s
                 canvas?.let {
                     fill.color = accent
                     it.drawRoundRect(RectF(pad, y, widthPx - pad, y + barHeight), 7f * s, 7f * s, fill)
@@ -172,7 +191,7 @@ class ReceiptImageRenderer(
                 y += text(canvas, labels.receiptTitle.uppercase(), outlineTitle, pad, contentWidth, Layout.Alignment.ALIGN_CENTER, y) + 8f * s
                 y += doubleRule(canvas, y) + 10f * s
             }
-            ReceiptStyle.MONO, ReceiptStyle.TABLE -> Unit // drawn by drawMono
+            ReceiptStyle.MONO, ReceiptStyle.TABLE, ReceiptStyle.PLAIN -> Unit // drawn by drawMono / drawPlain
         }
 
         if (r.isVoided) {
@@ -213,12 +232,16 @@ class ReceiptImageRenderer(
 
         // Grand total: boxed (classic), filled (modern), ruled (minimal / elegant).
         y += 8f * s
-        val boxHeight = if (style == ReceiptStyle.MINIMAL) 40f * s else 50f * s
+        val boxHeight = when {
+            style == ReceiptStyle.MINIMAL -> 40f * s
+            bigStyle -> 60f * s
+            else -> 50f * s
+        }
         canvas?.let {
             val rect = RectF(pad + 1.3f * s, y, widthPx - pad - 1.3f * s, y + boxHeight)
             when (style) {
                 ReceiptStyle.CLASSIC -> it.drawRoundRect(rect, 8f * s, 8f * s, Paint(linePaint).apply { strokeWidth = 2.6f * s })
-                ReceiptStyle.MODERN -> it.drawRoundRect(rect, 10f * s, 10f * s, Paint(fill).apply { color = accent })
+                ReceiptStyle.MODERN, ReceiptStyle.BOLD -> it.drawRoundRect(rect, 10f * s, 10f * s, Paint(fill).apply { color = accent })
                 ReceiptStyle.MINIMAL -> {
                     it.drawLine(pad, y, widthPx - pad, y, linePaint)
                     it.drawLine(pad, y + boxHeight, widthPx - pad, y + boxHeight, linePaint)
@@ -227,7 +250,7 @@ class ReceiptImageRenderer(
                     doubleRule(it, y)
                     doubleRule(it, y + boxHeight - 6f * s)
                 }
-                ReceiptStyle.MONO, ReceiptStyle.TABLE -> Unit // drawn by drawMono
+                ReceiptStyle.MONO, ReceiptStyle.TABLE, ReceiptStyle.PLAIN -> Unit // drawn by drawMono / drawPlain
             }
         }
         val totalText = money.format(r.totalMinor)
@@ -384,6 +407,32 @@ class ReceiptImageRenderer(
         return y + 22f * s
     }
 
+    /**
+     * PLAIN: the Text print layout (same lines, same order as the fast printer-font receipt) drawn
+     * as a picture in a heavy typewriter font, so it looks like Text print but prints any language.
+     */
+    private fun drawPlain(canvas: Canvas?, r: ReceiptData, labels: ReceiptLabels, logo: Bitmap?): Float {
+        val lines = ReceiptLayout.build(r, labels)
+        // About 30 characters per line on 58 mm, like the printer's own font.
+        val renderer = ReceiptCanvasRenderer(contentWidth.toInt(), textSizePx = widthPx / 19.5f, heavy = forPrinter)
+        var y = 14f * s
+        if (logo != null) {
+            val scale = minOf(widthPx * 0.36f / logo.width, 84f * s / logo.height)
+            val w = logo.width * scale
+            val h = logo.height * scale
+            canvas?.drawBitmap(logo, null, RectF((widthPx - w) / 2f, y, (widthPx + w) / 2f, y + h), Paint(Paint.FILTER_BITMAP_FLAG))
+            y += h + 10f * s
+        }
+        if (canvas != null) {
+            canvas.save()
+            canvas.translate(pad, 0f)
+            renderer.draw(canvas, lines, null, y)
+            canvas.restore()
+        }
+        y += renderer.measure(lines, null)
+        return y + 22f * s
+    }
+
     /** Item table for [ReceiptStyle.TABLE]: ITEM | QTY | RATE | AMOUNT with staff under the item. */
     private fun monoTable(canvas: Canvas?, r: ReceiptData, labels: ReceiptLabels, money: CurrencyFormatter, top: Float): Float {
         var y = top
@@ -526,6 +575,9 @@ class ReceiptImageRenderer(
 
     companion object {
         const val DEFAULT_ACCENT = 0xFF3E0E72.toInt()
+
+        /** Text on thermal paper is drawn this much larger than on screen (easier to read on 58 mm). */
+        const val PRINTER_TEXT_SCALE = 1.1f
 
         /** Width used for shared/saved images: sharp on phones, still small files. */
         const val SHARE_WIDTH_PX = 720
