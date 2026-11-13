@@ -35,7 +35,8 @@ internal class TemplateReceiptRenderer(
 ) {
     private val s = widthPx / 384f
     private val scale = if (forPrinter) 1.08f else 1f
-    private val pad = 12f * s
+    /** Royal keeps its text clear of the double frame. */
+    private val pad = (if (style == ReceiptStyle.ROYAL) 18f else 12f) * s
     private val left = pad
     private val right = widthPx - pad
     private val content = right - left
@@ -73,7 +74,7 @@ internal class TemplateReceiptRenderer(
     private val labelBold = font(base, bold = true)
     private val value = font(base)
     private val valueBold = font(base, bold = true)
-    private val caps = font(base - 3f, bold = true, color = muted, spacing = 0.08f)
+    private val caps = font(base - 2.5f, bold = true, color = muted, spacing = 0.08f)
     private val small = font(base - 2.5f, color = muted)
     private val itemName = font(base + 0.5f, bold = true)
     private val itemSub = font(base - 1f, color = muted)
@@ -122,9 +123,9 @@ internal class TemplateReceiptRenderer(
             if (item.lineDiscountMinor > 0) "${l.discount} -${money.plain(item.lineDiscountMinor)}" else null,
         )
 
-        fun details(withReceipt: Boolean = true, withCustomer: Boolean = true): List<Pair<String, String>> = buildList {
+        fun details(withReceipt: Boolean = true, withCustomer: Boolean = true, withTime: Boolean = true): List<Pair<String, String>> = buildList {
             if (withReceipt) add(l.receiptNo to r.receiptNumber)
-            add(l.date to "$date  $time")
+            add(l.date to if (withTime) "$date  $time" else date)
             if (withCustomer) add(l.customer to customer)
             phone?.let { add(l.phone to it) }
             if (staffNames.isNotEmpty()) add(l.servedBy to staffNames.joinToString(", "))
@@ -227,7 +228,7 @@ internal class TemplateReceiptRenderer(
         labelledBox(c, b.l.time.uppercase(), b.time, left + w1 + gap, w2, y, dashed = true, height = boxH)
         y += boxH + 10f * s
         y += voidBanner(c, b, y)
-        b.details(withReceipt = false).forEach { (k, v) -> y += row(c, k, v, y, value, label) }
+        b.details(withReceipt = false, withTime = false).forEach { (k, v) -> y += row(c, k, v, y, value, label) }
         y += 4f * s
         y += dashedLine(c, y) + 6f * s
         y += qtyFirstItems(c, b, y, prefix = { "${it.quantity}" }, rules = false)
@@ -263,7 +264,8 @@ internal class TemplateReceiptRenderer(
         y += dashedLine(c, y) + 6f * s
         // Service | qty | amount, notes in brackets after the name.
         val qtyW = maxOf(value.measureText("99"), value.measureText(b.l.qty)) + 6f * s
-        val amountW = b.r.items.maxOfOrNull { valueBold.measureText(b.amount(it)) }?.plus(4f * s) ?: 0f
+        // Room between the quantity and the amount so "1  1,500" never reads as one number.
+        val amountW = b.r.items.maxOfOrNull { valueBold.measureText(b.amount(it)) }?.plus(18f * s) ?: 0f
         val nameW = content - qtyW - amountW - 6f * s
         b.r.items.forEach { item ->
             val extra = b.notes(item).joinToString(", ")
