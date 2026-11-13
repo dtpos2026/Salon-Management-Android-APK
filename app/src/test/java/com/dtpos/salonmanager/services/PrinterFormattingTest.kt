@@ -4,6 +4,7 @@ import com.dtpos.salonmanager.core.util.CurrencyConfig
 import com.dtpos.salonmanager.domain.model.PaymentMethod
 import com.dtpos.salonmanager.domain.model.ReceiptData
 import com.dtpos.salonmanager.domain.model.ReceiptItem
+import com.dtpos.salonmanager.services.printer.AmountWords
 import com.dtpos.salonmanager.services.printer.EscPos
 import com.dtpos.salonmanager.services.printer.EscPosBuilder
 import com.dtpos.salonmanager.services.printer.ItemLayout
@@ -94,6 +95,19 @@ class PrinterFormattingTest {
         rendered.forEach { assertTrue("'${it.text}' too wide", it.text.length <= 20) }
         assertTrue(rendered.any { it.text.trimEnd().endsWith("12,345,678") })
         assertTrue(rendered.any { it.text.startsWith("Hair Cut") })
+    }
+
+    @Test
+    fun `amount in words uses lakh and crore like Pakistani bills`() {
+        assertEquals("One Thousand Nine Hundred", AmountWords.words(1_900))
+        assertEquals("Four Thousand Two Hundred Fifty", AmountWords.words(4_250))
+        assertEquals("One Lakh Fifty Thousand", AmountWords.words(150_000))
+        assertEquals("Two Crore Five Lakh Seven", AmountWords.words(20_500_007))
+        assertEquals("Eleven", AmountWords.words(11))
+        assertEquals("Rupees One Thousand Nine Hundred Only", AmountWords.rupees(190_000, CurrencyConfig()))
+        assertEquals("Rupees Twelve and Fifty Paisa Only", AmountWords.rupees(1_250, CurrencyConfig()))
+        // Other currencies: no Rupees line rather than a wrong one.
+        assertEquals(null, AmountWords.rupees(190_000, CurrencyConfig(code = "AED", symbol = "AED")))
     }
 
     @Test

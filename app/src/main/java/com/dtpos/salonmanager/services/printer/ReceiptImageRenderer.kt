@@ -37,6 +37,22 @@ enum class ReceiptStyle {
     PLAIN_TABLE,
     /** Text print look with the items in a boxed grid (a line around every cell). */
     GRID,
+    /** Header in a box, CASH MEMO title, details and items in grids with a black header row. */
+    CASH_MEMO,
+    /** INVOICE in an outlined box, numbered services in a grid, totals grid. */
+    INVOICE,
+    /** Ticket with saw-tooth edges, dashed receipt / time boxes and a PAID stamp. */
+    TICKET,
+    /** Small print, one line per service: the shortest receipt. */
+    COMPACT,
+    /** Receipt, customer and staff in big boxes, quantity first, black TOTAL bar. */
+    BOXES,
+    /** Double frame, serif letters, diamond dividers and dotted leaders. */
+    ROYAL,
+    /** Black SALES INVOICE bar, grids, numbered services. */
+    SALES_INVOICE,
+    /** Double rules, a box with customer and receipt number, very big GRAND TOTAL. */
+    GRAND_TOTAL,
 }
 
 /**
@@ -147,6 +163,9 @@ class ReceiptImageRenderer(
     private fun draw(canvas: Canvas?, r: ReceiptData, labels: ReceiptLabels, logo: Bitmap?): Float {
         if (mono) return drawMono(canvas, r, labels, logo)
         if (plain) return drawPlain(canvas, r, labels, logo)
+        if (style in TemplateReceiptRenderer.STYLES) {
+            return TemplateReceiptRenderer(widthPx, forPrinter, rtl, accentColor, style).draw(canvas, r, labels, logo)
+        }
         val money = CurrencyFormatter(r.currency)
         var y = 20f * s
 
@@ -198,7 +217,7 @@ class ReceiptImageRenderer(
                 y += text(canvas, labels.receiptTitle.uppercase(), outlineTitle, pad, contentWidth, Layout.Alignment.ALIGN_CENTER, y) + 8f * s
                 y += doubleRule(canvas, y) + 10f * s
             }
-            ReceiptStyle.MONO, ReceiptStyle.TABLE, ReceiptStyle.PLAIN, ReceiptStyle.PLAIN_TABLE, ReceiptStyle.GRID -> Unit // drawn by drawMono / drawPlain
+            else -> Unit // drawn by drawMono / drawPlain / TemplateReceiptRenderer
         }
 
         if (r.isVoided) {
@@ -265,7 +284,7 @@ class ReceiptImageRenderer(
                     doubleRule(it, y)
                     doubleRule(it, y + boxHeight - 6f * s)
                 }
-                ReceiptStyle.MONO, ReceiptStyle.TABLE, ReceiptStyle.PLAIN, ReceiptStyle.PLAIN_TABLE, ReceiptStyle.GRID -> Unit // drawn by drawMono / drawPlain
+                else -> Unit // drawn by drawMono / drawPlain / TemplateReceiptRenderer
             }
         }
         val totalText = money.format(r.totalMinor)

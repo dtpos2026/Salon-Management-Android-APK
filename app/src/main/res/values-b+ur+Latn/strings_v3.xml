@@ -236,4 +236,18 @@
     <string name="printer_items_table">Table</string>
     <string name="printer_items_list">Saada list</string>
     <string name="printer_items_hint">Table: har service ek line mein Qty, Rate aur Raqam ke saath. Saada list: sirf naam aur raqam.</string>
+    <string name="receipt_items_count">Services</string>
+    <string name="receipt_total_qty">Kul tadaad</string>
+    <string name="receipt_cash_memo">CASH MEMO / RASEED</string>
+    <string name="receipt_invoice">INVOICE</string>
+    <string name="receipt_sales_invoice">SALES INVOICE</string>
+    <string name="receipt_grand_total">GRAND TOTAL</string>
+    <string name="receipt_style_cash_memo">Cash memo (khaane)</string>
+    <string name="receipt_style_invoice">Invoice (number waar)</string>
+    <string name="receipt_style_ticket">Ticket (dandaane daar)</string>
+    <string name="receipt_style_compact">Mukhtasar (kaghaz bachaye)</string>
+    <string name="receipt_style_boxes">Bare khaane, kaala total</string>
+    <string name="receipt_style_royal">Shahi</string>
+    <string name="receipt_style_sales_invoice">Sales invoice</string>
+    <string name="receipt_style_grand_total">Grand total</string>
 </resources>

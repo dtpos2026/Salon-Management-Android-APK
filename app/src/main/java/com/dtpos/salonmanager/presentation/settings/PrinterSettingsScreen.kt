@@ -531,6 +531,14 @@ fun receiptStyleName(style: ReceiptStyle): Int = when (style) {
     ReceiptStyle.BOLD -> R.string.receipt_style_bold
     ReceiptStyle.PLAIN_TABLE -> R.string.receipt_style_plain_table
     ReceiptStyle.GRID -> R.string.receipt_style_grid
+    ReceiptStyle.CASH_MEMO -> R.string.receipt_style_cash_memo
+    ReceiptStyle.INVOICE -> R.string.receipt_style_invoice
+    ReceiptStyle.TICKET -> R.string.receipt_style_ticket
+    ReceiptStyle.COMPACT -> R.string.receipt_style_compact
+    ReceiptStyle.BOXES -> R.string.receipt_style_boxes
+    ReceiptStyle.ROYAL -> R.string.receipt_style_royal
+    ReceiptStyle.SALES_INVOICE -> R.string.receipt_style_sales_invoice
+    ReceiptStyle.GRAND_TOTAL -> R.string.receipt_style_grand_total
 }
 
 fun tokenStyleName(style: TokenStyle): Int = when (style) {

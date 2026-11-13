@@ -66,6 +66,13 @@ data class ReceiptLabels(
     /** Column titles of the item table. */
     val qty: String = "Qty",
     val rate: String = "Rate",
+    /** Titles and summary words of the bill templates. */
+    val itemsCount: String = "Items",
+    val totalQty: String = "Total qty",
+    val cashMemo: String = "CASH MEMO / RECEIPT",
+    val invoice: String = "INVOICE",
+    val salesInvoice: String = "SALES INVOICE",
+    val grandTotal: String = "GRAND TOTAL",
 )
 
 /** How the items are laid out: a table with quantity and rate, or the simple list. */

@@ -236,4 +236,18 @@
     <string name="printer_items_table">Table</string>
     <string name="printer_items_list">Simple list</string>
     <string name="printer_items_hint">Table: every service on one line with Qty, Rate and Amount. Simple list: name and amount only.</string>
+    <string name="receipt_items_count">Services</string>
+    <string name="receipt_total_qty">Total qty</string>
+    <string name="receipt_cash_memo">CASH MEMO / RECEIPT</string>
+    <string name="receipt_invoice">INVOICE</string>
+    <string name="receipt_sales_invoice">SALES INVOICE</string>
+    <string name="receipt_grand_total">GRAND TOTAL</string>
+    <string name="receipt_style_cash_memo">Cash memo (boxes)</string>
+    <string name="receipt_style_invoice">Invoice (numbered)</string>
+    <string name="receipt_style_ticket">Ticket (zigzag)</string>
+    <string name="receipt_style_compact">Compact (saves paper)</string>
+    <string name="receipt_style_boxes">Big boxes, black total</string>
+    <string name="receipt_style_royal">Royal</string>
+    <string name="receipt_style_sales_invoice">Sales invoice</string>
+    <string name="receipt_style_grand_total">Grand total</string>
 </resources>

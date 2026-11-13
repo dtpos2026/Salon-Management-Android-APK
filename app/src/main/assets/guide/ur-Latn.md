@@ -35,6 +35,7 @@
 
 ## Raseed design aur bold
 - Printer settings > Raseed design: Classic, Modern, Minimal, Elegant, Mono (saada parchi), Mono table, Saada (Text print jaisi, Urdu bhi), Saada table (Qty, Rate, Raqam ke khaane), Khaanon wala table ya Bold (bare huroof, 58 mm par sab se saaf).
+- Bill templates: Cash memo (khaane), Invoice (number waar), Ticket (dandaane daar), Mukhtasar (kaghaz bachaye), Bare khaane kaala total, Shahi, Sales invoice aur Grand total. In mein services ki ginti, kul tadaad aur raqam lafzon mein (Rupees ... Only) aati hai.
 - Text print (sab se tez): Printer settings > Text print mein services: Table (har service ek line mein Qty, Rate aur Raqam ke saath) ya Saada list. Agar sab services ek hi bande ne keen to us ka naam upar ek hi dafa aata hai.
 - Token design: Classic, Bara number, Ticket ya Mukhtasar (kaghaz bachaye).
 - Services mein kisi service ka "Naam bold" ya "Qeemat bold" on karein to raseed par numayan hogi.

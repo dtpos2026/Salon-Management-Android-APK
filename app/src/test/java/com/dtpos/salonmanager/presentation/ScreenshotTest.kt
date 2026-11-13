@@ -413,7 +413,7 @@ class ScreenshotTest {
         }
         // Two people, a double service with a discount: the case where the table helps most.
         val mixed = receipt.copy(items = receipt.items.take(3) + ReceiptItem("Beard trim and shape", "Ali", 2, 30_000, 5_000, 55_000))
-        listOf(ReceiptStyle.PLAIN_TABLE, ReceiptStyle.GRID).forEach { style ->
+        listOf(ReceiptStyle.PLAIN_TABLE, ReceiptStyle.GRID, ReceiptStyle.CASH_MEMO, ReceiptStyle.BOXES).forEach { style ->
             val bitmap = printed(ReceiptImageRenderer(384, forPrinter = true, style = style).render(mixed, labels, logo = null))
             FileOutputStream(File(outDir, "30-receipt-58mm-${style.name.lowercase()}-mixed.png")).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
         }

@@ -269,6 +269,12 @@ class ReceiptPrinter(
         creditStamp = context.getString(R.string.receipt_credit_stamp),
         qty = context.getString(R.string.receipt_qty),
         rate = context.getString(R.string.receipt_rate),
+        itemsCount = context.getString(R.string.receipt_items_count),
+        totalQty = context.getString(R.string.receipt_total_qty),
+        cashMemo = context.getString(R.string.receipt_cash_memo),
+        invoice = context.getString(R.string.receipt_invoice),
+        salesInvoice = context.getString(R.string.receipt_sales_invoice),
+        grandTotal = context.getString(R.string.receipt_grand_total),
     )
 
     companion object {

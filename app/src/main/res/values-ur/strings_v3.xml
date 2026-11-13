@@ -236,4 +236,18 @@
     <string name="printer_items_table">ٹیبل</string>
     <string name="printer_items_list">سادہ فہرست</string>
     <string name="printer_items_hint">ٹیبل: ہر سروس ایک لائن میں تعداد، ریٹ اور رقم کے ساتھ۔ سادہ فہرست: صرف نام اور رقم۔</string>
+    <string name="receipt_items_count">سروسز</string>
+    <string name="receipt_total_qty">کل تعداد</string>
+    <string name="receipt_cash_memo">کیش میمو / رسید</string>
+    <string name="receipt_invoice">انوائس</string>
+    <string name="receipt_sales_invoice">سیلز انوائس</string>
+    <string name="receipt_grand_total">مجموعی رقم</string>
+    <string name="receipt_style_cash_memo">کیش میمو (خانے)</string>
+    <string name="receipt_style_invoice">انوائس (نمبر وار)</string>
+    <string name="receipt_style_ticket">ٹکٹ (دندانے دار)</string>
+    <string name="receipt_style_compact">مختصر (کاغذ بچائے)</string>
+    <string name="receipt_style_boxes">بڑے خانے، کالا ٹوٹل</string>
+    <string name="receipt_style_royal">شاہی</string>
+    <string name="receipt_style_sales_invoice">سیلز انوائس</string>
+    <string name="receipt_style_grand_total">گرینڈ ٹوٹل</string>
 </resources>
