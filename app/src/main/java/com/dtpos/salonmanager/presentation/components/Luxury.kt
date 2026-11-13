@@ -288,7 +288,9 @@ fun GlassTextField(
         onValueChange = onValueChange,
         label = { Text(label) },
         singleLine = singleLine,
-        leadingIcon = leadingIcon?.let { icon -> { androidx.compose.material3.Icon(icon, contentDescription = null, tint = Glass.TextSecondary) } },
+        leadingIcon = if (leadingIcon == null) null else {
+            { androidx.compose.material3.Icon(leadingIcon, contentDescription = null, tint = Glass.TextSecondary) }
+        },
         keyboardOptions = KeyboardOptions(keyboardType = if (password) KeyboardType.Password else keyboardType),
         visualTransformation = if (password && !visible) PasswordVisualTransformation() else VisualTransformation.None,
         trailingIcon = if (!password) null else {
