@@ -75,6 +75,7 @@ import com.dtpos.salonmanager.presentation.components.MessageEffect
 import com.dtpos.salonmanager.presentation.theme.SalonTheme
 import com.dtpos.salonmanager.services.printer.PaperWidth
 import com.dtpos.salonmanager.services.printer.PrintMode
+import com.dtpos.salonmanager.services.printer.ItemLayout
 import com.dtpos.salonmanager.services.printer.ReceiptStyle
 import com.dtpos.salonmanager.services.printer.PrintSpeed
 import com.dtpos.salonmanager.services.export.TokenStyle
@@ -412,6 +413,18 @@ fun PrinterSettingsScreen(onBack: () -> Unit) {
                         onSelect = { m -> vm.updateOptions { it.copy(mode = m) } },
                     )
                     Text(stringResource(R.string.printer_mode_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (settings.mode == PrintMode.TEXT) {
+                        Spacer(Modifier.height(12.dp))
+                        Text(stringResource(R.string.printer_items_layout), style = MaterialTheme.typography.titleSmall)
+                        Spacer(Modifier.height(6.dp))
+                        SegmentedChoice(
+                            options = ItemLayout.entries.toList(),
+                            selected = settings.itemLayout,
+                            label = { stringResource(if (it == ItemLayout.TABLE) R.string.printer_items_table else R.string.printer_items_list) },
+                            onSelect = { l -> vm.updateOptions { it.copy(itemLayout = l) } },
+                        )
+                        Text(stringResource(R.string.printer_items_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                     Spacer(Modifier.height(12.dp))
                     Text(stringResource(R.string.printer_speed), style = MaterialTheme.typography.titleSmall)
                     Spacer(Modifier.height(6.dp))
@@ -516,6 +529,8 @@ fun receiptStyleName(style: ReceiptStyle): Int = when (style) {
     ReceiptStyle.TABLE -> R.string.receipt_style_table
     ReceiptStyle.PLAIN -> R.string.receipt_style_plain
     ReceiptStyle.BOLD -> R.string.receipt_style_bold
+    ReceiptStyle.PLAIN_TABLE -> R.string.receipt_style_plain_table
+    ReceiptStyle.GRID -> R.string.receipt_style_grid
 }
 
 fun tokenStyleName(style: TokenStyle): Int = when (style) {

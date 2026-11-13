@@ -17,6 +17,7 @@ import com.dtpos.salonmanager.core.util.CurrencyFormatter
 import com.dtpos.salonmanager.services.export.ReceiptImageFormat
 import com.dtpos.salonmanager.services.export.SaveResult
 import com.dtpos.salonmanager.services.printer.PrintMode
+import com.dtpos.salonmanager.services.printer.ItemLayout
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -146,6 +147,11 @@ class SaleDetailViewModel(
         .map { it.mode }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PrintMode.IMAGE)
 
+    /** Text print: items as a table or a list, so the preview matches the paper. */
+    val itemLayout: StateFlow<ItemLayout> = container.printerSettingsStore.settingsFlow
+        .map { it.itemLayout }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ItemLayout.TABLE)
+
     private fun export(block: suspend (ReceiptData) -> Unit) {
         if (_exporting.value) return
         _exporting.value = true
@@ -205,7 +211,7 @@ class SaleDetailViewModel(
 
     fun share(labelsProvider: (ReceiptData) -> com.dtpos.salonmanager.services.printer.ReceiptLabels) = launchSafe {
         val data = receipt.first { it != null } ?: return@launchSafe
-        val lines = ReceiptLayout.build(data, labelsProvider(data), includeHeader = true)
+        val lines = ReceiptLayout.build(data, labelsProvider(data), includeHeader = true, items = ItemLayout.TABLE)
         val logo = if (data.showLogo) container.logoStore.loadBitmap(data.logoPath) else null
         val file = container.pdfExporter.receiptPdf(lines, "Receipt_${data.receiptNumber}.pdf", logo)
         if (file == null) showMessage(R.string.share_failed) else shareFile.tryEmit(file)
@@ -273,6 +279,7 @@ fun SaleDetailScreen(
     }
     val previewImage by vm.previewImage.collectAsStateWithLifecycle()
     val printMode by vm.printMode.collectAsStateWithLifecycle()
+    val itemLayout by vm.itemLayout.collectAsStateWithLifecycle()
     val exporting by vm.exporting.collectAsStateWithLifecycle()
 
     Scaffold(
@@ -316,7 +323,7 @@ fun SaleDetailScreen(
                 )
             }
             if (printMode == PrintMode.TEXT) {
-                ReceiptPreview(data, Modifier.widthIn(max = 420.dp))
+                ReceiptPreview(data, Modifier.widthIn(max = 420.dp), itemLayout)
             } else {
                 StyledReceiptPreview(previewImage, Modifier.widthIn(max = 420.dp))
             }
@@ -411,11 +418,11 @@ fun SaleDetailScreen(
 
 /** On-screen receipt that mirrors the 58 mm printout exactly (same layout engine). */
 @Composable
-fun ReceiptPreview(receipt: ReceiptData, modifier: Modifier = Modifier) {
+fun ReceiptPreview(receipt: ReceiptData, modifier: Modifier = Modifier, items: ItemLayout = ItemLayout.LIST) {
     val container = LocalAppContainer.current
     val labels = remember(receipt.paymentMethod) { container.receiptPrinter.labels(receipt.paymentMethod) }
-    val lines = remember(receipt, labels) {
-        ReceiptTextRenderer.render(ReceiptLayout.build(receipt, labels), ReceiptTextRenderer.CHARS_58MM)
+    val lines = remember(receipt, labels, items) {
+        ReceiptTextRenderer.render(ReceiptLayout.build(receipt, labels, items = items), ReceiptTextRenderer.CHARS_58MM)
     }
     val logo = remember(receipt.logoPath, receipt.showLogo) {
         if (receipt.showLogo) container.logoStore.loadBitmap(receipt.logoPath, 256)?.asImageBitmap() else null

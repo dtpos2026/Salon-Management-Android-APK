@@ -33,6 +33,10 @@ enum class ReceiptStyle {
     PLAIN,
     /** Big, bold letters with a filled title bar and total: easiest to read on 58 mm paper. */
     BOLD,
+    /** Text print look with the items in a table: SERVICE | QTY | RATE | AMOUNT. */
+    PLAIN_TABLE,
+    /** Text print look with the items in a boxed grid (a line around every cell). */
+    GRID,
 }
 
 /**
@@ -110,6 +114,9 @@ class ReceiptImageRenderer(
     private val itemNameBig = paint(16.5f, bold = true)
     private val valueBig = paint(16f, bold = true)
 
+    /** Designs drawn like the printer-font receipt (see [drawPlain]). */
+    private val plain = style == ReceiptStyle.PLAIN || style == ReceiptStyle.PLAIN_TABLE || style == ReceiptStyle.GRID
+
     // Typewriter (MONO / TABLE) designs.
     private val mono = style == ReceiptStyle.MONO || style == ReceiptStyle.TABLE
     private fun monoPaint(size: Float, bold: Boolean = false, color: Int = ink) = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -139,7 +146,7 @@ class ReceiptImageRenderer(
     /** Lays the receipt out; draws when [canvas] is not null. Returns the total height. */
     private fun draw(canvas: Canvas?, r: ReceiptData, labels: ReceiptLabels, logo: Bitmap?): Float {
         if (mono) return drawMono(canvas, r, labels, logo)
-        if (style == ReceiptStyle.PLAIN) return drawPlain(canvas, r, labels, logo)
+        if (plain) return drawPlain(canvas, r, labels, logo)
         val money = CurrencyFormatter(r.currency)
         var y = 20f * s
 
@@ -191,7 +198,7 @@ class ReceiptImageRenderer(
                 y += text(canvas, labels.receiptTitle.uppercase(), outlineTitle, pad, contentWidth, Layout.Alignment.ALIGN_CENTER, y) + 8f * s
                 y += doubleRule(canvas, y) + 10f * s
             }
-            ReceiptStyle.MONO, ReceiptStyle.TABLE, ReceiptStyle.PLAIN -> Unit // drawn by drawMono / drawPlain
+            ReceiptStyle.MONO, ReceiptStyle.TABLE, ReceiptStyle.PLAIN, ReceiptStyle.PLAIN_TABLE, ReceiptStyle.GRID -> Unit // drawn by drawMono / drawPlain
         }
 
         if (r.isVoided) {
@@ -219,10 +226,18 @@ class ReceiptImageRenderer(
         y += 10f * s
 
         r.items.forEach { item ->
-            y += text(canvas, item.serviceName, if (item.boldName) itemNameBig else itemName, pad, contentWidth, start(), y) + 2f * s
-            y += row(canvas, "${item.quantity} × ${money.format(item.unitPriceMinor)}", money.plain(item.unitPriceMinor * item.quantity), y, if (item.boldPrice) valueBig else valueBold, itemSub)
+            val amount = money.plain(item.unitPriceMinor * item.quantity)
+            val namePaint = if (item.boldName) itemNameBig else itemName
+            val amountPaint = if (item.boldPrice) valueBig else valueBold
+            if (item.quantity > 1) {
+                y += text(canvas, item.serviceName, namePaint, pad, contentWidth, start(), y) + 1f * s
+                y += row(canvas, "${item.quantity} × ${money.format(item.unitPriceMinor)}", amount, y, amountPaint, itemSub)
+            } else {
+                // One service: name and amount on one line (shorter receipt).
+                y += row(canvas, item.serviceName, amount, y, amountPaint, namePaint)
+            }
             if (item.lineDiscountMinor > 0) y += row(canvas, labels.discount, "-" + money.plain(item.lineDiscountMinor), y, value, itemSub)
-            y += 8f * s
+            y += 3f * s
         }
 
         y += dashed(canvas, y)
@@ -250,7 +265,7 @@ class ReceiptImageRenderer(
                     doubleRule(it, y)
                     doubleRule(it, y + boxHeight - 6f * s)
                 }
-                ReceiptStyle.MONO, ReceiptStyle.TABLE, ReceiptStyle.PLAIN -> Unit // drawn by drawMono / drawPlain
+                ReceiptStyle.MONO, ReceiptStyle.TABLE, ReceiptStyle.PLAIN, ReceiptStyle.PLAIN_TABLE, ReceiptStyle.GRID -> Unit // drawn by drawMono / drawPlain
             }
         }
         val totalText = money.format(r.totalMinor)
@@ -412,9 +427,11 @@ class ReceiptImageRenderer(
      * as a picture in a heavy typewriter font, so it looks like Text print but prints any language.
      */
     private fun drawPlain(canvas: Canvas?, r: ReceiptData, labels: ReceiptLabels, logo: Bitmap?): Float {
-        val lines = ReceiptLayout.build(r, labels)
-        // About 30 characters per line on 58 mm, like the printer's own font.
-        val renderer = ReceiptCanvasRenderer(contentWidth.toInt(), textSizePx = widthPx / 19.5f, heavy = forPrinter)
+        val items = if (style == ReceiptStyle.PLAIN) ItemLayout.LIST else ItemLayout.TABLE
+        val lines = ReceiptLayout.build(r, labels, items = items, boxed = style == ReceiptStyle.GRID)
+        // About 30 characters per line on 58 mm, like the printer's own font, with a little less
+        // space between the lines.
+        val renderer = ReceiptCanvasRenderer(contentWidth.toInt(), textSizePx = widthPx / 19.5f, heavy = forPrinter, lineSpacing = 0.22f)
         var y = 14f * s
         if (logo != null) {
             val scale = minOf(widthPx * 0.36f / logo.width, 84f * s / logo.height)
@@ -436,10 +453,14 @@ class ReceiptImageRenderer(
     /** Item table for [ReceiptStyle.TABLE]: ITEM | QTY | RATE | AMOUNT with staff under the item. */
     private fun monoTable(canvas: Canvas?, r: ReceiptData, labels: ReceiptLabels, money: CurrencyFormatter, top: Float): Float {
         var y = top
-        val gap = 6f * s
+        val gap = 12f * s
+        val qtyLabel = labels.qty.uppercase()
+        val rateLabel = labels.rate.uppercase()
         val amountW = maxOf(mHead.measureText(labels.amount.uppercase()), r.items.maxOfOrNull { mBold.measureText(money.plain(it.unitPriceMinor * it.quantity)) } ?: 0f)
-        val rateW = maxOf(mHead.measureText("RATE"), r.items.maxOfOrNull { mText.measureText(money.plain(it.unitPriceMinor)) } ?: 0f)
-        val qtyW = maxOf(mHead.measureText("QTY"), mText.measureText("99"))
+        val rateW = maxOf(mHead.measureText(rateLabel), r.items.maxOfOrNull { mText.measureText(money.plain(it.unitPriceMinor)) } ?: 0f)
+        val qtyW = maxOf(mHead.measureText(qtyLabel), mText.measureText("99"))
+        // Staff are listed once at the top; under each item only when several people worked.
+        val staffPerItem = r.showStaff && ReceiptLayout.singleStaff(r) == null
         val itemW = (contentWidth - amountW - rateW - qtyW - gap * 3).coerceAtLeast(contentWidth * 0.3f)
         val xItem = pad
         val xQty = xItem + itemW + gap
@@ -457,8 +478,8 @@ class ReceiptImageRenderer(
         y += 5f * s
         val headH = maxOf(
             cell(labels.item.uppercase(), mHead, xItem, itemW, false, y),
-            cell("QTY", mHead, xQty, qtyW, true, y),
-            cell("RATE", mHead, xRate, rateW, true, y),
+            cell(qtyLabel, mHead, xQty, qtyW, true, y),
+            cell(rateLabel, mHead, xRate, rateW, true, y),
             cell(labels.amount.uppercase(), mHead, xAmount, amountW, true, y),
         )
         y += headH + 4f * s
@@ -472,13 +493,13 @@ class ReceiptImageRenderer(
                 cell(money.plain(item.unitPriceMinor * item.quantity), if (item.boldPrice) mBold else mText, xAmount, amountW, true, y),
             )
             y += h + 2f * s
-            if (r.showStaff && !item.staffName.isNullOrBlank()) {
+            if (staffPerItem && !item.staffName.isNullOrBlank()) {
                 y += cell("  ${labels.by}: ${item.staffName}", mSmall, xItem, contentWidth, false, y) + 2f * s
             }
             if (item.lineDiscountMinor > 0) {
                 y += row(canvas, "  ${labels.discount.uppercase()}", "-" + money.plain(item.lineDiscountMinor), y, mSmall, mSmall)
             }
-            y += 4f * s
+            y += 2f * s
         }
         return y
     }

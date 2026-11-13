@@ -228,4 +228,12 @@
     <string name="login_feature_offline">Works offline</string>
     <string name="login_feature_print">58 / 80 mm printing</string>
     <string name="login_feature_language">اردو · English</string>
+    <string name="receipt_qty">Qty</string>
+    <string name="receipt_rate">Rate</string>
+    <string name="receipt_style_plain_table">Plain table (Qty, Rate)</string>
+    <string name="receipt_style_grid">Boxed table</string>
+    <string name="printer_items_layout">Items in Text print</string>
+    <string name="printer_items_table">Table</string>
+    <string name="printer_items_list">Simple list</string>
+    <string name="printer_items_hint">Table: every service on one line with Qty, Rate and Amount. Simple list: name and amount only.</string>
 </resources>

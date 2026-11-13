@@ -34,7 +34,8 @@
 - Void cancels a receipt completely (it stays in history as VOID).
 
 ## Receipt designs and bold items
-- Printer settings > Receipt design: Classic, Modern, Minimal, Elegant, Mono (till slip), Mono table, Plain (looks like Text print, Urdu too) or Bold (big letters, easiest to read on 58 mm).
+- Printer settings > Receipt design: Classic, Modern, Minimal, Elegant, Mono (till slip), Mono table, Plain (looks like Text print, Urdu too), Plain table (Qty, Rate, Amount columns), Boxed table (a line around every cell) or Bold (big letters, easiest to read on 58 mm).
+- Text print (fastest): Printer settings > Items in Text print: Table (each service on one line with Qty, Rate and Amount) or Simple list. When one person did every service, the name is printed once at the top.
 - Token design: Classic, Big number, Ticket or Compact (saves paper).
 - Services: edit a service and turn on "Bold name" or "Bold price" to make it stand out on receipts.
 

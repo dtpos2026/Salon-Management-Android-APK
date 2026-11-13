@@ -34,10 +34,58 @@ object ReceiptTextRenderer {
                 }
                 is PrintLine.Separator -> out += RenderedLine(line.char.toString().repeat(width))
                 is PrintLine.Feed -> repeat(line.lines.coerceIn(0, 10)) { out += RenderedLine("") }
+                is PrintLine.Table -> out += table(line, width)
             }
         }
         return out
     }
+
+    /**
+     * Item table in the printer's font: header, a dashed line, then one row per item. Number
+     * columns are right-aligned with one space between them; the first column gets the rest of
+     * the line and wraps. When the numbers leave too little room (very long amounts), the name
+     * goes on its own line and the numbers on the line under it.
+     */
+    fun table(table: PrintLine.Table, width: Int): List<RenderedLine> {
+        val columns = table.header.size
+        val all = listOf(table.header) + table.rows.map { it.cells }
+        val numberWidths = (1 until columns).map { c -> all.maxOf { it.getOrElse(c) { "" }.length } }
+        val firstWidth = width - numberWidths.sum() - (columns - 1)
+        val out = mutableListOf<RenderedLine>()
+
+        fun numbers(cells: List<String>): String =
+            (1 until columns).joinToString("") { c -> " " + cells.getOrElse(c) { "" }.padStart(numberWidths[c - 1]) }
+
+        /** First cell wrapped to [w], keeping its leading spaces (indented discount rows). */
+        fun name(cell: String, w: Int): List<String> {
+            val indent = cell.takeWhile { it == ' ' }.take(w / 2)
+            return wrap(cell, w - indent.length).map { indent + it }
+        }
+
+        fun row(cells: List<String>, bold: Boolean) {
+            if (firstWidth < MIN_FIRST_COLUMN) {
+                // Too narrow: name, then the numbers right-aligned under it (wrapped if needed).
+                cells.firstOrNull()?.takeIf { it.isNotBlank() }?.let { first -> name(first, width).forEach { out += RenderedLine(it.padEnd(width), bold = bold) } }
+                val numbers = cells.drop(1).filter { it.isNotBlank() }.joinToString(" ")
+                if (numbers.isNotEmpty()) wrap(numbers, width).forEach { out += RenderedLine(it.padStart(width), bold = bold) }
+                return
+            }
+            name(cells.firstOrNull() ?: "", firstWidth).forEachIndexed { index, part ->
+                val text = if (index == 0) part.padEnd(firstWidth) + numbers(cells) else part
+                out += RenderedLine(text.padEnd(width).take(width), bold = bold)
+            }
+        }
+
+        row(table.header, bold = true)
+        out += RenderedLine("-".repeat(width))
+        table.rows.forEach { r ->
+            row(r.cells, r.bold)
+            r.note?.let { note -> wrap(note, width - 2).forEach { out += RenderedLine(("  " + it).padEnd(width).take(width)) } }
+        }
+        return out
+    }
+
+    private const val MIN_FIRST_COLUMN = 8
 
     /** Convenience for previews and tests. */
     fun renderToString(lines: List<PrintLine>, width: Int): String =

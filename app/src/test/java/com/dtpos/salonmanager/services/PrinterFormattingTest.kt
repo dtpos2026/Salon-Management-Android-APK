@@ -6,6 +6,7 @@ import com.dtpos.salonmanager.domain.model.ReceiptData
 import com.dtpos.salonmanager.domain.model.ReceiptItem
 import com.dtpos.salonmanager.services.printer.EscPos
 import com.dtpos.salonmanager.services.printer.EscPosBuilder
+import com.dtpos.salonmanager.services.printer.ItemLayout
 import com.dtpos.salonmanager.services.printer.MonochromeImage
 import com.dtpos.salonmanager.services.printer.PrintAlign
 import com.dtpos.salonmanager.services.printer.PrintLine
@@ -53,9 +54,46 @@ class PrinterFormattingTest {
         assertTrue(text.contains("SAL-000042"))
         assertTrue(text.contains("Ali Khan"))
         assertTrue(text.contains("Hair Cut"))
-        assertTrue(text.contains("By: Ahmed"))
+        // One staff member for every service: named once at the top, not under each item.
+        assertTrue(text, text.contains("Served by") && text.contains("Ahmed"))
+        assertTrue(text, !text.contains("By: Ahmed"))
         assertTrue(text.contains("Rs. 1,000"))
         assertTrue(text.contains("Thank you for visiting!"))
+    }
+
+    @Test
+    fun `table layout puts qty rate and amount in straight columns on 58mm`() {
+        val two = receipt.copy(items = receipt.items + ReceiptItem("Facial and full body massage deluxe", "Bilal", 1, 1_250_000, 0, 1_250_000))
+        val rendered = ReceiptTextRenderer.render(ReceiptLayout.build(two, labels, items = ItemLayout.TABLE), 32)
+        rendered.forEach { line -> assertTrue("'${line.text}' too wide", line.text.length <= if (line.large) 16 else 32) }
+        val text = rendered.joinToString("\n") { it.text.trimEnd() }
+        val header = rendered.first { it.text.startsWith("Item") }
+        assertTrue(header.bold)
+        assertTrue(header.text, header.text.contains("Qty") && header.text.contains("Rate") && header.text.trimEnd().endsWith("Amount"))
+        // Amounts end in the same column as the "Amount" title.
+        val end = header.text.trimEnd().length
+        val beard = rendered.first { it.text.startsWith("Beard") }.text
+        assertEquals(end, beard.trimEnd().length)
+        assertTrue(beard, beard.contains(" 2 ") && beard.contains("300") && beard.trimEnd().endsWith("600"))
+        // Long names wrap inside the first column; the numbers stay on the first line.
+        val facial = rendered.indexOfFirst { it.text.startsWith("Facial") }
+        assertTrue(rendered[facial].text.trimEnd().endsWith("12,500"))
+        assertTrue(rendered[facial + 1].text.trim().isNotEmpty() && !rendered[facial + 1].text.contains("12,500"))
+        // Two people worked, so each service shows who did it.
+        assertTrue(text, text.contains("By: Ahmed") && text.contains("By: Bilal"))
+        assertTrue(text, text.contains("Discount") && text.contains("-100"))
+    }
+
+    @Test
+    fun `table falls back to numbers under the name when the paper is too narrow`() {
+        val table = PrintLine.Table(
+            listOf("Item", "Qty", "Rate", "Amount"),
+            listOf(PrintLine.Table.Row(listOf("Hair Cut", "1", "1,234,567", "12,345,678"))),
+        )
+        val rendered = ReceiptTextRenderer.table(table, 20)
+        rendered.forEach { assertTrue("'${it.text}' too wide", it.text.length <= 20) }
+        assertTrue(rendered.any { it.text.trimEnd().endsWith("12,345,678") })
+        assertTrue(rendered.any { it.text.startsWith("Hair Cut") })
     }
 
     @Test

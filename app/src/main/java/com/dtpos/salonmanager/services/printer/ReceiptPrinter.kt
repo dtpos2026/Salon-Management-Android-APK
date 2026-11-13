@@ -35,6 +35,9 @@ class ReceiptPrinter(
 
     suspend fun tokenStyle(): com.dtpos.salonmanager.services.export.TokenStyle = settingsStore.current().tokenStyle
 
+    /** Text print: items as a table or as a list (also used for the matching on-screen preview). */
+    suspend fun itemLayout(): ItemLayout = settingsStore.current().itemLayout
+
     suspend fun printSale(saleId: Long): PrintResult {
         val receipt = saleRepository.buildReceipt(saleId) ?: return PrintResult.Failure(PrinterError.NOTHING_TO_PRINT)
         return printReceipt(receipt)
@@ -172,7 +175,7 @@ class ReceiptPrinter(
     /** Image mode prints the styled receipt; text mode the classic printer-font layout. */
     private suspend fun buildReceiptBytes(receipt: ReceiptData, settings: PrinterSettings): Job {
         if (settings.mode == PrintMode.TEXT) {
-            val lines = ReceiptLayout.build(receipt, labels(receipt.paymentMethod, forTextPrinter = true))
+            val lines = ReceiptLayout.build(receipt, labels(receipt.paymentMethod, forTextPrinter = true), items = settings.itemLayout)
             return buildBytes(lines, settings, receipt.logoPath.takeIf { receipt.showLogo })
         }
         return withContext(Dispatchers.Default) {
@@ -264,6 +267,8 @@ class ReceiptPrinter(
         paidNow = context.getString(R.string.receipt_paid_now),
         balanceDue = context.getString(R.string.receipt_balance_due),
         creditStamp = context.getString(R.string.receipt_credit_stamp),
+        qty = context.getString(R.string.receipt_qty),
+        rate = context.getString(R.string.receipt_rate),
     )
 
     companion object {

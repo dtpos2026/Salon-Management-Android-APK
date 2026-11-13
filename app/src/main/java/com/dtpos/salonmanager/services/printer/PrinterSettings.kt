@@ -54,6 +54,8 @@ data class PrinterSettings(
     val lanPort: Int = LanPrinterService.DEFAULT_PORT,
     val speed: PrintSpeed = PrintSpeed.STANDARD,
     val tokenStyle: com.dtpos.salonmanager.services.export.TokenStyle = com.dtpos.salonmanager.services.export.TokenStyle.CLASSIC,
+    /** Text print: items in a table (qty, rate, amount) or the simple list. */
+    val itemLayout: ItemLayout = ItemLayout.TABLE,
 ) {
     val isConfigured: Boolean
         get() = when (connection) {
@@ -92,6 +94,7 @@ class PrinterSettingsStore(private val settings: SettingsRepository) {
         settings.putInt(SettingKeys.PRINTER_LAN_PORT, value.lanPort.coerceIn(1, 65535))
         settings.putString(SettingKeys.PRINTER_SPEED, value.speed.name)
         settings.putString(SettingKeys.PRINTER_TOKEN_STYLE, value.tokenStyle.name)
+        settings.putString(SettingKeys.PRINTER_ITEM_LAYOUT, value.itemLayout.name)
     }
 
     private fun parse(map: Map<String, String>) = PrinterSettings(
@@ -111,5 +114,6 @@ class PrinterSettingsStore(private val settings: SettingsRepository) {
         speed = map[SettingKeys.PRINTER_SPEED]?.let { v -> PrintSpeed.entries.firstOrNull { it.name == v } } ?: PrintSpeed.STANDARD,
         tokenStyle = map[SettingKeys.PRINTER_TOKEN_STYLE]?.let { v -> com.dtpos.salonmanager.services.export.TokenStyle.entries.firstOrNull { it.name == v } }
             ?: com.dtpos.salonmanager.services.export.TokenStyle.CLASSIC,
+        itemLayout = map[SettingKeys.PRINTER_ITEM_LAYOUT]?.let { v -> ItemLayout.entries.firstOrNull { it.name == v } } ?: ItemLayout.TABLE,
     )
 }

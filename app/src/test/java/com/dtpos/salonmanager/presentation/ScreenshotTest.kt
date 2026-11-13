@@ -411,6 +411,33 @@ class ScreenshotTest {
             assertEquals(384, bitmap.width)
             FileOutputStream(File(outDir, "30-receipt-58mm-${style.name.lowercase()}.png")).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
         }
+        // Two people, a double service with a discount: the case where the table helps most.
+        val mixed = receipt.copy(items = receipt.items.take(3) + ReceiptItem("Beard trim and shape", "Ali", 2, 30_000, 5_000, 55_000))
+        listOf(ReceiptStyle.PLAIN_TABLE, ReceiptStyle.GRID).forEach { style ->
+            val bitmap = printed(ReceiptImageRenderer(384, forPrinter = true, style = style).render(mixed, labels, logo = null))
+            FileOutputStream(File(outDir, "30-receipt-58mm-${style.name.lowercase()}-mixed.png")).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        }
+        // Text (fast) print as the printer's own 12 x 24 dot font lays it out: 32 letters a line.
+        com.dtpos.salonmanager.services.printer.ItemLayout.entries.forEach { layout ->
+            val rendered = com.dtpos.salonmanager.services.printer.ReceiptTextRenderer.render(
+                com.dtpos.salonmanager.services.printer.ReceiptLayout.build(mixed, labels, items = layout), 32,
+            )
+            val font = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { typeface = android.graphics.Typeface.MONOSPACE; textSize = 20f }
+            font.textSize *= 384f / font.measureText("M".repeat(32))
+            val height = rendered.sumOf { if (it.large) 54L else 30L }.toInt() + 20
+            val bitmap = Bitmap.createBitmap(384, height, Bitmap.Config.ARGB_8888)
+            val canvas = android.graphics.Canvas(bitmap).apply { drawColor(android.graphics.Color.WHITE) }
+            var y = 10f
+            rendered.forEach { line ->
+                val p = android.graphics.Paint(font).apply {
+                    typeface = android.graphics.Typeface.create(android.graphics.Typeface.MONOSPACE, if (line.bold) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+                    if (line.large) textSize *= 2f
+                }
+                y += if (line.large) 54f else 30f
+                canvas.drawText(line.text, 0f, y - 8f, p)
+            }
+            FileOutputStream(File(outDir, "32-text-print-58mm-${layout.name.lowercase()}.png")).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        }
         com.dtpos.salonmanager.services.export.TokenStyle.entries.forEach { style ->
             val token = printed(
                 com.dtpos.salonmanager.services.export.TokenImage.render(

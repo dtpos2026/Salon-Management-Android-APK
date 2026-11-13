@@ -18,11 +18,14 @@ class ReceiptCanvasRenderer(
     textSizePx: Float,
     private val typeface: Typeface = Typeface.MONOSPACE,
     private val heavy: Boolean = false,
+    /** Space between lines as a share of the text size (0.35 is like the printer's own font). */
+    lineSpacing: Float = 0.35f,
 ) {
     private val normal = paint(textSizePx, bold = heavy)
     private val bold = paint(textSizePx, bold = true).apply { isFakeBoldText = heavy }
     private val largeBold = paint(textSizePx * 1.6f, bold = true).apply { isFakeBoldText = heavy }
-    private val lineGap = textSizePx * 0.35f
+    private val lineGap = textSizePx * lineSpacing
+    private val rule = (textSizePx * 0.1f).coerceAtLeast(1.5f)
 
     private fun paint(size: Float, bold: Boolean) = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.BLACK
@@ -58,6 +61,7 @@ class ReceiptCanvasRenderer(
         }
         is PrintLine.Separator -> lineHeight(normal)
         is PrintLine.Feed -> line.lines * lineHeight(normal)
+        is PrintLine.Table -> table(null, line, 0f)
     }
 
     fun draw(canvas: Canvas, lines: List<PrintLine>, logo: Bitmap? = null, top: Float = 0f): Float {
@@ -94,19 +98,110 @@ class ReceiptCanvasRenderer(
                 }
                 is PrintLine.Separator -> {
                     y += lineHeight(normal)
-                    val mid = y - lineHeight(normal) / 2f
-                    val dash = if (line.char == '=') 0f else 6f
-                    var x = 0f
-                    while (x < widthPx) {
-                        val end = if (dash == 0f) widthPx.toFloat() else minOf(x + dash, widthPx.toFloat())
-                        canvas.drawRect(x, mid - 1f, end, mid + 1f, normal)
-                        x = if (dash == 0f) widthPx.toFloat() else x + dash * 2
-                    }
+                    separator(canvas, y - lineHeight(normal) / 2f, line.char)
                 }
                 is PrintLine.Feed -> y += line.lines * lineHeight(normal)
+                is PrintLine.Table -> y += table(canvas, line, y)
             }
         }
         return y
+    }
+
+    private fun separator(canvas: Canvas, mid: Float, char: Char) {
+        val dash = if (char == '=') 0f else 6f
+        var x = 0f
+        while (x < widthPx) {
+            val end = if (dash == 0f) widthPx.toFloat() else minOf(x + dash, widthPx.toFloat())
+            canvas.drawRect(x, mid - 1f, end, mid + 1f, normal)
+            x = if (dash == 0f) widthPx.toFloat() else x + dash * 2
+        }
+    }
+
+    /**
+     * Item table; returns its height and draws it when [canvas] is set. Number columns are
+     * right-aligned and as wide as their longest value, the first column takes the rest and
+     * wraps. Boxed: a grid with a black header row and a line around every cell. When the
+     * numbers leave too little room the name goes on its own line, numbers under it.
+     */
+    private fun table(canvas: Canvas?, t: PrintLine.Table, top: Float): Float {
+        val columns = t.header.size
+        val numberWidths = (1 until columns).map { c ->
+            maxOf(bold.measureText(t.header.getOrElse(c) { "" }), t.rows.maxOfOrNull { paintFor(it.bold, false).measureText(it.cells.getOrElse(c) { "" }) } ?: 0f)
+        }
+        val boxedWanted = t.boxed
+        val pad = if (boxedWanted) normal.textSize * 0.3f else 0f
+        val gap = if (boxedWanted) 0f else normal.measureText("  ")
+        val firstWidth = widthPx - numberWidths.sum() - (columns - 1) * gap - columns * 2 * pad
+        val stacked = firstWidth < widthPx * 0.3f
+        val boxed = boxedWanted && !stacked
+        val vpad = if (boxed) normal.textSize * 0.22f else 0f
+        // Column borders: edges[c] is where column c starts, edges[columns] the right side.
+        val edges = FloatArray(columns + 1)
+        edges[1] = firstWidth + 2 * pad
+        for (c in 1 until columns) edges[c + 1] = edges[c] + gap + numberWidths[c - 1] + 2 * pad
+        edges[columns] = widthPx.toFloat()
+        val lines = Paint(normal).apply { style = Paint.Style.STROKE; strokeWidth = rule }
+        var y = top
+
+        fun row(cells: List<String>, p: Paint, note: String?, header: Boolean) {
+            val rowTop = y
+            val nameWidth = if (stacked) widthPx.toFloat() else firstWidth
+            val first = cells.firstOrNull() ?: ""
+            // Keeps the indent of rows such as an item's discount.
+            val indent = p.measureText(first.takeWhile { it == ' ' }).coerceAtMost(nameWidth / 2f)
+            val names = wrap(first, p, nameWidth - indent)
+            val notes = note?.let { wrap(it.trim(), normal, if (boxed) firstWidth else widthPx - normal.measureText("  ")) } ?: emptyList()
+            val numbersOwnLine = stacked && cells.drop(1).any { it.isNotBlank() }
+            val height = 2 * vpad + names.size * lineHeight(p) + (if (numbersOwnLine) lineHeight(p) else 0f) +
+                (if (boxed) notes.size * lineHeight(normal) else 0f)
+            val ink = if (boxed && header) Paint(p).apply { color = Color.WHITE } else p
+            if (canvas != null) {
+                if (boxed && header) canvas.drawRect(0f, rowTop, widthPx.toFloat(), rowTop + height, Paint(normal).apply { style = Paint.Style.FILL })
+                var ty = rowTop + vpad
+                names.forEachIndexed { index, part ->
+                    ty += lineHeight(p)
+                    val baseline = ty - lineGap - p.descent()
+                    canvas.drawText(part, edges[0] + pad + indent, baseline, ink)
+                    if (index == 0 && !stacked) {
+                        for (c in 1 until columns) {
+                            val v = cells.getOrElse(c) { "" }
+                            canvas.drawText(v, edges[c + 1] - pad - p.measureText(v), baseline, ink)
+                        }
+                    }
+                }
+                if (numbersOwnLine) {
+                    ty += lineHeight(p)
+                    val v = cells.drop(1).filter { it.isNotBlank() }.joinToString("  ")
+                    canvas.drawText(v, widthPx - p.measureText(v), ty - lineGap - p.descent(), ink)
+                }
+                if (boxed) notes.forEach { n ->
+                    ty += lineHeight(normal)
+                    canvas.drawText(n, edges[0] + pad, ty - lineGap - normal.descent(), normal)
+                }
+            }
+            y += height
+            if (!boxed && notes.isNotEmpty()) {
+                notes.forEach { n ->
+                    y += lineHeight(normal)
+                    canvas?.drawText(n, normal.measureText("  "), y - lineGap - normal.descent(), normal)
+                }
+            }
+            if (boxed) canvas?.drawLine(0f, y, widthPx.toFloat(), y, lines)
+        }
+
+        row(t.header, bold, null, header = true)
+        if (!boxed) {
+            y += lineHeight(normal)
+            canvas?.let { separator(it, y - lineHeight(normal) / 2f, '-') }
+        }
+        t.rows.forEach { r -> row(r.cells, paintFor(r.bold, false), r.note, header = false) }
+        if (boxed && canvas != null) {
+            val half = rule / 2f
+            canvas.drawRect(half, top + half, widthPx - half, y - half, lines)
+            for (c in 1 until columns) canvas.drawLine(edges[c], top, edges[c], y, lines)
+        }
+        if (boxed) y += lineGap
+        return y - top
     }
 
     /** Renders to a white bitmap exactly [widthPx] wide. */

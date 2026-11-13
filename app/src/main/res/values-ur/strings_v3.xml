@@ -228,4 +228,12 @@
     <string name="login_feature_offline">آف لائن چلتی ہے</string>
     <string name="login_feature_print">58 / 80 ملی میٹر پرنٹ</string>
     <string name="login_feature_language">اردو · English</string>
+    <string name="receipt_qty">تعداد</string>
+    <string name="receipt_rate">ریٹ</string>
+    <string name="receipt_style_plain_table">سادہ ٹیبل (تعداد، ریٹ)</string>
+    <string name="receipt_style_grid">خانوں والا ٹیبل</string>
+    <string name="printer_items_layout">ٹیکسٹ پرنٹ میں سروسز</string>
+    <string name="printer_items_table">ٹیبل</string>
+    <string name="printer_items_list">سادہ فہرست</string>
+    <string name="printer_items_hint">ٹیبل: ہر سروس ایک لائن میں تعداد، ریٹ اور رقم کے ساتھ۔ سادہ فہرست: صرف نام اور رقم۔</string>
 </resources>

@@ -228,4 +228,12 @@
     <string name="login_feature_offline">Offline chalti hai</string>
     <string name="login_feature_print">58 / 80 mm print</string>
     <string name="login_feature_language">اردو · English</string>
+    <string name="receipt_qty">Qty</string>
+    <string name="receipt_rate">Rate</string>
+    <string name="receipt_style_plain_table">Saada table (Qty, Rate)</string>
+    <string name="receipt_style_grid">Khaanon wala table</string>
+    <string name="printer_items_layout">Text print mein services</string>
+    <string name="printer_items_table">Table</string>
+    <string name="printer_items_list">Saada list</string>
+    <string name="printer_items_hint">Table: har service ek line mein Qty, Rate aur Raqam ke saath. Saada list: sirf naam aur raqam.</string>
 </resources>

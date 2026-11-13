@@ -21,6 +21,16 @@ sealed interface PrintLine {
     data class Separator(val char: Char = '-') : PrintLine
 
     data class Feed(val lines: Int = 1) : PrintLine
+
+    /**
+     * Item table (e.g. SERVICE | QTY | RATE | AMOUNT): the first column takes the free width and
+     * wraps, the others are right-aligned and as wide as their longest value. [boxed] draws it as
+     * a grid of boxes on pictures; the printer's own font uses dashed lines instead.
+     */
+    data class Table(val header: List<String>, val rows: List<Row>, val boxed: Boolean = false) : PrintLine {
+        /** One row; [note] is a full-width line under it (e.g. who did the service). */
+        data class Row(val cells: List<String>, val bold: Boolean = false, val note: String? = null)
+    }
 }
 
 /** Translated labels so the pure layout code never touches Android resources. */
@@ -53,13 +63,37 @@ data class ReceiptLabels(
     val paidNow: String = "Paid",
     val balanceDue: String = "Balance due",
     val creditStamp: String = "CREDIT",
+    /** Column titles of the item table. */
+    val qty: String = "Qty",
+    val rate: String = "Rate",
 )
+
+/** How the items are laid out: a table with quantity and rate, or the simple list. */
+enum class ItemLayout { TABLE, LIST }
 
 object ReceiptLayout {
 
-    fun build(receipt: ReceiptData, labels: ReceiptLabels, includeHeader: Boolean = true): List<PrintLine> {
+    /**
+     * The staff member who did every service, when it is one person: printed once at the top
+     * instead of under each item (shorter receipt). Null when several people worked on it.
+     */
+    fun singleStaff(receipt: ReceiptData): String? {
+        if (!receipt.showStaff) return null
+        val names = receipt.items.mapNotNull { it.staffName?.takeIf { n -> n.isNotBlank() } }.distinct()
+        return names.singleOrNull()
+    }
+
+    fun build(
+        receipt: ReceiptData,
+        labels: ReceiptLabels,
+        includeHeader: Boolean = true,
+        items: ItemLayout = ItemLayout.LIST,
+        boxed: Boolean = false,
+    ): List<PrintLine> {
         val money = CurrencyFormatter(receipt.currency)
         val lines = mutableListOf<PrintLine>()
+        val oneStaff = singleStaff(receipt)
+        val staffPerItem = receipt.showStaff && oneStaff == null
 
         if (includeHeader) {
             lines += PrintLine.Text(receipt.businessName, PrintAlign.CENTER, bold = true, large = true)
@@ -79,25 +113,45 @@ object ReceiptLayout {
         lines += PrintLine.Columns(labels.time, DateTimeUtils.formatTime(receipt.createdAtMillis))
         lines += PrintLine.Columns(labels.customer, receipt.customerName?.takeIf { it.isNotBlank() } ?: labels.walkIn)
         receipt.customerPhone?.takeIf { it.isNotBlank() }?.let { lines += PrintLine.Columns(labels.phone, it) }
-        lines += PrintLine.Separator()
-        lines += PrintLine.Columns(labels.item, labels.amount, bold = true)
-        lines += PrintLine.Separator()
+        oneStaff?.let { lines += PrintLine.Columns(labels.servedBy, it) }
 
-        receipt.items.forEach { item ->
-            val name = if (item.quantity > 1) "${item.serviceName} x${item.quantity}" else item.serviceName
-            lines += PrintLine.Columns(name, money.plain(item.unitPriceMinor * item.quantity), bold = item.boldName || item.boldPrice)
-            if (item.quantity > 1) {
-                lines += PrintLine.Text("  ${item.quantity} x ${money.plain(item.unitPriceMinor)}")
+        if (items == ItemLayout.TABLE) {
+            val rows = mutableListOf<PrintLine.Table.Row>()
+            receipt.items.forEach { item ->
+                val staff = item.staffName?.takeIf { staffPerItem && it.isNotBlank() }?.let { "  ${labels.by}: $it" }
+                rows += PrintLine.Table.Row(
+                    listOf(item.serviceName, item.quantity.toString(), money.plain(item.unitPriceMinor), money.plain(item.unitPriceMinor * item.quantity)),
+                    bold = item.boldName || item.boldPrice,
+                    note = staff,
+                )
+                if (item.lineDiscountMinor > 0) {
+                    rows += PrintLine.Table.Row(listOf("  ${labels.discount}", "", "", "-" + money.plain(item.lineDiscountMinor)))
+                }
             }
-            if (receipt.showStaff && !item.staffName.isNullOrBlank()) {
-                lines += PrintLine.Text("  ${labels.by}: ${item.staffName}")
-            }
-            if (item.lineDiscountMinor > 0) {
-                lines += PrintLine.Columns("  ${labels.discount}", "-" + money.plain(item.lineDiscountMinor))
+            if (!boxed) lines += PrintLine.Separator()
+            lines += PrintLine.Table(listOf(labels.item, labels.qty, labels.rate, labels.amount), rows, boxed)
+        } else {
+            lines += PrintLine.Separator()
+            lines += PrintLine.Columns(labels.item, labels.amount, bold = true)
+            lines += PrintLine.Separator()
+
+            receipt.items.forEach { item ->
+                val name = if (item.quantity > 1) "${item.serviceName} x${item.quantity}" else item.serviceName
+                lines += PrintLine.Columns(name, money.plain(item.unitPriceMinor * item.quantity), bold = item.boldName || item.boldPrice)
+                if (item.quantity > 1) {
+                    lines += PrintLine.Text("  ${item.quantity} x ${money.plain(item.unitPriceMinor)}")
+                }
+                if (staffPerItem && !item.staffName.isNullOrBlank()) {
+                    lines += PrintLine.Text("  ${labels.by}: ${item.staffName}")
+                }
+                if (item.lineDiscountMinor > 0) {
+                    lines += PrintLine.Columns("  ${labels.discount}", "-" + money.plain(item.lineDiscountMinor))
+                }
             }
         }
 
-        lines += PrintLine.Separator()
+        // A boxed table already ends with a line.
+        if (!(items == ItemLayout.TABLE && boxed)) lines += PrintLine.Separator()
         lines += PrintLine.Columns(labels.subtotal, money.plain(receipt.subtotalMinor))
         if (receipt.totalDiscountMinor > 0) {
             lines += PrintLine.Columns(labels.discount, "-" + money.plain(receipt.totalDiscountMinor))

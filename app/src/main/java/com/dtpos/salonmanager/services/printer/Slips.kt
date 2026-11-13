@@ -176,6 +176,10 @@ object Slips {
                 is PrintLine.Columns -> appendLine(if (line.bold) "*${line.left}: ${line.right}*" else "${line.left}: ${line.right}")
                 is PrintLine.Separator -> appendLine("----------------")
                 is PrintLine.Feed -> appendLine()
+                is PrintLine.Table -> line.rows.forEach { row ->
+                    appendLine(row.cells.filter { it.isNotBlank() }.joinToString("  "))
+                    row.note?.let { appendLine(it) }
+                }
             }
         }
     }.trimEnd()

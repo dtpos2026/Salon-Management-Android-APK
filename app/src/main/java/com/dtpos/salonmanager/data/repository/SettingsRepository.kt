@@ -26,6 +26,7 @@ object SettingKeys {
     const val PRINTER_LAN_PORT = "printer.lanPort"
     const val PRINTER_SPEED = "printer.speed"
     const val PRINTER_TOKEN_STYLE = "printer.tokenStyle"
+    const val PRINTER_ITEM_LAYOUT = "printer.itemLayout"
 
     const val SEC_LOCK_TYPE = "security.lockType"
     const val SEC_SECRET_HASH = "security.secretHash"
