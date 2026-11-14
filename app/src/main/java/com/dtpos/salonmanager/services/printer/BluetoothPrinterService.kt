@@ -88,6 +88,17 @@ class BluetoothPrinterService(private val context: Context) {
     fun connectPermissions(): Array<String> =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) arrayOf(Manifest.permission.BLUETOOTH_CONNECT) else emptyArray()
 
+    /**
+     * What to ask for before printing: connect, plus scan on Android 12+. Both are the one
+     * "Nearby devices" question, so the owner answers once and printing and searching both work.
+     */
+    fun printPermissions(): Array<String> =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN)
+        } else {
+            emptyArray()
+        }
+
     /** Runtime permissions needed to discover new (unpaired) printers. */
     fun scanPermissions(): Array<String> =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -191,10 +202,15 @@ class BluetoothPrinterService(private val context: Context) {
                 null
             } ?: return@withLock PrintResult.Failure(PrinterError.DEVICE_NOT_FOUND)
 
-            try {
-                bt.cancelDiscovery() // Discovery slows down / breaks RFCOMM connections.
-            } catch (e: SecurityException) {
-                return@withLock PrintResult.Failure(PrinterError.PERMISSION_DENIED)
+            // A running search slows down or breaks the printer connection, so stop it. On
+            // Android 12+ that needs the scan permission; printing itself only needs connect, so
+            // without scan there is no search of ours to stop and printing goes ahead.
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || hasPermissions(arrayOf(Manifest.permission.BLUETOOTH_SCAN))) {
+                try {
+                    bt.cancelDiscovery()
+                } catch (e: SecurityException) {
+                    // Nothing to stop.
+                }
             }
 
             // FAST: reuse the open connection to this printer (no new connection wait).

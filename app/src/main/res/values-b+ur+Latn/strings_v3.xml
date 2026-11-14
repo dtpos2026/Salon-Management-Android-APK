@@ -250,4 +250,5 @@
     <string name="receipt_style_royal">Shahi</string>
     <string name="receipt_style_sales_invoice">Sales invoice</string>
     <string name="receipt_style_grand_total">Grand total</string>
+    <string name="printer_allow_and_print">Ijazat dein aur print karein</string>
 </resources>

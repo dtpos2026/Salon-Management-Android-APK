@@ -149,6 +149,7 @@ fun SlipPreviewDialog(previews: SlipPreviews) {
     val context = LocalContext.current
     val printing by previews.printing.collectAsStateWithLifecycle()
     val printResult by previews.printResult.collectAsStateWithLifecycle()
+    val printWithPermission = rememberPrintWithPermission()
     val whatsApp = rememberWhatsAppLauncher()
     val uri = remember(p.file) { p.file?.let { ShareHelper.uriFor(context, it) } }
     val title = p.title
@@ -174,7 +175,7 @@ fun SlipPreviewDialog(previews: SlipPreviews) {
                         contentScale = ContentScale.FillWidth,
                     )
                 }
-                Button(onClick = previews::print, enabled = !printing, modifier = Modifier.fillMaxWidth()) {
+                Button(onClick = { printWithPermission(previews::print) }, enabled = !printing, modifier = Modifier.fillMaxWidth()) {
                     if (printing) {
                         CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
                     } else {

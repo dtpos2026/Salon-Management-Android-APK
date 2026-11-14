@@ -113,7 +113,7 @@
     <string name="printer_test_ok">Printer chal raha hai</string>
     <string name="printer_error_unsupported">Yeh phone Bluetooth support nahi karta.</string>
     <string name="printer_error_off">Bluetooth band hai. Print ke liye on karein.</string>
-    <string name="printer_error_permission">Bluetooth ki ijazat chahiye. Settings &gt; Printer mein ijazat dein.</string>
+    <string name="printer_error_permission">Bluetooth (Nearby devices) ki ijazat chahiye. \"Ijazat dein aur print karein\" dabayein. Agar sawal na aaye to phone ki Settings &gt; Apps &gt; DT Salon Management &gt; Permissions &gt; Nearby devices &gt; Allow.</string>
     <string name="printer_error_none">Koi printer nahi chuna. Settings &gt; Printer mein chunein.</string>
     <string name="printer_error_not_found">Save shuda printer nahi mila. Dobara pair karein.</string>
     <string name="printer_error_connect">Connect nahi ho saka. Printer on, charge aur qareeb ho, phir dobara koshish karein.</string>

@@ -80,6 +80,7 @@ import com.dtpos.salonmanager.presentation.common.BaseViewModel
 import com.dtpos.salonmanager.presentation.common.LocalAppContainer
 import com.dtpos.salonmanager.presentation.common.appViewModel
 import com.dtpos.salonmanager.presentation.common.messageRes
+import com.dtpos.salonmanager.presentation.common.rememberPrintWithPermission
 import com.dtpos.salonmanager.presentation.components.ConfirmDialog
 import com.dtpos.salonmanager.presentation.components.FormTextField
 import com.dtpos.salonmanager.presentation.components.InfoBanner
@@ -240,6 +241,8 @@ fun SaleDetailScreen(
     val customerId by vm.customerId.collectAsStateWithLifecycle()
     val printing by vm.printing.collectAsStateWithLifecycle()
     val printError by vm.printError.collectAsStateWithLifecycle()
+    // Asks for Bluetooth (Nearby devices) first when needed, then prints.
+    val printWithPermission = rememberPrintWithPermission()
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
     var showVoid by remember { mutableStateOf(false) }
@@ -329,7 +332,7 @@ fun SaleDetailScreen(
             }
 
             Button(
-                onClick = vm::print,
+                onClick = { printWithPermission(vm::print) },
                 enabled = !printing,
                 modifier = Modifier.widthIn(max = 420.dp).fillMaxWidth().height(52.dp),
             ) {
@@ -388,7 +391,11 @@ fun SaleDetailScreen(
             icon = { Icon(Icons.Filled.Print, contentDescription = null) },
             title = { Text(stringResource(R.string.print_failed_title)) },
             text = { Text(stringResource(error.messageRes)) },
-            confirmButton = { Button(onClick = vm::print) { Text(stringResource(R.string.action_retry)) } },
+            confirmButton = {
+                Button(onClick = { printWithPermission(vm::print) }) {
+                    Text(stringResource(if (error == PrinterError.PERMISSION_DENIED) R.string.printer_allow_and_print else R.string.action_retry))
+                }
+            },
             dismissButton = { TextButton(onClick = vm::dismissPrintError) { Text(stringResource(R.string.action_close)) } },
         )
     }

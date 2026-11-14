@@ -119,7 +119,7 @@
     <string name="printer_test_ok">Printer is working</string>
     <string name="printer_error_unsupported">This phone does not support Bluetooth.</string>
     <string name="printer_error_off">Bluetooth is off. Turn it on to print.</string>
-    <string name="printer_error_permission">Bluetooth permission is needed. Allow it in Settings > Printer.</string>
+    <string name="printer_error_permission">Bluetooth (Nearby devices) permission is needed. Tap Allow and print. If no question appears: phone Settings &gt; Apps &gt; DT Salon Management &gt; Permissions &gt; Nearby devices &gt; Allow.</string>
     <string name="printer_error_none">No printer selected. Choose one in Settings > Printer.</string>
     <string name="printer_error_not_found">The saved printer was not found. Pair it again.</string>
     <string name="printer_error_connect">Could not connect. Make sure the printer is on, charged and nearby, then retry.</string>

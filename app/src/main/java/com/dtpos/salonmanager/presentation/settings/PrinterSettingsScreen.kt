@@ -114,6 +114,9 @@ class PrinterSettingsViewModel(private val container: AppContainer) : BaseViewMo
     private var scanJob: Job? = null
 
     val connectPermissions: Array<String> get() = bt.connectPermissions()
+
+    /** Asked from the "Allow" banner: connect and scan together (one Nearby devices question). */
+    val printPermissions: Array<String> get() = bt.printPermissions()
     val scanPermissions: Array<String> get() = bt.scanPermissions()
 
     fun refresh() {
@@ -310,7 +313,7 @@ fun PrinterSettingsScreen(onBack: () -> Unit) {
                         SalonTheme.extended.warningContainer,
                         SalonTheme.extended.warning,
                         actionLabel = stringResource(R.string.action_allow),
-                        onAction = { permissionLauncher.launch(vm.connectPermissions) },
+                        onAction = { permissionLauncher.launch(vm.printPermissions) },
                     )
                     !status.enabled -> InfoBanner(
                         stringResource(R.string.printer_error_off),

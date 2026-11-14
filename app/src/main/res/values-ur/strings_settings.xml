@@ -113,7 +113,7 @@
     <string name="printer_test_ok">Printer is working</string>
     <string name="printer_error_unsupported">یہ فون بلوٹوتھ سپورٹ نہیں کرتا۔</string>
     <string name="printer_error_off">بلوٹوتھ بند ہے۔ پرنٹ کے لیے آن کریں۔</string>
-    <string name="printer_error_permission">بلوٹوتھ کی اجازت درکار ہے۔ سیٹنگز &gt; پرنٹر میں اجازت دیں۔</string>
+    <string name="printer_error_permission">بلوٹوتھ (قریبی آلات) کی اجازت درکار ہے۔ \"اجازت دیں اور پرنٹ کریں\" دبائیں۔ اگر سوال نہ آئے تو فون کی سیٹنگز &gt; ایپس &gt; DT Salon Management &gt; اجازتیں &gt; قریبی آلات &gt; اجازت دیں۔</string>
     <string name="printer_error_none">کوئی پرنٹر منتخب نہیں۔ سیٹنگز &gt; پرنٹر میں منتخب کریں۔</string>
     <string name="printer_error_not_found">محفوظ پرنٹر نہیں ملا۔ دوبارہ جوڑیں۔</string>
     <string name="printer_error_connect">رابطہ نہیں ہو سکا۔ پرنٹر آن، چارج اور قریب ہو، پھر دوبارہ کوشش کریں۔</string>

@@ -75,6 +75,7 @@ import com.dtpos.salonmanager.domain.model.BusinessProfile
 import com.dtpos.salonmanager.presentation.common.BaseViewModel
 import com.dtpos.salonmanager.presentation.common.appViewModel
 import com.dtpos.salonmanager.presentation.common.messageRes
+import com.dtpos.salonmanager.presentation.common.rememberPrintWithPermission
 import com.dtpos.salonmanager.presentation.components.ContentCard
 import com.dtpos.salonmanager.presentation.components.EmptyState
 import com.dtpos.salonmanager.presentation.components.MessageEffect
@@ -304,13 +305,14 @@ fun TokensScreen(onBack: () -> Unit) {
             onSave = { day, draft, time -> vm.issue(day, draft, time) { creating = null } },
         )
     }
+    val printWithPermission = rememberPrintWithPermission()
     preview?.let { p ->
         TokenPreviewDialog(
             preview = p,
             salon = profile?.name.orEmpty(),
             printing = printing,
             accent = accent,
-            onPrint = vm::printPreview,
+            onPrint = { printWithPermission(vm::printPreview) },
             onDismiss = vm::closePreview,
         )
     }
